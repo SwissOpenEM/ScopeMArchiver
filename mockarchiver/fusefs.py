@@ -13,6 +13,7 @@ import datetime
 from errno import EACCES, EIO
 from os.path import realpath
 from threading import Lock
+from filelock import FileLock
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -136,7 +137,8 @@ class Loopback(LoggingMixIn, Operations):
         return fd
 
     def read(self, path, size, offset, fh):
-        with self.rwlock:
+        #with self.rwlock:
+        with FileLock(path+".lock"):
             os.lseek(fh, offset, 0)
             return os.read(fh, size)
 
@@ -186,7 +188,8 @@ class Loopback(LoggingMixIn, Operations):
     utimens = os.utime
 
     def write(self, path, data, offset, fh):
-        with self.rwlock:
+        #with self.rwlock:
+        with FileLock(path+".lock"):
             os.lseek(fh, offset, 0)
             return os.write(fh, data)
 

@@ -2,3 +2,4 @@ python_dotenv
 regex
 fastapi[all]
 fusepy
+filelock
