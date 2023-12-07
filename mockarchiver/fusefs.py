@@ -33,7 +33,7 @@ class Loopback(LoggingMixIn, Operations):
 
     def archiver(self, filename: str):
         """
-        Started in a thread to move a single file to tape.
+        Started in a thread to archive a single file to tape.
         It copies it to the replica directory, waits the defined number
         of seconds, then sets the sticky bit on the replica, as LTS would do.
         """
@@ -46,12 +46,27 @@ class Loopback(LoggingMixIn, Operations):
         os.chmod(replica_file, 0o1644)   
         logging.info("Archived " + filename)
 
+    def unarchiver(self, filename : str):
+        """
+        Started in a thread to unarchive a single file from tape.
+        It adds it to the unarchiving list, sleeps, removes it from
+        the unarchiving list and clears the sticky bit
+        """
+        logging.info("Unarchive " + filename)
+        replica_file = os.path.join(self.replica_dir, filename)
+        self.unarchiving_files.add(filename)
+        if (self.archive_delay_secs > 0):
+            time.sleep(self.archive_delay_secs)
+        os.chmod(replica_file, 0o644)   
+        self.unarchiving_files.remove(filename)
+        logging.info("Unarchived " + filename)
+
     def __init__(self, root, replica_dir, 
                  archive_delay_secs,):
         self.root = realpath(root)
         self.replica_dir = replica_dir
         self.archive_delay_secs = archive_delay_secs
-        self.unarchive_request_timestamps = {}
+        self.unarchiving_files = set()
         self.rwlock = Lock()
 
     def __call__(self, op, path, *args):
@@ -108,21 +123,16 @@ class Loopback(LoggingMixIn, Operations):
         if (statusbits & 1 == 0 and os.path.isfile(replica_file)):
             if (os.stat(replica_file).st_mode & 0o1000 == 0o1000):
                 # open for reading and file has been archived
-                now = datetime.datetime.now()
-                if (basename not in self.unarchive_request_timestamps):
-                    logging.info("Unarchive " + basename)
-                    self.unarchive_request_timestamps[basename] = now
+                if (basename not in self.unarchiving_files):
+                    # archiving has not started - start it
+                    thread = threading.Thread(target=self.unarchiver, 
+                                                name="Unarchive_"+basename,
+                                                args=(basename,))
+                    thread.start()
                     raise FuseOSError(EIO)
-                else:
-                    first_time = self.unarchive_request_timestamps[basename]
-                    diff = now - first_time
-                    if (diff.seconds < self.archive_delay_secs):
-                        raise FuseOSError(EIO)
-                    else:
-                        logging.info("Unarchive " + basename + " finished ")
-                        del self.unarchive_request_timestamps[basename]
-                        os.chmod(replica_file, 0o644)   
-                        return fd
+                elif basename in (self.unarchiving_files):
+                    # archiving has started but not finished
+                    raise FuseOSError(EIO)
         return fd
 
     def read(self, path, size, offset, fh):
@@ -149,7 +159,7 @@ class Loopback(LoggingMixIn, Operations):
         if (statusbits & 1 == 1):
             filename = os.path.basename(path)
             thread = threading.Thread(target=self.archiver, 
-                                        name="Move_"+filename,
+                                        name="Archive_"+filename,
                                         args=(filename,))
             thread.start()
 
