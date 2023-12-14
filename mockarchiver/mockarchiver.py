@@ -88,6 +88,11 @@ def deleteFile(filename : str, delete_real=False):
                 os.remove(fullpath)
             except:
                 logging.warn("Couldn't delete " + fullpath)
+        if (os.path.isfile(fullpath+".lock")):
+            try:
+                os.remove(fullpath+".lock")
+            except:
+                logging.warn("Couldn't delete " + fullpath+".lock")
 
 def deleteAllFiles():
     """
