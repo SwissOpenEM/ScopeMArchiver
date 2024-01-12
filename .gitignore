@@ -25,7 +25,7 @@
 **/node_modules
 **/~*.xlsx
 lts/staging/*
-lts/final
+lts/final/*
 lts/replica/*
 lts/final.real/*
 lts/final.archived/*

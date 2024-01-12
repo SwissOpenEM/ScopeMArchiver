@@ -1,0 +1,17 @@
+version: "3.9"
+services:
+  mockarchiver:
+    image: sissource.ethz.ch:5005/sis/emuploader/mockarchiver:latest
+    cap_add:
+      - SYS_ADMIN
+    devices:
+      - /dev/fuse
+    security_opt:
+      - apparmor:unconfined
+    build: 
+      context: ./mockarchiver
+      dockerfile: dockerfile
+    volumes:
+      - ${LTS_FOLDER}:/mnt/lts
+    ports:
+      - 7000:7000

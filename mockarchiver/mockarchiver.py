@@ -155,8 +155,11 @@ async def exit(response: Response):
     return None
 
 if __name__ == "__main__":
+    for f in (FINAL_DIR, REAL_FINAL_DIR, REPLICA_DIR):
+        if not os.path.exists(f):
+            os.makedirs(f)
     deleteAllFiles()
-    config = uvicorn.Config(app, port=PORT, log_level="info")
+    config = uvicorn.Config(app, port=PORT, log_level="info", host="0.0.0.0")
     server = UvicornServer(config=config)
     with server.run_in_thread():
         # Uvicorn started.

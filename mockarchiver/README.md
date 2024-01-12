@@ -34,3 +34,16 @@ $ cat final/myfile
 one
 ```
 
+
+
+### Inside Docker Container
+
+`docker-compose-development.yml` mounts the relative folder `emuploader/lts` into the container. Files written into `emuploader/lts/final` get archived as in the example above.
+
+However, it needs to be touched inside the docker container
+
+```bash
+touch /mnt/lts/final/myfile
+```
+
+else it does not seem to appear inside the container, see [Issue](https://github.com/docker/for-mac/issues/5795)
