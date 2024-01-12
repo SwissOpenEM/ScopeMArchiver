@@ -8,6 +8,7 @@ import time
 import threading
 import fusefs
 import contextlib
+import signal
 
 from pathlib import Path
 from contextlib import asynccontextmanager
@@ -111,7 +112,7 @@ def delayed_exit():
     """
     time.sleep(1)
     print("Exiting")
-    sys.exit(0)
+    os.kill(os.getpid(), signal.SIGINT)
 
 class UvicornServer(uvicorn.Server):
     """
