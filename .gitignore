@@ -21,7 +21,6 @@
 **/*.ipynb
 **/venv
 **/config.env
-**/.env
 **/node_modules
 **/~*.xlsx
 lts/staging/*

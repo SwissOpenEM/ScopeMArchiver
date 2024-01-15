@@ -6,22 +6,13 @@ RUN apt update; \
 RUN echo "user_allow_other" >> /etc/fuse.conf
 
 
-
-
-
 RUN useradd -rm -d /home/mockarchiver -s /bin/bash -g root -G sudo -u 1000 mockarchiver
 USER mockarchiver
 
 WORKDIR /home/mockarchiver
 
-# RUN mkdir -p /mnt/lts/final
-# RUN mkdir -p /mnt/lts/final.real
-# RUN mkdir -p /mnt/lts/replica
-# RUN mkdir -p /mnt/lts/archived
-
 COPY . ./
 
 RUN pip install -r requirements.txt
-RUN cp .env.example .env
 
 CMD ["python", "mockarchiver.py"]
