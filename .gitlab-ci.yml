@@ -1,0 +1,51 @@
+stages:          # List of stages for jobs, and their order of execution
+  - build
+
+build_compose:
+  stage: build
+  variables:
+    ARCHIVE_NAME: emuploader-${$CI_COMMIT_BRANCH}-CI_COMMIT_REF_SLUG.tar.gz 
+  before_script:
+    - mkdir ./build
+    - cp docker-compose-development.yml ./build/
+    - cp .env ./build/
+  script:
+    - tar cvzf ${ARCHIVE_NAME} ./build
+  rules:
+    - changes:
+      - docker-compose-development.yml
+      - .env
+  artifacts:
+    paths:
+      - ${ARCHIVE_NAME} 
+
+
+build_mockarchiver:
+  image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/docker:24.0.2
+  stage: build
+  tags: [docker-executor]
+  services:
+    - name: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/docker:24.0.2-dind
+      alias: docker
+      variables:
+        DOCKER_TLS_CERTDIR: ''
+  variables:
+    DOCKER_IMAGE_NAME: $CI_REGISTRY_IMAGE/mockarchiver:$CI_COMMIT_REF_SLUG
+  before_script:
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
+
+  # All branches are tagged with $DOCKER_IMAGE_NAME (defaults to commit ref slug)
+  # Default branch is also tagged with `latest`
+  script:
+    - cd ./mockarchiver
+    - docker build --pull -t "$DOCKER_IMAGE_NAME" .
+    - docker push "$DOCKER_IMAGE_NAME"
+    - |
+      if [[ "$CI_COMMIT_BRANCH" == "$CI_DEFAULT_BRANCH" ]]; then
+        docker tag "$DOCKER_IMAGE_NAME" "$CI_REGISTRY_IMAGE/mockarchiver:latest"
+        docker push "$CI_REGISTRY_IMAGE/mockarchiver:latest"
+      fi
+  rules:
+    - changes:
+      - mockarchiver/*
+      - docker-compose-development.yml
