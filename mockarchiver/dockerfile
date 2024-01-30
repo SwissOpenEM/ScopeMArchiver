@@ -6,10 +6,12 @@ RUN apt update; \
 RUN echo "user_allow_other" >> /etc/fuse.conf
 
 
-RUN useradd -rm -d /home/mockarchiver -s /bin/bash -g root -G sudo -u 1000 mockarchiver
-USER mockarchiver
+ARG USER=dev
 
-WORKDIR /home/mockarchiver
+RUN useradd -rm -d /home/${USER} -s /bin/bash -g root -G sudo -u 1000 ${USER}
+USER ${USER}
+
+WORKDIR /home/${USER}
 
 COPY . ./
 
