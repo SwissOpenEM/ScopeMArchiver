@@ -106,6 +106,13 @@ services:
       /usr/bin/mc mb -p local-minio/retrieval.${HOST};
       exit 0;
       "
+  webuploader:
+    image: webuploader
+    environment:
+      - COMPANION_URL=${HOST}/companion
+      - MINIO_PORT=9000
+    expose:
+      - 3000
 
 
 ## Monitoring
