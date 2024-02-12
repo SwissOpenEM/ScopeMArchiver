@@ -119,7 +119,7 @@ deploy-dev:
     - ssh $SSH_USER@$SSH_HOST "pwd && exit"
     - ssh $SSH_USER@$SSH_HOST "cd gitlab && docker compose down && exit"
     - |
-      ssh $SSH_USER@$SSH_HOST "cd gitlab && wget --user ${CI_DEPLOY_USER} --password ${CI_DEPLOY_PASSWORD} https://sissource.ethz.ch/api/v4/projects/${CI_PROJECT_ID}/packages/generic/emuploader/0.0.1/${ARCHIVE_NAME} && tar -xvzf ${ARCHIVE_NAME} && docker compose -f ./build/docker-compose.yml up -d && exit"
+      ssh $SSH_USER@$SSH_HOST "cd gitlab && wget -N --user ${CI_DEPLOY_USER} --password ${CI_DEPLOY_PASSWORD} https://sissource.ethz.ch/api/v4/projects/${CI_PROJECT_ID}/packages/generic/emuploader/0.0.1/${ARCHIVE_NAME} && tar -xvzf ${ARCHIVE_NAME} && docker compose -f ./build/docker-compose.yml up -d && exit"
 
   after_script:
     - rm -rf ~/.ssh
