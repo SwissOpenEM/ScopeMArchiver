@@ -107,7 +107,7 @@ services:
       exit 0;
       "
   webuploader:
-    image: sissource.ethz.ch:5005/sis/emuploader/webuploader:14-poc-direct-upload-to-s3-uppy-minio
+    image: sissource.ethz.ch:5005/sis/emuploader/${WEBUPLOADER_IMAGE_NAME}:latest
     environment:
       - COMPANION_URL=${HOST}/companion
       - MINIO_PORT=9000
@@ -115,8 +115,7 @@ services:
       - 3000
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.webuploader.rule=Host(`${HOST}`) && PathPrefix(`/webuploader`)"
-      - "traefik.http.middlewares.webuploader-stripprefix.stripprefix.prefixes=/webuploader"
+      - "traefik.http.routers.webuploader.rule=Host(`${HOST}`)"
       - "traefik.http.routers.webuploader.entrypoints=web"
       - "traefik.http.services.webuploader.loadbalancer.server.port=3000"
 
