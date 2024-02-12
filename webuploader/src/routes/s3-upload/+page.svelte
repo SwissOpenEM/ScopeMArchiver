@@ -8,18 +8,17 @@
 	import '@uppy/core/dist/style.css';
 	import '@uppy/dashboard/dist/style.css';
 
-	import CryptoJS from 'crypto-js'
+	import SparkMd5 from 'spark-md5';
 
 	async function calculateMD5(chunk, callback) {
 		if(!calculateChecksum){
 			callback("")
 			return
 		}
-		console.log("Calcualting hash")
 		var reader = new FileReader();
 		reader.onloadend = function () {
-			var  hash = CryptoJS.MD5(CryptoJS.lib.WordArray.create(reader.result));
-			var hashb64 = hash.toString(CryptoJS.enc.Base64)
+			var hash = SparkMd5.ArrayBuffer.hash(reader.result, true)
+			var hashb64 = btoa(hash)
 			callback(hashb64);
 		}
 		reader.readAsArrayBuffer(chunk);
@@ -43,7 +42,6 @@
 						if(!calculateChecksum){
 					 		resolve({presignedUrls: { [partNumber]: url }})
 						}
-						console.log("PartNumber:", partNumber,"hash: ", hash)
 					 	resolve({presignedUrls: { [partNumber]: url }, headers: {[partNumber]:{"Content-MD5":hash}} })
 					});
 					
