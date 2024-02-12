@@ -17,7 +17,10 @@
 		"@sveltejs/adapter-auto": "^3.0.0",
 		"@sveltejs/kit": "^2.0.0",
 		"@sveltejs/vite-plugin-svelte": "^3.0.0",
+		"@types/crypto-js": "^4.2.2",
 		"@types/eslint": "8.56.0",
+		"@types/events": "^3.0.3",
+		"@types/node": "^20.11.13",
 		"eslint": "^8.56.0",
 		"eslint-config-prettier": "^9.1.0",
 		"eslint-plugin-svelte": "^2.35.1",
@@ -31,6 +34,17 @@
 	},
 	"type": "module",
 	"dependencies": {
-		"@smui/button": "^7.0.0-beta.16"
+		"@smui/button": "^7.0.0-beta.16",
+		"@uppy/aws-s3": "^3.6.0",
+		"@uppy/core": "^3.8.0",
+		"@uppy/dashboard": "^3.7.1",
+		"@uppy/drag-drop": "^3.0.3",
+		"@uppy/progress-bar": "^3.0.4",
+		"@uppy/status-bar": "^3.2.5",
+		"@uppy/svelte": "^3.1.1",
+		"buffer": "^6.0.3",
+		"crypto-js": "^4.2.0",
+		"filereader": "^0.10.3",
+		"uppy": "^3.21.0"
 	}
 }

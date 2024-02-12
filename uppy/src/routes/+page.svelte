@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
 	import Button, { Group, Label } from '@smui/button';
 </script>
 
@@ -23,12 +23,12 @@
 			<Label>Grafana</Label>
 		</Button>
 
-		<Button variant="outlined" class="button-shaped-round" href="/tusd-upload">
+		<!-- <Button variant="outlined" class="button-shaped-round" href="/tusd-upload">
 			<Label>Tusd Upload</Label>
-		</Button>
+		</Button> -->
 
-		<Button variant="outlined" class="button-shaped-round" href="/client-to-store-upload">
-			<Label>Minio Direct Upload</Label>
+		<Button variant="outlined" class="button-shaped-round" href="/s3-upload">
+			<Label>File Upload to Minio</Label>
 		</Button>
 	</Group>
 </center>
