@@ -107,7 +107,7 @@ services:
       exit 0;
       "
   webuploader:
-    image: webuploader
+    image: sissource.ethz.ch:5005/sis/emuploader/webuploader:latest
     environment:
       - COMPANION_URL=${HOST}/companion
       - MINIO_PORT=9000
