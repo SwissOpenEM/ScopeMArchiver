@@ -113,6 +113,12 @@ services:
       - MINIO_PORT=9000
     expose:
       - 3000
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.webuploader.rule=Host(`${HOST}`) && PathPrefix(`/webuploader`)"
+      - "traefik.http.middlewares.webuploader-stripprefix.stripprefix.prefixes=/webuploader"
+      - "traefik.http.routers.webuploader.entrypoints=web"
+      - "traefik.http.services.webuploader.loadbalancer.server.port=3000"
 
 
 ## Monitoring
