@@ -36,3 +36,17 @@ npm run build
 You can preview the production build with `npm run preview`.
 
 > To deploy your app, you may need to install an [adapter](https://kit.svelte.dev/docs/adapters) for your target environment.
+
+
+## Testing
+Create an empty file
+
+```bash
+fallocate -l 10GB file.bin
+ ```
+
+Create a file with random content
+
+```bash
+ dd if=/dev/urandom of=1GB.bin bs=64M count=16 iflag=fullblock
+ ```
