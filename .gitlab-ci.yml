@@ -19,6 +19,7 @@ publish_docker_compose:
   rules:
     - changes:
       - docker-compose.yml
+      - prometheus.yml
       - .env
 
 build_mockarchiver:

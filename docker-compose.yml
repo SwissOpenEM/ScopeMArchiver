@@ -26,25 +26,16 @@ services:
       - "traefik.http.routers.mydashboard.middlewares=mydashboard-strip"
       - "traefik.frontend.headers.passHostHeader=true"
 
-  whoami:
-    image: "traefik/whoami"
-    container_name: "whoami-service"
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.whoami.rule=Host(`${HOST}`) && Path(`/whoami`)"
-      - "traefik.http.middlewares.whoami.stripprefix.prefixes=/whoami"
-      - "traefik.http.routers.whoami.entrypoints=web"
-      
   tusd:
     image: tusio/tusd:latest
     container_name: tusd-service
     command:
       - "-upload-dir=/home/tusd/data"
       - "-behind-proxy=true"
-      - "-s3-bucket=tusdtest.com"
+      - "-s3-bucket=archiving.${HOST}"
       - "-s3-endpoint=http://minio:9000"
-    ports:
-      - "1080:1080"
+    expose:
+      - 1080
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.tusd.rule=Host(`${HOST}`) && PathPrefix(`/tusd`)"
@@ -68,15 +59,17 @@ services:
       - AWS_REGION=eu-west-1
   minio:
     image: minio/minio
-    ports:
-      - "9000:9000"
-      - "9001:9001"
+    expose:
+      - 9000
+      - 9001
     volumes:
     - ${MINIO_STORAGE_FOLDER}:/data
     environment:
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin
-      MINIO_SERVER_URL: "http://minio:9000"
+      MINIO_PROMETHEUS_AUTH_TYPE: "public"
+      MINIO_PROMETHEUS_URL: "http://prometheus:9090"
+      MINIO_BROWSER_REDIRECT_URL: "http://${HOST}/minio"
     command: server --console-address ":9001" /data
     labels:
       - "traefik.enable=true"
@@ -84,3 +77,56 @@ services:
       - "traefik.http.middlewares.minio-stripprefix.stripprefix.prefixes=/minio"
       - "traefik.http.routers.minio.entrypoints=web"
       - "traefik.http.routers.minio.middlewares=minio-stripprefix"
+      - "traefik.http.services.minio.loadbalancer.server.port=9001"
+  minio-create-bucket:
+    image: minio/mc
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      /usr/bin/mc alias set local-minio http://minio:9000 minioadmin minioadmin;
+      /usr/bin/mc mb -p local-minio/archiving.${HOST};
+      /usr/bin/mc mb -p local-minio/retrieval.${HOST};
+      exit 0;
+      "
+
+
+## Monitoring
+
+  grafana:
+    image: grafana/grafana-enterprise
+    container_name: grafana
+    restart: unless-stopped
+    expose:
+      - 3000
+    volumes:
+      - 'grafana_storage:/var/lib/grafana'
+    environment:
+     - GF_SERVER_ROOT_URL=http://${HOST}/grafana
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.grafana.rule=Host(`${HOST}`) && PathPrefix(`/grafana`)"
+      - "traefik.http.middlewares.grafana-stripprefix.stripprefix.prefixes=/grafana"
+      - "traefik.http.routers.grafana.entrypoints=web"
+      - "traefik.http.routers.grafana.middlewares=grafana-stripprefix"
+      - "traefik.http.services.grafana.loadbalancer.server.port=3000"
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    restart: unless-stopped
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    expose:
+      - 9090
+
+volumes:
+  prometheus_data: {}
+  grafana_storage: {}
