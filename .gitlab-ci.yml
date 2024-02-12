@@ -53,7 +53,34 @@ build_mockarchiver:
       - docker-compose-development.yml
       - .development.env
 
+build_webuploader:
+  image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/docker:24.0.2
+  stage: build
+  tags: [docker-executor]
+  services:
+    - name: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/docker:24.0.2-dind
+      alias: docker
+      variables:
+        DOCKER_TLS_CERTDIR: ''
+  variables:
+    DOCKER_IMAGE_NAME: $CI_REGISTRY_IMAGE/webuploader:$CI_COMMIT_REF_SLUG
+  before_script:
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
 
+  # All branches are tagged with $DOCKER_IMAGE_NAME (defaults to commit ref slug)
+  # Default branch is also tagged with `latest`
+  script:
+    - cd ./webuploader
+    - docker build --pull -t "$DOCKER_IMAGE_NAME" .
+    - docker push "$DOCKER_IMAGE_NAME"
+    - |
+      if [[ "$CI_COMMIT_BRANCH" == "$CI_DEFAULT_BRANCH" ]]; then
+        docker tag "$DOCKER_IMAGE_NAME" "$CI_REGISTRY_IMAGE/webuploader:latest"
+        docker push "$CI_REGISTRY_IMAGE/webuploader:latest"
+      fi
+  rules:
+    - changes:
+      - webuploader/*
 
 deploy-dev:
   image: ubuntu
