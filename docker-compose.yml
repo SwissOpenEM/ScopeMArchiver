@@ -4,22 +4,83 @@ services:
     image: "traefik:v2.10"
     container_name: "traefik"
     command:
-      - "--log.level=DEBUG"
+      - "--log.level=INFO"
       - "--api.insecure=true"
+      - "--api.dashboard=true"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.websecure.address=:443"
       - "--entrypoints.web.address=:80"
+      - "--entryPoints.web.forwardedHeaders.insecure"
     ports:
       - "443:443"
       - "80:80"
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
-  whoami:
-    image: "traefik/whoami"
-    container_name: "simple-service"
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.whoami.rule=Host(`openem-dev.ethz.ch`) && Path(`/whoami`)"
+      - "traefik.http.routers.mydashboard.rule=PathPrefix(`/traefik`) || PathPrefix(`/dashboard`) || PathPrefix(`/api`)"
+      - "traefik.http.middlewares.mydashboard-strip.stripprefix.prefixes=/traefik"
+      - "traefik.http.routers.mydashboard.service=api@internal"
+      - "traefik.http.routers.mydashboard.entrypoints=web"
+      - "traefik.http.routers.mydashboard.middlewares=mydashboard-strip"
+      - "traefik.frontend.headers.passHostHeader=true"
+
+  whoami:
+    image: "traefik/whoami"
+    container_name: "whoami-service"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.whoami.rule=Host(`${HOST}`) && Path(`/whoami`)"
       - "traefik.http.middlewares.whoami.stripprefix.prefixes=/whoami"
       - "traefik.http.routers.whoami.entrypoints=web"
+      
+  tusd:
+    image: tusio/tusd:latest
+    container_name: tusd-service
+    command:
+      - "-upload-dir=/home/tusd/data"
+      - "-behind-proxy=true"
+      - "-s3-bucket=tusdtest.com"
+      - "-s3-endpoint=http://minio:9000"
+    ports:
+      - "1080:1080"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.tusd.rule=Host(`${HOST}`) && PathPrefix(`/tusd`)"
+      - "traefik.http.middlewares.tusd-stripprefix.stripprefix.prefixes=/tusd"
+      - "traefik.http.routers.tusd.entrypoints=web"
+      - "traefik.http.services.tusd.loadbalancer.server.port=1080"
+      - "traefik.http.middlewares.cors.headers.accesscontrolallowmethods=*"
+      - "traefik.http.middlewares.cors.headers.accesscontrolallowheaders=*"
+      - "traefik.http.middlewares.cors.headers.accessControlExposeHeaders=Location,Authorization,Origin,X-Requested-With,X-Request-ID,X-HTTP-Method-Override,Content-Type,Upload-Length,Upload-Offset,Tus-Resumable,Upload-Metadata,Upload-Defer-Length,Upload-Concat,Upload-Complete,Upload-Draft-Interop-Version,x-token"
+      - "traefik.http.middlewares.cors.headers.accessControlAllowOriginList=*"
+      - "traefik.http.middlewares.cors.headers.accesscontrolmaxage=100"
+      - "traefik.http.middlewares.cors.headers.addvaryheader=true"
+      - "traefik.http.middlewares.tusd-headers.headers.customrequestheaders.X-Forwarded-Proto=http"
+      - "traefik.http.middlewares.tusd-headers.headers.customrequestheaders.X-Forwarded-Host=${HOST}/tusd"
+      - "traefik.http.routers.tusd.middlewares=cors,tusd-stripprefix,tusd-headers"
+    depends_on:
+      - minio
+    environment:
+      - AWS_ACCESS_KEY_ID=minioadmin
+      - AWS_SECRET_ACCESS_KEY=minioadmin
+      - AWS_REGION=eu-west-1
+  minio:
+    image: minio/minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+    - ${MINIO_STORAGE_FOLDER}:/data
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_SERVER_URL: "http://minio:9000"
+    command: server --console-address ":9001" /data
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.minio.rule=Host(`${HOST}`) && PathPrefix(`/minio`)"
+      - "traefik.http.middlewares.minio-stripprefix.stripprefix.prefixes=/minio"
+      - "traefik.http.routers.minio.entrypoints=web"
+      - "traefik.http.routers.minio.middlewares=minio-stripprefix"
