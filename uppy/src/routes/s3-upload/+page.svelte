@@ -11,6 +11,10 @@
 	import CryptoJS from 'crypto-js'
 
 	async function calculateMD5(chunk, callback) {
+		if(!calculateChecksum){
+			callback("")
+			return
+		}
 		console.log("Calcualting hash")
 		var reader = new FileReader();
 		reader.onloadend = function () {
@@ -24,6 +28,7 @@
 	const uppy = new Uppy()
 		.use(AwsS3, {
 			shouldUseMultipart: (file) => file.size > 10 * 2 ** 20,
+			getTemporarySecurityCredentials: true,
 			companionUrl: 'http://openem-dev.ethz.ch/companion',
 			// https://github.com/transloadit/uppy/blob/dc9e7c795ee5ab95fbf242255ec1564fb2db5fb9/website/src/docs/aws-s3-multipart.md#prepareuploadpartsfile-partdata
 			async prepareUploadParts(file, { uploadId, key, parts, signal }) {
@@ -35,6 +40,9 @@
 					const { url } = await plugin.signPart(file, { uploadId, key, partNumber, body, signal })
 
 					calculateMD5(body, (hash) => {
+						if(!calculateChecksum){
+					 		resolve({presignedUrls: { [partNumber]: url }})
+						}
 						console.log("PartNumber:", partNumber,"hash: ", hash)
 					 	resolve({presignedUrls: { [partNumber]: url }, headers: {[partNumber]:{"Content-MD5":hash}} })
 					});
@@ -43,16 +51,14 @@
 				},
 		});
 
-	let showInlineDashboard = true;
+	let calculateChecksum = true;
 </script>
 
 <main>
     <h1>File Upload to Minio S3 Storage</h1>
 	<label>
-		<input type="checkbox" bind:checked={showInlineDashboard} />
-		Show Dashboard
+		<input type="checkbox" bind:checked={calculateChecksum} />
+		Calculate Checksums
 	</label>
-	{#if showInlineDashboard}
-		<Dashboard {uppy} />
-	{/if}
+		<Dashboard uppy={uppy}  showProgressDetails=true />
 </main>
