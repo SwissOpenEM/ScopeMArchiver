@@ -107,7 +107,7 @@ services:
       exit 0;
       "
   webuploader:
-    image: sissource.ethz.ch:5005/sis/emuploader/webuploader:latest
+    image: sissource.ethz.ch:5005/sis/emuploader/webuploader:14-poc-direct-upload-to-s3-uppy-minio
     environment:
       - COMPANION_URL=${HOST}/companion
       - MINIO_PORT=9000
