@@ -13,6 +13,7 @@ publish_docker_compose:
     - mkdir ./build
     - cp docker-compose.yml ./build/
     - cp .env ./build/
+    - cp .companion.env ./build/
   script:
     - tar cvzf ${ARCHIVE_NAME} ./build
     - |
@@ -22,6 +23,7 @@ publish_docker_compose:
       - docker-compose.yml
       - prometheus.yml
       - .env
+      - .companion.env
 
 build_mockarchiver:
   image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/docker:24.0.2
