@@ -14,13 +14,11 @@ publish_docker_compose:
     - cp .env ./build/
   script:
     - tar cvzf ${ARCHIVE_NAME} ./build
-    # - |
-    #   curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file ${ARCHIVE_NAME} "https://sissource.ethz.ch/api/v4/projects/${CI_PROJECT_ID}/packages/generic/${ARCHIVE_NAME}"
     - |
       curl --user "${CI_DEPLOY_USER}:${CI_DEPLOY_PASSWORD}" --upload-file ${ARCHIVE_NAME} "https://sissource.ethz.ch/api/v4/projects/${CI_PROJECT_ID}/packages/generic/emuploader/0.0.1/${ARCHIVE_NAME}"
   rules:
     - changes:
-      - docker-compose-development.yml
+      - docker-compose.yml
       - .env
 
 build_mockarchiver:
@@ -52,6 +50,7 @@ build_mockarchiver:
     - changes:
       - mockarchiver/*
       - docker-compose-development.yml
+      - .development.env
 
 
 
@@ -117,9 +116,9 @@ deploy-dev:
   script:
     # - ssh $SSH_USER@$SSH_HOST "cd $WORK_DIR && docker compose pull && docker compose up -d && exit"
     - ssh $SSH_USER@$SSH_HOST "pwd && exit"
-    - ssh $SSH_USER@$SSH_HOST "docker compose down"
+    - ssh $SSH_USER@$SSH_HOST "cd gitlab && docker compose down $$ exit"
     - |
-      ssh $SSH_USER@$SSH_HOST "wget --user ${CI_DEPLOY_USER} --password ${CI_DEPLOY_PASSWORD} https://sissource.ethz.ch/api/v4/projects/${CI_PROJECT_ID}/packages/generic/emuploader/0.0.1/${ARCHIVE_NAME} && tar -xvzf ${ARCHIVE_NAME} && docker compose -f ./build/docker-compose.yml up -d && exit"
+      ssh $SSH_USER@$SSH_HOST "cd gitlab && wget --user ${CI_DEPLOY_USER} --password ${CI_DEPLOY_PASSWORD} https://sissource.ethz.ch/api/v4/projects/${CI_PROJECT_ID}/packages/generic/emuploader/0.0.1/${ARCHIVE_NAME} && tar -xvzf ${ARCHIVE_NAME} && docker compose -f ./build/docker-compose.yml up -d && exit"
 
   after_script:
     - rm -rf ~/.ssh

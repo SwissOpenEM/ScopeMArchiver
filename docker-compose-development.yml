@@ -1,4 +1,6 @@
 version: "3.9"
+env_file:
+  path: ./.development.env
 services:
   mockarchiver:
     image: ${MOCKARCHIVER_IMAGE}
