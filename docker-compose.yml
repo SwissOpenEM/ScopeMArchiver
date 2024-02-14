@@ -4,22 +4,189 @@ services:
     image: "traefik:v2.10"
     container_name: "traefik"
     command:
-      - "--log.level=DEBUG"
+      - "--log.level=INFO"
       - "--api.insecure=true"
+      - "--api.dashboard=true"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.websecure.address=:443"
       - "--entrypoints.web.address=:80"
+      - "--entryPoints.web.forwardedHeaders.insecure"
     ports:
       - "443:443"
       - "80:80"
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
-  whoami:
-    image: "traefik/whoami"
-    container_name: "simple-service"
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.whoami.rule=Host(`openem-dev.ethz.ch`) && Path(`/whoami`)"
-      - "traefik.http.middlewares.whoami.stripprefix.prefixes=/whoami"
-      - "traefik.http.routers.whoami.entrypoints=web"
+      - "traefik.http.routers.mydashboard.rule=PathPrefix(`/traefik`) || PathPrefix(`/dashboard`) || PathPrefix(`/api`)"
+      - "traefik.http.middlewares.mydashboard-strip.stripprefix.prefixes=/traefik"
+      - "traefik.http.routers.mydashboard.service=api@internal"
+      - "traefik.http.routers.mydashboard.entrypoints=web"
+      - "traefik.http.routers.mydashboard.middlewares=mydashboard-strip"
+      - "traefik.frontend.headers.passHostHeader=true"
+
+  tusd:
+    image: tusio/tusd:latest
+    container_name: tusd-service
+    command:
+      - "-upload-dir=/home/tusd/data"
+      - "-behind-proxy=true"
+      - "-s3-bucket=archiving.${HOST}"
+      - "-s3-endpoint=http://minio:9000"
+    expose:
+      - 1080
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.tusd.rule=Host(`${HOST}`) && PathPrefix(`/tusd`)"
+      - "traefik.http.middlewares.tusd-stripprefix.stripprefix.prefixes=/tusd"
+      - "traefik.http.routers.tusd.entrypoints=web"
+      - "traefik.http.services.tusd.loadbalancer.server.port=1080"
+      - "traefik.http.middlewares.cors.headers.accesscontrolallowmethods=*"
+      - "traefik.http.middlewares.cors.headers.accesscontrolallowheaders=*"
+      - "traefik.http.middlewares.cors.headers.accessControlExposeHeaders=Location,Authorization,Origin,X-Requested-With,X-Request-ID,X-HTTP-Method-Override,Content-Type,Upload-Length,Upload-Offset,Tus-Resumable,Upload-Metadata,Upload-Defer-Length,Upload-Concat,Upload-Complete,Upload-Draft-Interop-Version,x-token"
+      - "traefik.http.middlewares.cors.headers.accessControlAllowOriginList=*"
+      - "traefik.http.middlewares.cors.headers.accesscontrolmaxage=100"
+      - "traefik.http.middlewares.cors.headers.addvaryheader=true"
+      - "traefik.http.middlewares.tusd-headers.headers.customrequestheaders.X-Forwarded-Proto=http"
+      - "traefik.http.middlewares.tusd-headers.headers.customrequestheaders.X-Forwarded-Host=${HOST}/tusd"
+      - "traefik.http.routers.tusd.middlewares=cors,tusd-stripprefix,tusd-headers"
+    depends_on:
+      - minio
+    environment:
+      - AWS_ACCESS_KEY_ID=minioadmin
+      - AWS_SECRET_ACCESS_KEY=minioadmin
+      - AWS_REGION=eu-west-1
+  minio:
+    image: minio/minio
+    # S3 specs for presigned urls require minio to be directly exposed, with path?
+    ports:
+      - 9000:9000
+      - 9001:9001
+    volumes:
+    - ${MINIO_STORAGE_FOLDER}:/data
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_PROMETHEUS_AUTH_TYPE: "public"
+      MINIO_PROMETHEUS_URL: "http://prometheus:9090"
+      MINIO_BROWSER_REDIRECT_URL: "http://${HOST}/minio"
+    command: server --console-address ":9001" /data
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.minio.rule=Host(`${HOST}`) && PathPrefix(`/minio`)"
+      - "traefik.http.middlewares.minio-stripprefix.stripprefix.prefixes=/minio"
+      - "traefik.http.routers.minio.entrypoints=web"
+      - "traefik.http.routers.minio.service=minio-web"
+      - "traefik.http.services.minio-web.loadbalancer.server.port=9001"
+      - "traefik.http.middlewares.minio-cors.headers.accesscontrolallowmethods=*"
+      - "traefik.http.middlewares.minio-cors.headers.accesscontrolallowheaders=*"
+      - "traefik.http.middlewares.minio-cors.headers.accessControlExposeHeaders=ETag,Location,Authorization,Origin,X-Requested-With,X-Request-ID,X-HTTP-Method-Override,Content-Type,Upload-Length,Upload-Offset,Tus-Resumable,Upload-Metadata,Upload-Defer-Length,Upload-Concat,Upload-Complete,Upload-Draft-Interop-Version,x-token"
+      - "traefik.http.middlewares.minio-cors.headers.accessControlAllowOriginList=*"
+      - "traefik.http.middlewares.minio-cors.headers.accesscontrolmaxage=100"
+      - "traefik.http.middlewares.minio-cors.headers.addvaryheader=true"
+      - "traefik.http.middlewares.minio-headers.headers.customrequestheaders.X-Forwarded-Proto=http"
+      - "traefik.http.middlewares.minio-headers.headers.customrequestheaders.X-Forwarded-Host=${HOST}/minio"
+      - "traefik.http.routers.minio.middlewares=minio-stripprefix,minio-headers,minio-cors"
+
+      - "traefik.http.routers.minio-api.rule=Host(`${HOST}`) && PathPrefix(`/minio-api`)"
+      - "traefik.http.middlewares.minio-api-stripprefix.stripprefix.prefixes=/minio-api"
+      - "traefik.http.routers.minio-api.entrypoints=web"
+      - "traefik.http.routers.minio-api.service=minio-api"
+      - "traefik.http.routers.minio-api.middlewares=minio-api-stripprefix,minio-headers,minio-cors"
+      - "traefik.http.services.minio-api.loadbalancer.server.port=9000"
+  minio-create-bucket:
+    image: minio/mc
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      /usr/bin/mc alias set local-minio http://minio:9000 minioadmin minioadmin;
+      /usr/bin/mc mb -p local-minio/archiving.${HOST};
+      /usr/bin/mc mb -p local-minio/retrieval.${HOST};
+      exit 0;
+      "
+  webuploader:
+    image: ${WEBUPLOADER_IMAGE_NAME}:${WEBUPLOADER_IMAGE_TAG}
+    environment:
+      - COMPANION_URL=${HOST}/companion
+      - MINIO_PORT=9000
+    expose:
+      - 3000
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.webuploader.rule=Host(`${HOST}`)"
+      - "traefik.http.routers.webuploader.entrypoints=web"
+      - "traefik.http.services.webuploader.loadbalancer.server.port=3000"
+
+
+## Monitoring
+
+  grafana:
+    image: grafana/grafana-enterprise
+    container_name: grafana
+    restart: unless-stopped
+    expose:
+      - 3000
+    volumes:
+      - 'grafana_storage:/var/lib/grafana'
+    environment:
+     - GF_SERVER_ROOT_URL=http://${HOST}/grafana
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.grafana.rule=Host(`${HOST}`) && PathPrefix(`/grafana`)"
+      - "traefik.http.middlewares.grafana-stripprefix.stripprefix.prefixes=/grafana"
+      - "traefik.http.routers.grafana.entrypoints=web"
+      - "traefik.http.routers.grafana.middlewares=grafana-stripprefix"
+      - "traefik.http.services.grafana.loadbalancer.server.port=3000"
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    restart: unless-stopped
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    expose:
+      - 9090
+
+  uppy-companion:
+    image: transloadit/companion
+    depends_on:
+      - minio
+    volumes:
+      - /app/node_modules
+      - ./uppy-server-data:/mnt/uppy-server-data
+    expose:
+      - '3020'
+    env_file:
+      - .companion.env
+    environment:
+      - COMPANION_DOMAIN=http://${HOST}
+      - COMPANION_AWS_ENDPOINT=http://${HOST}:9000
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.companion.rule=Host(`${HOST}`) && PathPrefix(`/companion`)"
+      - "traefik.http.middlewares.companion-stripprefix.stripprefix.prefixes=/companion"
+      - "traefik.http.routers.companion.entrypoints=web"
+      - "traefik.http.services.companion.loadbalancer.server.port=3020"
+      - "traefik.http.middlewares.companion-cors.headers.accesscontrolallowmethods=*"
+      - "traefik.http.middlewares.companion-cors.headers.accesscontrolallowheaders=*"
+      - "traefik.http.middlewares.companion-cors.headers.accessControlExposeHeaders=Content-MD5,Authorization,Content-Type,x-amz-date,x-amz-content-sha256,Origin,ETag,Location,Origin,X-Requested-With,X-Request-ID,X-HTTP-Method-Override"
+      - "traefik.http.middlewares.companion-cors.headers.accessControlAllowOriginList=*"
+      - "traefik.http.middlewares.companion-cors.headers.accesscontrolmaxage=100"
+      - "traefik.http.middlewares.companion-cors.headers.addvaryheader=true"
+      - "traefik.http.middlewares.companion-headers.headers.customrequestheaders.X-Forwarded-Proto=http"
+      - "traefik.http.middlewares.companion-headers.headers.customrequestheaders.X-Forwarded-Host=${HOST}/companion"
+      - "traefik.http.routers.companion.middlewares=companion-stripprefix,companion-headers,companion-cors"
+
+
+volumes:
+  prometheus_data: {}
+  grafana_storage: {}

@@ -14,3 +14,5 @@ All the services can be deployed using docker compose:
 ```bash
 docker compose up -d
 ```
+
+> Note: Individual image tags need to be passed as env variables
