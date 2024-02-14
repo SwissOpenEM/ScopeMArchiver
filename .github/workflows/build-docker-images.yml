@@ -27,6 +27,8 @@ jobs:
       webuploader: ${{ steps.filter.outputs.webuploader }}
     steps:
     # For pull requests it's not necessary to checkout the code
+    - uses: actions/checkout@v4
+      if: github.event_name != 'pull_request'
     - uses: dorny/paths-filter@v3
       id: filter
       with:
