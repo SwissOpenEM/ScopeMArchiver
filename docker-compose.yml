@@ -107,7 +107,7 @@ services:
       exit 0;
       "
   webuploader:
-    image: ${WEBUPLOADER_IMAGE_NAME}:latest
+    image: ${WEBUPLOADER_IMAGE_NAME}:${WEBUPLOADER_IMAGE_TAG}
     environment:
       - COMPANION_URL=${HOST}/companion
       - MINIO_PORT=9000
