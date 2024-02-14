@@ -42,7 +42,7 @@ jobs:
       contents: read
 
     needs: detect_changes
-    if: ${{ needs.detect_changes.outputs.mockarchiver == 'true' }} || ${{ github.event_name != 'pull_request' }}
+    if: ${{ needs.detect_changes.outputs.mockarchiver == 'true' }} || github.event_name != 'pull_request'
       
     steps:
     - uses: actions/checkout@v3
@@ -81,9 +81,9 @@ jobs:
     permissions:
       packages: write
       contents: read
-      
+
     needs: detect_changes
-    if: ${{ needs.detect_changes.outputs.webuploader == 'true' }} || ${{ github.event_name != 'pull_request' }}
+    if: ${{ needs.detect_changes.outputs.webuploader == 'true' }} || github.event_name != 'pull_request'
       
     steps:
     - uses: actions/checkout@v3
