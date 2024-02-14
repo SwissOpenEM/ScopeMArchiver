@@ -108,6 +108,7 @@ services:
       "
   webuploader:
     image: ${WEBUPLOADER_IMAGE_NAME}:${WEBUPLOADER_IMAGE_TAG}
+    pull_policy: always
     environment:
       - COMPANION_URL=${HOST}/companion
       - MINIO_PORT=9000
@@ -167,8 +168,11 @@ services:
       - '3020'
     env_file:
       - .companion.env
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
       - COMPANION_DOMAIN=http://${HOST}
+      # TODO: Using the route through traefik creates a SignatureDoesNotMatch error when creating the presigned url
       - COMPANION_AWS_ENDPOINT=http://${HOST}:9000
     labels:
       - "traefik.enable=true"
