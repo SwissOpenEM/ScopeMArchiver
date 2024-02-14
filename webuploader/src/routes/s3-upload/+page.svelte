@@ -24,11 +24,14 @@
 		reader.readAsArrayBuffer(chunk);
     };
 
+	const host = location.hostname
+
+
 	const uppy = new Uppy()
 		.use(AwsS3, {
 			shouldUseMultipart: (file) => file.size > 10 * 2 ** 20,
 			getTemporarySecurityCredentials: true,
-			companionUrl: 'http://openem-dev.ethz.ch/companion',
+			companionUrl: "http://" + host + "/companion",
 			// https://github.com/transloadit/uppy/blob/dc9e7c795ee5ab95fbf242255ec1564fb2db5fb9/website/src/docs/aws-s3-multipart.md#prepareuploadpartsfile-partdata
 			async prepareUploadParts(file, { uploadId, key, parts, signal }) {
 				const { number: partNumber, chunk: body } = parts[0]

@@ -167,6 +167,9 @@ services:
       - '3020'
     env_file:
       - .companion.env
+    environment:
+      - COMPANION_DOMAIN=http://${HOST}
+      - COMPANION_AWS_ENDPOINT=http://${HOST}:9000
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.companion.rule=Host(`${HOST}`) && PathPrefix(`/companion`)"
