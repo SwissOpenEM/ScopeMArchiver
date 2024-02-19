@@ -1,0 +1,18 @@
+{
+  "name": "OpenEM",
+  "short_name": "OpenEm",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0175C2",
+  "description": "",
+  "orientation": "natural",
+  "icons": [
+    {
+      "src": "icons/android-chrome-512x512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any"
+    }
+  ]
+}
