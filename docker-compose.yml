@@ -110,7 +110,10 @@ services:
       "
   webuploader:
     image: ${WEBUPLOADER_IMAGE_NAME}:${WEBUPLOADER_IMAGE_TAG}
-    pull_policy: always
+    pull_policy: if_not_present
+    build:
+      context: ./webuploader
+      dockerfile: Dockerfile
     environment:
       - COMPANION_URL=${HOST}/companion
       - MINIO_PORT=9000
