@@ -1,0 +1,95 @@
+version: "3.9"
+services:
+  rabbitmq:
+    image: rabbitmq:3.12-management
+    container_name: rabbitmq
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    expose:
+      - 5672:5672
+      - 15672:15672
+    volumes:
+      - ~/.docker-conf/rabbitmq/data/:/var/lib/rabbitmq/
+      - ~/.docker-conf/rabbitmq/log/:/var/log/rabbitmq/
+
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.rabbitmq.rule=Host(`${HOST}`) && PathPrefix(`/rabbitmq`)"
+      - "traefik.http.middlewares.rabbitmq-stripprefix.stripprefix.prefixes=/rabbitmq"
+      - "traefik.http.routers.rabbitmq.entrypoints=web"
+      - "traefik.http.middlewares.rabbitmq-headers.headers.customrequestheaders.X-Forwarded-Proto=http"
+      - "traefik.http.middlewares.rabbitmq-headers.headers.customrequestheaders.X-Forwarded-Host=${HOST}/rabbitmq"
+      - "traefik.http.services.rabbitmq.loadbalancer.server.port=15672"
+      - "traefik.http.routers.rabbitmq.middlewares=rabbitmq-stripprefix,rabbitmq-headers"
+
+  celery-insights:
+    image: ghcr.io/danyi1212/celery-insights:latest
+    container_name: celery-insights
+    # celery-insights does not yet allow being run at a non-root path
+    ports:
+      - 8555:8555
+    environment:
+      - BROKER_URL=amqp://guest:guest@rabbitmq
+      - RESULT_BACKEND=redis://redis:6379
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.celery-insights.rule=Host(`${HOST}`) && PathPrefix(`/celery-insights`)"
+      - "traefik.http.middlewares.celery-insights-stripprefix.stripprefix.prefixes=/celery-insights"
+      - "traefik.http.routers.celery-insights.entrypoints=web"
+      - "traefik.http.services.celery-insights.loadbalancer.server.port=8555"
+      - "traefik.http.middlewares.insights-headers.headers.customrequestheaders.X-Forwarded-Proto=http"
+      - "traefik.http.middlewares.insights-headers.headers.customrequestheaders.X-Forwarded-Host=${HOST}/celery-insights"
+      - "traefik.http.routers.celery-insights.middlewares=celery-insights-stripprefix,insights-headers"
+    depends_on:
+      - rabbitmq
+      - redis
+  celery-flower:
+    image: celery-flower
+    build:
+      context: ./
+      dockerfile: flower.Dockerfile
+    container_name: celery-flower
+    expose:
+      - 5555:5555
+    environment:
+      - CELERY_BROKER_URL=amqp://guest:guest@rabbitmq
+      - CELERY_RESULT_BACKEND=redis://redis:6379
+      # Seems to be an issue with running it behind a reverse proxy, needs this and no stripprefix middleware
+      - FLOWER_URL_PREFIX=/celery-flower
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.celery-flower.rule=Host(`${HOST}`) && PathPrefix(`/celery-flower`)"
+      - "traefik.http.routers.celery-flower.entrypoints=web"
+      - "traefik.http.services.celery-flower.loadbalancer.server.port=5555"
+    depends_on:
+      - rabbitmq
+      - redis
+  celery-worker:
+    image: celery-worker
+    build:
+      context: ./
+      dockerfile: worker.Dockerfile
+    environment:
+      - CELERY_BROKER_URL=amqp://guest:guest@rabbitmq
+      - CELERY_RESULT_BACKEND=redis://redis:6379
+    depends_on:
+      - rabbitmq
+      - redis
+  web:
+    image: archiver-web
+    build:
+      context: ./
+      dockerfile: web.Dockerfile
+    expose:
+      - 8004:8000
+    environment:
+      - CELERY_BROKER_URL=amqp://guest:guest@rabbitmq
+      - CELERY_RESULT_BACKEND=redis://redis:6379
+    depends_on:
+      - rabbitmq
+      - redis
+  redis:
+    image: redis:latest
+    expose:
+      - 6379

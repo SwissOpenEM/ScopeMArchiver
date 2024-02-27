@@ -1,5 +1,6 @@
 version: "3.9"
 include:
+  - jobs.docker-compose.yml
   - monitoring.docker-compose.yml
 services:
   traefik:
@@ -66,7 +67,7 @@ services:
       - 9000:9000
       - 9001:9001
     volumes:
-    - ${MINIO_STORAGE_FOLDER}:/data
+      - ${MINIO_STORAGE_FOLDER}:/data
     environment:
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin
@@ -102,12 +103,7 @@ services:
     depends_on:
       - minio
     entrypoint: >
-      /bin/sh -c "
-      /usr/bin/mc alias set local-minio http://minio:9000 minioadmin minioadmin;
-      /usr/bin/mc mb -p local-minio/archiving.${HOST};
-      /usr/bin/mc mb -p local-minio/retrieval.${HOST};
-      exit 0;
-      "
+      /bin/sh -c " /usr/bin/mc alias set local-minio http://minio:9000 minioadmin minioadmin; /usr/bin/mc mb -p local-minio/archiving.${HOST}; /usr/bin/mc mb -p local-minio/retrieval.${HOST}; exit 0; "
   webuploader:
     image: ${WEBUPLOADER_IMAGE_NAME}:${WEBUPLOADER_IMAGE_TAG}
     pull_policy: if_not_present
