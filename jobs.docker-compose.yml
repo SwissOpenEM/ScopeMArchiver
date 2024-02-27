@@ -45,7 +45,7 @@ services:
       - rabbitmq
       - redis
   celery-flower:
-    image: celery-flower
+    image: ${CELERY_FLOWER_IMAGE_NAME}:${CELERY_IMAGE_TAG}
     build:
       context: ./
       dockerfile: flower.Dockerfile
@@ -66,7 +66,7 @@ services:
       - rabbitmq
       - redis
   celery-worker:
-    image: celery-worker
+    image: ${CELERY_WORKER_IMAGE_NAME}:${CELERY_IMAGE_TAG}
     build:
       context: ./
       dockerfile: worker.Dockerfile
@@ -76,8 +76,8 @@ services:
     depends_on:
       - rabbitmq
       - redis
-  web:
-    image: archiver-web
+  celery-web:
+    image: ${CELERY_SERVER_IMAGE_NAME}:${CELERY_IMAGE_TAG}
     build:
       context: ./
       dockerfile: web.Dockerfile

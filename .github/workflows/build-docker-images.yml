@@ -7,6 +7,9 @@ env:
     # github.repository as <account>/<repo>
     MOCKARCHIVER_IMAGE_NAME: ${{ github.repository }}-mockarchiver
     WEBUPLOADER_IMAGE_NAME: ${{ github.repository }}-webuploader
+    CELERY_WORKER_IMAGE_NAME: ${{ github.repository }}-worker
+    CELERY_SERVER_IMAGE_NAME: ${{ github.repository }}-server
+    CELERY_FLOWER_IMAGE_NAME: ${{ github.repository }}-flower
 
 on:
   push:
@@ -25,6 +28,7 @@ jobs:
     outputs:
       mockarchiver: ${{ steps.filter.outputs.mockarchiver }}
       webuploader: ${{ steps.filter.outputs.webuploader }}
+      jobsystem: ${{ steps.filter.outputs.jobsystem }}
     steps:
     # For pull requests it's not necessary to checkout the code
     - uses: actions/checkout@v4
@@ -37,6 +41,8 @@ jobs:
             - 'mockarchiver/**'
           webuploader:
             - 'webuploader/**'
+          jobsystem:
+            - 'jobsystem/**'
 
   build_mockarchiver:
     runs-on: ubuntu-latest
@@ -79,6 +85,132 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
+  build_celery_worker:
+    runs-on: ubuntu-latest
+
+    permissions:
+      packages: write
+      contents: read
+
+    needs: detect_changes
+    if: ${{ needs.detect_changes.outputs.jobsystem == 'true' }} || github.event_name != 'pull_request'
+      
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Log into registry ${{ env.REGISTRY }}
+      # if: github.event_name != 'pull_request'
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Extract metadata (tags, labels) for Docker
+      # https://github.com/docker/metadata-action
+
+    - name: Extract Docker metadata
+      id: meta
+      uses: docker/metadata-action@96383f45573cb7f253c731d3b3ab81c87ef81934 # v5.0.0
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.CELERY_WORKER_IMAGE_NAME }}
+
+      # Build and push Docker image with Buildx (don't push on PR)
+      # https://github.com/docker/build-push-action
+    - name: Build and push Docker image
+      id: build-and-push
+      uses: docker/build-push-action@v5
+      with:
+          context: ./jobsystem
+          file: ./jobsystem/worker.Dockerfile
+          push: true # ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  build_celery_server:
+    runs-on: ubuntu-latest
+
+    permissions:
+      packages: write
+      contents: read
+
+    needs: detect_changes
+    if: ${{ needs.detect_changes.outputs.jobsystem == 'true' }} || github.event_name != 'pull_request'
+      
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Log into registry ${{ env.REGISTRY }}
+      # if: github.event_name != 'pull_request'
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Extract metadata (tags, labels) for Docker
+      # https://github.com/docker/metadata-action
+
+    - name: Extract Docker metadata
+      id: meta
+      uses: docker/metadata-action@96383f45573cb7f253c731d3b3ab81c87ef81934 # v5.0.0
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.CELERY_SERVER_IMAGE_NAME }}
+
+      # Build and push Docker image with Buildx (don't push on PR)
+      # https://github.com/docker/build-push-action
+    - name: Build and push Docker image
+      id: build-and-push
+      uses: docker/build-push-action@v5
+      with:
+          context: ./jobsystem
+          file: ./jobsystem/web.Dockerfile
+          push: true # ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  build_celery_flower:
+    runs-on: ubuntu-latest
+
+    permissions:
+      packages: write
+      contents: read
+
+    needs: detect_changes
+    if: ${{ needs.detect_changes.outputs.jobsystem == 'true' }} || github.event_name != 'pull_request'
+      
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Log into registry ${{ env.REGISTRY }}
+      # if: github.event_name != 'pull_request'
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Extract metadata (tags, labels) for Docker
+      # https://github.com/docker/metadata-action
+
+    - name: Extract Docker metadata
+      id: meta
+      uses: docker/metadata-action@96383f45573cb7f253c731d3b3ab81c87ef81934 # v5.0.0
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.CELERY_FLOWER_IMAGE_NAME }}
+
+      # Build and push Docker image with Buildx (don't push on PR)
+      # https://github.com/docker/build-push-action
+    - name: Build and push Docker image
+      id: build-and-push
+      uses: docker/build-push-action@v5
+      with:
+          context: ./jobsystem
+          file: ./jobsystem/flower.Dockerfile
+          push: true # ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+    
   build_webuploader:
     runs-on: ubuntu-latest
 
