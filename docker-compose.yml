@@ -140,6 +140,10 @@ services:
       - COMPANION_DOMAIN=http://${HOST}
       # TODO: Using the route through traefik creates a SignatureDoesNotMatch error when creating the presigned url
       - COMPANION_AWS_ENDPOINT=http://${HOST}:9000
+      - COMPANION_AWS_BUCKET=${MINIO_ARCHIVAL_BUCKET}
+      - COMPANION_AWS_REGION=${MINIO_REGION}
+      - COMPANION_AWS_KEY=${MINIO_USER}
+      - COMPANION_AWS_SECRET=${MINIO_PASS}
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.companion.rule=Host(`${HOST}`) && PathPrefix(`/companion`)"
