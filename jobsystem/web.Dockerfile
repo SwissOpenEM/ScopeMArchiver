@@ -24,4 +24,4 @@ RUN PATH="${HOME}/.local/bin:$PATH"
 
 RUN PIPENV_VENV_IN_PROJECT=1 pipenv install --deploy
 
-CMD ["pipenv", "run", "uvicorn", "main:app", "--reload", "--host", "0.0.0.0"]
+CMD ["pipenv", "run", "uvicorn", "main:app", "--reload", "--host", "0.0.0.0", "--root-path", "/fastapi"]

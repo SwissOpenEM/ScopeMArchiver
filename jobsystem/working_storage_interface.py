@@ -1,13 +1,20 @@
 from typing import List
 from abc import ABC, abstractmethod
 from datetime import timedelta
+import os
 import minio
+from dataclasses import dataclass
+
+
+@dataclass
+class Bucket():
+    name: str
 
 
 class WorkingStorage(ABC):
 
     @abstractmethod
-    def get_presigned_url(self, filename: str) -> str:
+    def get_presigned_url(self, filename: str, bucket: Bucket) -> str:
         pass
 
     # @abstractmethod
@@ -17,12 +24,15 @@ class WorkingStorage(ABC):
 
 class MinioStorage(WorkingStorage):
 
-    _USER = "minioadmin"
-    _PASSWORD = "minioadmin"
-    _REGION = "eu-west-1"
-    _URL = "openem-dev.ethz.ch:9000"
-    _ARCHIVAL_BUCKET = "archival"
-    _RETRIEVAL_BUCKET = "archiving.openem-dev.ethz.ch"
+    _USER = os.environ.get('MINIO_USER')
+    _PASSWORD = os.environ.get('MINIO_PASS')
+    _REGION = os.environ.get('MINIO_REGION')
+    _URL = os.environ.get('MINIO_URL')
+
+    ARCHIVAL_BUCKET: Bucket = Bucket(
+        os.environ.get('MINIO_ARCHIVAL_BUCKET', "archival"))
+    RETRIEVAL_BUCKET: Bucket = Bucket(
+        os.environ.get('MINIO_RETRIEVAL_BUCKET', "retrieval"))
 
     def __init__(self):
         self._minio = minio.Minio(
@@ -33,17 +43,27 @@ class MinioStorage(WorkingStorage):
             secure=False
         )
 
-    def get_presigned_url(self, filename: str) -> str:
+    def get_presigned_url(self, filename: str, bucket: Bucket) -> str:
         url = self._minio.presigned_get_object(
-            bucket_name=self._RETRIEVAL_BUCKET,
+            bucket_name=bucket.name,
             object_name=filename,
             expires=timedelta(hours=2)
         )
 
         return url
 
-    def stat_object(self, filename: str) -> minio.Minio.stat_object:
+    def stat_object(self, filename: str, bucket: Bucket) -> minio.Minio.stat_object:
         return self._minio.stat_object(
-            bucket_name=self._RETRIEVAL_BUCKET,
+            bucket_name=bucket.name,
             object_name=filename
         )
+
+    def get_objects(self, bucket: Bucket):
+        return self._minio.list_objects(bucket_name=bucket.name)
+
+
+minioClient = MinioStorage()
+
+__attributes__ = [
+    minioClient
+]

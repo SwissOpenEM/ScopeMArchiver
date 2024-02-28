@@ -2,7 +2,7 @@ from celery import Celery, chain, shared_task
 
 
 import os
-from working_storage_interface import MinioStorage
+from working_storage_interface import minioClient
 import logging
 import requests
 import time
@@ -13,9 +13,6 @@ _LOGGER = logging.getLogger("Jobs")
 celery = Celery('tasks',
                 broker=os.environ.get('CELERY_BROKER_URL'),
                 backend=os.environ.get('CELERY_RESULT_BACKEND'))
-
-
-minio = MinioStorage()
 
 
 @shared_task
@@ -36,34 +33,33 @@ class SciCat():
 # @dramatiq.actor(min_backoff=2000)
 @shared_task
 def update_job_status():
-    time.sleep(30)
+    time.sleep(10)
     SciCat.update_job_status()
 
 
 # @dramatiq.actor(max_retries=0)
 @shared_task
-def archive_job(filename: str, destination_folder: str):
+def archive_job(result, filename: str, destination_folder: str):
     _LOGGER.info("Archive job started")
-    time.sleep(30)
-
+    local_filename = download_object(filename, destination_folder)
     _LOGGER.info("Archive job ended")
-    return 1
+    return local_filename
 
 
 # @dramatiq.actor(min_backoff=2000)
 @shared_task(autoretry_for=(Exception,), retry_backoff=True, retry_kwargs={'max_retries': 5})
 def update_lifecycle(archive_jobs_result):
     # result ttl vs retries?
-    time.sleep(30)
+    time.sleep(10)
     _LOGGER.info(f"Updating lifecyle: {archive_jobs_result}")
 
 
-def create_archiving_pipeline():
+def create_archiving_pipeline(filename: str):
     """Archiving Workflow
 
     Returns:
         Pipeline: steps to be executed to archive
-
+d
       # register job, dataset
       # verify data
       # create tarballs
@@ -73,7 +69,7 @@ def create_archiving_pipeline():
 
     return chain(
         update_job_status.s(),
-        archive_job.s(""),
+        archive_job.s(filename=filename, destination_folder="/tmp/archiving"),
         update_lifecycle.s()
     )
 
@@ -85,8 +81,10 @@ def download_object(filename: str, destination_folder: str):
         print("Destination not reachable")
         return
 
-    presigned_url = minio.get_presigned_url(filename=filename)
-    stat = minio.stat_object(filename=filename)
+    presigned_url = minioClient.get_presigned_url(
+        filename=filename, bucket=minioClient.ARCHIVAL_BUCKET)
+    stat = minioClient.stat_object(
+        filename=filename, bucket=minioClient.ARCHIVAL_BUCKET)
     local_filename = os.path.join(
         destination_folder, filename)
 
