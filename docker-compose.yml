@@ -57,11 +57,12 @@ services:
     depends_on:
       - minio
     environment:
-      - AWS_ACCESS_KEY_ID=minioadmin
-      - AWS_SECRET_ACCESS_KEY=minioadmin
+      - AWS_ACCESS_KEY_ID=${MINIO_USER}
+      - AWS_SECRET_ACCESS_KEY=${MINIO_PASS}
       - AWS_REGION=eu-west-1
   minio:
     image: minio/minio
+    container_name: minio
     # S3 specs for presigned urls require minio to be directly exposed, with path?
     ports:
       - 9000:9000
@@ -69,8 +70,8 @@ services:
     volumes:
       - ${MINIO_STORAGE_FOLDER}:/data
     environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_ROOT_USER: ${MINIO_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_PASS}
       MINIO_PROMETHEUS_AUTH_TYPE: "public"
       MINIO_PROMETHEUS_URL: "http://prometheus:9090"
       MINIO_BROWSER_REDIRECT_URL: "http://${HOST}/minio"
@@ -103,16 +104,16 @@ services:
     depends_on:
       - minio
     entrypoint: >
-      /bin/sh -c " /usr/bin/mc alias set local-minio http://minio:9000 minioadmin minioadmin; /usr/bin/mc mb -p local-minio/archiving.${HOST}; /usr/bin/mc mb -p local-minio/retrieval.${HOST}; exit 0; "
-  webuploader:
+      /bin/sh -c " /usr/bin/mc alias set local-minio http://minio:9000 ${MINIO_USER} ${MINIO_PASS}; /usr/bin/mc mb -p local-minio/${MINIO_ARCHIVAL_BUCKET}; /usr/bin/mc mb -p local-minio/${MINIO_RETRIEVAL_BUCKET}; exit 0; "
+  frontend:
     image: ${WEBUPLOADER_IMAGE_NAME}:${WEBUPLOADER_IMAGE_TAG}
+    container_name: frontend
     pull_policy: if_not_present
     build:
       context: ./webuploader
       dockerfile: Dockerfile
     environment:
       - COMPANION_URL=${HOST}/companion
-      - MINIO_PORT=9000
     expose:
       - 3000
     labels:
@@ -123,6 +124,7 @@ services:
 
   uppy-companion:
     image: transloadit/companion
+    container_name: uppy-companion
     depends_on:
       - minio
     volumes:

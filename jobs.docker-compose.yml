@@ -47,8 +47,8 @@ services:
   celery-flower:
     image: ${CELERY_FLOWER_IMAGE_NAME}:${CELERY_IMAGE_TAG}
     build:
-      context: ./
-      dockerfile: flower.Dockerfile
+      context: ./jobsystem/
+      dockerfile: ./flower.Dockerfile
     container_name: celery-flower
     expose:
       - 5555:5555
@@ -57,6 +57,12 @@ services:
       - CELERY_RESULT_BACKEND=redis://redis:6379
       # Seems to be an issue with running it behind a reverse proxy, needs this and no stripprefix middleware
       - FLOWER_URL_PREFIX=/celery-flower
+      - MINIO_REGION=${MINIO_REGION}
+      - MINIO_USER=${MINIO_USER}
+      - MINIO_PASS=${MINIO_PASS}
+      - MINIO_ARCHIVAL_BUCKET=${MINIO_ARCHIVAL_BUCKET}
+      - MINIO_RETRIEVAL_BUCKET=${MINIO_RETRIEVAL_BUCKET}
+      - MINIO_URL=minio:9000
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.celery-flower.rule=Host(`${HOST}`) && PathPrefix(`/celery-flower`)"
@@ -67,29 +73,53 @@ services:
       - redis
   celery-worker:
     image: ${CELERY_WORKER_IMAGE_NAME}:${CELERY_IMAGE_TAG}
+    container_name: celery-worker
     build:
-      context: ./
-      dockerfile: worker.Dockerfile
+      context: ./jobsystem/
+      dockerfile: ./worker.Dockerfile
     environment:
       - CELERY_BROKER_URL=amqp://guest:guest@rabbitmq
       - CELERY_RESULT_BACKEND=redis://redis:6379
+      - MINIO_REGION=${MINIO_REGION}
+      - MINIO_USER=${MINIO_USER}
+      - MINIO_PASS=${MINIO_PASS}
+      - MINIO_ARCHIVAL_BUCKET=${MINIO_ARCHIVAL_BUCKET}
+      - MINIO_RETRIEVAL_BUCKET=${MINIO_RETRIEVAL_BUCKET}
+      - MINIO_URL=minio:9000
     depends_on:
       - rabbitmq
       - redis
+    volumes:
+      - ${CELERY_ARCHIVING_DIR}:/tmp/archiving
   celery-web:
     image: ${CELERY_SERVER_IMAGE_NAME}:${CELERY_IMAGE_TAG}
+    container_name: celery-web
     build:
-      context: ./
-      dockerfile: web.Dockerfile
-    expose:
+      context: ./jobsystem
+      dockerfile: ./web.Dockerfile
+    ports:
       - 8004:8000
     environment:
       - CELERY_BROKER_URL=amqp://guest:guest@rabbitmq
       - CELERY_RESULT_BACKEND=redis://redis:6379
+      - MINIO_REGION=${MINIO_REGION}
+      - MINIO_USER=${MINIO_USER}
+      - MINIO_PASS=${MINIO_PASS}
+      - MINIO_ARCHIVAL_BUCKET=${MINIO_ARCHIVAL_BUCKET}
+      - MINIO_RETRIEVAL_BUCKET=${MINIO_RETRIEVAL_BUCKET}
+      - MINIO_URL=minio:9000
     depends_on:
       - rabbitmq
       - redis
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.celery-web.rule=Host(`${HOST}`) && PathPrefix(`/fastapi`)"
+      - "traefik.http.middlewares.celery-web-stripprefix.stripprefix.prefixes=/fastapi"
+      - "traefik.http.routers.celery-web.entrypoints=web"
+      - "traefik.http.routers.celery-web.middlewares=celery-web-stripprefix"
+      - "traefik.http.services.celery-web.loadbalancer.server.port=8000"
   redis:
     image: redis:latest
+    container_name: redis
     expose:
       - 6379
