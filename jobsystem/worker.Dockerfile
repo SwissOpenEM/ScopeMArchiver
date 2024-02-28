@@ -17,6 +17,8 @@ USER ${USER}
 
 WORKDIR /home/${USER}
 
+RUN mkdir /tmp/archiving
+
 COPY . ./
 
 RUN echo 'export PATH="${HOME}/.local/bin:$PATH"' >> ~/.bashrc
