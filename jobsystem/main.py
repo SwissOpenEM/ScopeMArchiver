@@ -1,8 +1,5 @@
-from celery.result import AsyncResult
-from fastapi import Body, FastAPI, Form, Request
+from fastapi import FastAPI
 from fastapi.responses import JSONResponse
-from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 
 from working_storage_interface import minioClient
@@ -35,7 +32,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-# app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
 @app.get("/tasks", status_code=201)
