@@ -1,0 +1,211 @@
+version: "3.9"
+services:
+  rabbitmq:
+    image: rabbitmq:3.12-management
+    container_name: rabbitmq
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    expose:
+      - 5672:5672
+      - 15672:15672
+    volumes:
+      - ~/.docker-conf/rabbitmq/data/:/var/lib/rabbitmq/
+      - ~/.docker-conf/rabbitmq/log/:/var/log/rabbitmq/
+
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.rabbitmq.rule=Host(`${HOST}`) && PathPrefix(`/rabbitmq`)"
+      - "traefik.http.middlewares.rabbitmq-stripprefix.stripprefix.prefixes=/rabbitmq"
+      - "traefik.http.routers.rabbitmq.entrypoints=web"
+      - "traefik.http.middlewares.rabbitmq-headers.headers.customrequestheaders.X-Forwarded-Proto=http"
+      - "traefik.http.middlewares.rabbitmq-headers.headers.customrequestheaders.X-Forwarded-Host=${HOST}/rabbitmq"
+      - "traefik.http.services.rabbitmq.loadbalancer.server.port=15672"
+      - "traefik.http.routers.rabbitmq.middlewares=rabbitmq-stripprefix,rabbitmq-headers"
+
+  celery-insights:
+    image: ghcr.io/danyi1212/celery-insights:latest
+    container_name: celery-insights
+    # celery-insights does not yet allow being run at a non-root path
+    ports:
+      - 8555:8555
+    environment:
+      - BROKER_URL=amqp://guest:guest@rabbitmq
+      - RESULT_BACKEND=redis://redis:6379
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.celery-insights.rule=Host(`${HOST}`) && PathPrefix(`/celery-insights`)"
+      - "traefik.http.middlewares.celery-insights-stripprefix.stripprefix.prefixes=/celery-insights"
+      - "traefik.http.routers.celery-insights.entrypoints=web"
+      - "traefik.http.services.celery-insights.loadbalancer.server.port=8555"
+      - "traefik.http.middlewares.insights-headers.headers.customrequestheaders.X-Forwarded-Proto=http"
+      - "traefik.http.middlewares.insights-headers.headers.customrequestheaders.X-Forwarded-Host=${HOST}/celery-insights"
+      - "traefik.http.routers.celery-insights.middlewares=celery-insights-stripprefix,insights-headers"
+    depends_on:
+      - rabbitmq
+      - redis
+  celery-flower:
+    image: ${CELERY_FLOWER_IMAGE_NAME}:${CELERY_IMAGE_TAG}
+    build:
+      context: ./jobsystem/
+      dockerfile: ./flower.Dockerfile
+    container_name: celery-flower
+    expose:
+      - 5555:5555
+    environment:
+      - CELERY_BROKER_URL=amqp://guest:guest@rabbitmq
+      - CELERY_RESULT_BACKEND=redis://redis:6379
+      # Seems to be an issue with running it behind a reverse proxy, needs this and no stripprefix middleware
+      - FLOWER_URL_PREFIX=/celery-flower
+      - MINIO_REGION=${MINIO_REGION}
+      - MINIO_USER=${MINIO_USER}
+      - MINIO_PASS=${MINIO_PASS}
+      - MINIO_ARCHIVAL_BUCKET=${MINIO_ARCHIVAL_BUCKET}
+      - MINIO_RETRIEVAL_BUCKET=${MINIO_RETRIEVAL_BUCKET}
+      - MINIO_URL=minio:9000
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.celery-flower.rule=Host(`${HOST}`) && PathPrefix(`/celery-flower`)"
+      - "traefik.http.routers.celery-flower.entrypoints=web"
+      - "traefik.http.services.celery-flower.loadbalancer.server.port=5555"
+    depends_on:
+      - rabbitmq
+      - redis
+  celery-worker:
+    image: ${CELERY_WORKER_IMAGE_NAME}:${CELERY_IMAGE_TAG}
+    container_name: celery-worker
+    build:
+      context: ./jobsystem/
+      dockerfile: ./worker.Dockerfile
+    environment:
+      - CELERY_BROKER_URL=amqp://guest:guest@rabbitmq
+      - CELERY_RESULT_BACKEND=redis://redis:6379
+      - CELERY_TASK_TRACK_STARTED=True
+      - CELERY_TASK_SEND_SENT_EVENT=True
+      - CELERY_ENABLE_UTC=True
+      - MINIO_REGION=${MINIO_REGION}
+      - MINIO_USER=${MINIO_USER}
+      - MINIO_PASS=${MINIO_PASS}
+      - MINIO_ARCHIVAL_BUCKET=${MINIO_ARCHIVAL_BUCKET}
+      - MINIO_RETRIEVAL_BUCKET=${MINIO_RETRIEVAL_BUCKET}
+      - MINIO_URL=minio:9000
+    depends_on:
+      - rabbitmq
+      - redis
+    volumes:
+      - ${CELERY_ARCHIVING_DIR}:/tmp/archiving
+  celery-web:
+    image: ${CELERY_SERVER_IMAGE_NAME}:${CELERY_IMAGE_TAG}
+    container_name: celery-web
+    build:
+      context: ./jobsystem
+      dockerfile: ./web.Dockerfile
+    ports:
+      - 8004:8000
+    environment:
+      - CELERY_BROKER_URL=amqp://guest:guest@rabbitmq
+      - CELERY_RESULT_BACKEND=redis://redis:6379
+      - MINIO_REGION=${MINIO_REGION}
+      - MINIO_USER=${MINIO_USER}
+      - MINIO_PASS=${MINIO_PASS}
+      - MINIO_ARCHIVAL_BUCKET=${MINIO_ARCHIVAL_BUCKET}
+      - MINIO_RETRIEVAL_BUCKET=${MINIO_RETRIEVAL_BUCKET}
+      - MINIO_URL=minio:9000
+    depends_on:
+      - rabbitmq
+      - redis
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.celery-web.rule=Host(`${HOST}`) && PathPrefix(`/fastapi`)"
+      - "traefik.http.middlewares.celery-web-stripprefix.stripprefix.prefixes=/fastapi"
+      - "traefik.http.routers.celery-web.entrypoints=web"
+      - "traefik.http.routers.celery-web.middlewares=celery-web-stripprefix"
+      - "traefik.http.services.celery-web.loadbalancer.server.port=8000"
+  redis:
+    image: redis:latest
+    container_name: redis
+    expose:
+      - 6379
+  leek:
+    image: kodhive/leek
+    container_name: leek
+    environment:
+      # General
+      - LEEK_API_LOG_LEVEL=WARNING
+      - LEEK_AGENT_LOG_LEVEL=INFO
+      # Components
+      - LEEK_ENABLE_API=true
+      - LEEK_ENABLE_AGENT=true
+      - LEEK_ENABLE_WEB=true
+      # URLs
+      - LEEK_API_URL=http://${HOST}:5000
+      - LEEK_WEB_URL=http://${HOST}:8000
+      - LEEK_ES_URL=http://elastic:9200
+      # Authentication
+      - LEEK_API_ENABLE_AUTH=false
+      # Subscriptions
+      - |
+        LEEK_AGENT_SUBSCRIPTIONS=
+        [
+          {
+            "broker": "amqp://guest:guest@rabbitmq//",
+            "broker_management_url": "http://rabbitmq:15672",
+            "backend": null,
+            "exchange": "celeryev",
+            "queue": "leek.fanout",
+            "routing_key": "#",
+            "org_name": "mono",
+            "app_name": "leek",
+            "app_env": "prod",
+            "prefetch_count": 1000,
+            "concurrency_pool_size": 2,
+            "batch_max_size_in_mb": 1,
+            "batch_max_number_of_messages": 1000,
+            "batch_max_window_in_seconds": 5
+          }
+        ]
+      - LEEK_AGENT_API_SECRET=not-secret
+    ports:
+      - 5000:5000
+      - 8000:8000
+    depends_on:
+      - rabbitmq
+    labels:
+      - "traefik.enable=false"
+      - "traefik.http.routers.leek-web.rule=Host(`${HOST}`) && PathPrefix(`/leek`)"
+      - "traefik.http.middlewares.leek-web-stripprefix.stripprefix.prefixes=/leek"
+      - "traefik.http.routers.leek-web.entrypoints=web"
+      - "traefik.http.middlewares.leek-headers.headers.customrequestheaders.X-Forwarded-Proto=http"
+      - "traefik.http.middlewares.leek-headers.headers.customrequestheaders.X-Forwarded-Host=${HOST}/leek"
+      - "traefik.http.routers.leek-web.middlewares=leek-web-stripprefix,leek-headers"
+      - "traefik.http.services.leek-web.loadbalancer.server.port=8000"
+
+  # Just for local development!! (Test index db)
+  elastic:
+    image: elasticsearch:7.10.1
+    container_name: elastic
+    environment:
+      - node.name=es01
+      - cluster.name=es-docker-cluster
+      - cluster.initial_master_nodes=es01
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    command: [ "elasticsearch", "-Elogger.level=ERROR" ]
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl --silent --fail localhost:9200/_cluster/health || exit 1"
+        ]
+      interval: 30s
+      timeout: 30s
+      retries: 3
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65535
+        hard: 65535
+    expose:
+      - 9200:9200
