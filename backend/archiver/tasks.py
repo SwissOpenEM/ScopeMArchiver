@@ -2,7 +2,7 @@ from celery import Celery, chain, shared_task
 
 
 import os
-from working_storage_interface import minioClient
+from .working_storage_interface import minioClient
 import logging
 import requests
 import time

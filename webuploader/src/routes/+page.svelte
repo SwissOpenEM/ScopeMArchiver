@@ -6,8 +6,7 @@
 	import { onMount } from 'svelte';
 
 	async function doPost(object_name: Str) {
-		var archive_url = `/fastapi/archiving`;
-		// var archive_url = 'http://localhost:8000/archiving';
+		var archive_url = `/api/v1/archiving`;
 		const res = await fetch(archive_url, {
 			method: 'POST',
 			body: JSON.stringify({
@@ -43,8 +42,7 @@
 	let selected: List = [];
 
 	onMount(async function () {
-		var archivable_objects_url = '/fastapi/archivable_objects';
-		// var archivable_objects_url = 'http://localhost:8000/archivable_objects';
+		var archivable_objects_url = '/api/v1/archivable_objects';
 		try {
 			const res = await fetch(archivable_objects_url, {
 				method: 'GET'
@@ -54,12 +52,17 @@
 			items = json;
 			console.log(json);
 		} catch {}
-
-		// items = JSON.parse(json);
-		// console.log(items);
 	});
 
 	let changeEvent: CustomEvent<{ changedIndices: number[] }> | null;
+
+	function openTraefikDashboard() {
+		const host = window.location.hostname;
+		let url = window.location.protocol + '//traefik.' + host + '/dashboard/';
+		console.log(url);
+		let w = window.open(url, '_blank');
+		w?.focus();
+	}
 </script>
 
 <h1>Open EM Network Data Uploader Service</h1>
@@ -70,7 +73,11 @@
 			<Label>Minio</Label>
 		</Button>
 
-		<Button variant="outlined" class="button-shaped-round" href="/traefik" target="_blank">
+		<Button
+			variant="outlined"
+			class="button-shaped-round"
+			on:click={(event) => openTraefikDashboard()}
+		>
 			<Label>Traefik Dashboard</Label>
 		</Button>
 
@@ -80,10 +87,6 @@
 
 		<Button variant="outlined" class="button-shaped-round" href="rabbitmq/" target="_blank">
 			<Label>RabbitMQ</Label>
-		</Button>
-
-		<Button variant="outlined" class="button-shaped-round" href="/celery-flower/" target="_blank">
-			<Label>Celery Flower</Label>
 		</Button>
 
 		<Button variant="outlined" class="button-shaped-round" href="/celery-insights" target="_blank">

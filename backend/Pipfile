@@ -13,6 +13,7 @@ uvicorn = "*"
 celery = {extras = ["redis"], version = "*"}
 pytest-celery = "*"
 pytest = "*"
+fastapi-featureflags = "*"
 
 [dev-packages]
 
