@@ -86,6 +86,7 @@ services:
       - MINIO_ARCHIVAL_BUCKET=${MINIO_ARCHIVAL_BUCKET}
       - MINIO_RETRIEVAL_BUCKET=${MINIO_RETRIEVAL_BUCKET}
       - MINIO_URL=minio:9000
+      - API_ROOT_PATH=/api/v1
       - ARCHIVER_ENABLED=${ARCHIVER_ENABLED}
       - INGESTER_ENABLED=${INGESTER_ENABLED}
     depends_on:
@@ -93,8 +94,8 @@ services:
       - redis
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.celery-web.rule=Host(`${HOST}`) && PathPrefix(`/fastapi`)"
-      - "traefik.http.middlewares.celery-web-stripprefix.stripprefix.prefixes=/fastapi"
+      - "traefik.http.routers.celery-web.rule=Host(`${HOST}`) && PathPrefix(`/api/v1`)"
+      - "traefik.http.middlewares.celery-web-stripprefix.stripprefix.prefixes=/api/v1"
       - "traefik.http.routers.celery-web.entrypoints=web"
       - "traefik.http.routers.celery-web.middlewares=celery-web-stripprefix"
       - "traefik.http.services.celery-web.loadbalancer.server.port=8000"

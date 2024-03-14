@@ -22,11 +22,11 @@ services:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.mydashboard.rule=PathPrefix(`/traefik`) || PathPrefix(`/dashboard`) || PathPrefix(`/api`)"
-      - "traefik.http.middlewares.mydashboard-strip.stripprefix.prefixes=/traefik"
+      - "traefik.http.routers.mydashboard.rule=Host(`traefik.${HOST}`) && PathPrefix(`/dashboard`, `/api`)"
+      # - "traefik.http.middlewares.mydashboard-strip.stripprefix.prefixes=/traefik"
       - "traefik.http.routers.mydashboard.service=api@internal"
       - "traefik.http.routers.mydashboard.entrypoints=web"
-      - "traefik.http.routers.mydashboard.middlewares=mydashboard-strip"
+      # - "traefik.http.routers.mydashboard.middlewares=mydashboard-strip"
       - "traefik.frontend.headers.passHostHeader=true"
 
   tusd:

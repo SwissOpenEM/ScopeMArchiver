@@ -6,7 +6,7 @@ from fastapi_featureflags import FeatureFlags, feature_flag, feature_enabled
 
 FeatureFlags.load_conf_from_dict(dict(os.environ.items()))
 
-app = FastAPI()
+app = FastAPI(root_path=os.environ.get('API_ROOT_PATH', '/'))
 
 if feature_enabled("ARCHIVER_ENABLED"):
     import archiver.api as archiver_api
