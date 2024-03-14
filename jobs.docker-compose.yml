@@ -44,38 +44,11 @@ services:
     depends_on:
       - rabbitmq
       - redis
-  celery-flower:
-    image: ${CELERY_FLOWER_IMAGE_NAME}:${CELERY_IMAGE_TAG}
-    build:
-      context: ./jobsystem/
-      dockerfile: ./flower.Dockerfile
-    container_name: celery-flower
-    expose:
-      - 5555:5555
-    environment:
-      - CELERY_BROKER_URL=amqp://guest:guest@rabbitmq
-      - CELERY_RESULT_BACKEND=redis://redis:6379
-      # Seems to be an issue with running it behind a reverse proxy, needs this and no stripprefix middleware
-      - FLOWER_URL_PREFIX=/celery-flower
-      - MINIO_REGION=${MINIO_REGION}
-      - MINIO_USER=${MINIO_USER}
-      - MINIO_PASS=${MINIO_PASS}
-      - MINIO_ARCHIVAL_BUCKET=${MINIO_ARCHIVAL_BUCKET}
-      - MINIO_RETRIEVAL_BUCKET=${MINIO_RETRIEVAL_BUCKET}
-      - MINIO_URL=minio:9000
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.celery-flower.rule=Host(`${HOST}`) && PathPrefix(`/celery-flower`)"
-      - "traefik.http.routers.celery-flower.entrypoints=web"
-      - "traefik.http.services.celery-flower.loadbalancer.server.port=5555"
-    depends_on:
-      - rabbitmq
-      - redis
   celery-worker:
     image: ${CELERY_WORKER_IMAGE_NAME}:${CELERY_IMAGE_TAG}
     container_name: celery-worker
     build:
-      context: ./jobsystem/
+      context: ./backend/
       dockerfile: ./worker.Dockerfile
     environment:
       - CELERY_BROKER_URL=amqp://guest:guest@rabbitmq
@@ -89,6 +62,8 @@ services:
       - MINIO_ARCHIVAL_BUCKET=${MINIO_ARCHIVAL_BUCKET}
       - MINIO_RETRIEVAL_BUCKET=${MINIO_RETRIEVAL_BUCKET}
       - MINIO_URL=minio:9000
+      - ARCHIVER_ENABLED=${ARCHIVER_ENABLED}
+      - INGESTER_ENABLED=${INGESTER_ENABLED}
     depends_on:
       - rabbitmq
       - redis
@@ -98,7 +73,7 @@ services:
     image: ${CELERY_SERVER_IMAGE_NAME}:${CELERY_IMAGE_TAG}
     container_name: celery-web
     build:
-      context: ./jobsystem
+      context: ./backend
       dockerfile: ./web.Dockerfile
     ports:
       - 8004:8000
@@ -111,6 +86,8 @@ services:
       - MINIO_ARCHIVAL_BUCKET=${MINIO_ARCHIVAL_BUCKET}
       - MINIO_RETRIEVAL_BUCKET=${MINIO_RETRIEVAL_BUCKET}
       - MINIO_URL=minio:9000
+      - ARCHIVER_ENABLED=${ARCHIVER_ENABLED}
+      - INGESTER_ENABLED=${INGESTER_ENABLED}
     depends_on:
       - rabbitmq
       - redis

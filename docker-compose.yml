@@ -1,7 +1,7 @@
 version: "3.9"
 include:
   - jobs.docker-compose.yml
-  - monitoring.docker-compose.yml
+  # - monitoring.docker-compose.yml
 services:
   traefik:
     image: "traefik:v2.10"
@@ -60,6 +60,8 @@ services:
       - AWS_ACCESS_KEY_ID=${MINIO_USER}
       - AWS_SECRET_ACCESS_KEY=${MINIO_PASS}
       - AWS_REGION=eu-west-1
+    profiles:
+      - tus
   minio:
     image: minio/minio
     container_name: minio
@@ -99,12 +101,17 @@ services:
       - "traefik.http.routers.minio-api.service=minio-api"
       - "traefik.http.routers.minio-api.middlewares=minio-api-stripprefix,minio-headers,minio-cors"
       - "traefik.http.services.minio-api.loadbalancer.server.port=9000"
+    profiles:
+      - archiver
   minio-create-bucket:
     image: minio/mc
     depends_on:
       - minio
     entrypoint: >
       /bin/sh -c " /usr/bin/mc alias set local-minio http://minio:9000 ${MINIO_USER} ${MINIO_PASS}; /usr/bin/mc mb -p local-minio/${MINIO_ARCHIVAL_BUCKET}; /usr/bin/mc mb -p local-minio/${MINIO_RETRIEVAL_BUCKET}; exit 0; "
+    profiles:
+      - archiver
+
   frontend:
     image: ${WEBUPLOADER_IMAGE_NAME}:${WEBUPLOADER_IMAGE_TAG}
     container_name: frontend
@@ -159,3 +166,5 @@ services:
       - "traefik.http.middlewares.companion-headers.headers.customrequestheaders.X-Forwarded-Proto=http"
       - "traefik.http.middlewares.companion-headers.headers.customrequestheaders.X-Forwarded-Host=${HOST}/companion"
       - "traefik.http.routers.companion.middlewares=companion-stripprefix,companion-headers,companion-cors"
+    profiles:
+      - archiver
