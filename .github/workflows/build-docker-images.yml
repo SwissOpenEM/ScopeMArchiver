@@ -7,9 +7,9 @@ env:
     # github.repository as <account>/<repo>
     MOCKARCHIVER_IMAGE_NAME: ${{ github.repository }}-mockarchiver
     WEBUPLOADER_IMAGE_NAME: ${{ github.repository }}-webuploader
-    CELERY_WORKER_IMAGE_NAME: ${{ github.repository }}-worker
-    CELERY_SERVER_IMAGE_NAME: ${{ github.repository }}-server
-    CELERY_FLOWER_IMAGE_NAME: ${{ github.repository }}-flower
+    CELERY_WORKER_IMAGE_NAME: ${{ github.repository }}-openem-worker
+    OPENEM_BACKEND_IMAGE_NAME: ${{ github.repository }}-openem-backend
+    CELERY_FLOWER_IMAGE_NAME: ${{ github.repository }}-openem-flower
 
 on:
   push:
@@ -127,7 +127,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
-  build_celery_server:
+  build_openem_backend:
     runs-on: ubuntu-latest
 
     permissions:
@@ -155,7 +155,7 @@ jobs:
       id: meta
       uses: docker/metadata-action@96383f45573cb7f253c731d3b3ab81c87ef81934 # v5.0.0
       with:
-        images: ${{ env.REGISTRY }}/${{ env.CELERY_SERVER_IMAGE_NAME }}
+        images: ${{ env.REGISTRY }}/${{ env.OPENEM_BACKEND_IMAGE_NAME }}
 
       # Build and push Docker image with Buildx (don't push on PR)
       # https://github.com/docker/build-push-action

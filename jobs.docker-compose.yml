@@ -45,7 +45,7 @@ services:
       - rabbitmq
       - redis
   celery-worker:
-    image: ${CELERY_WORKER_IMAGE_NAME}:${CELERY_IMAGE_TAG}
+    image: ${CELERY_WORKER_IMAGE_NAME}:${OPENEM_IMAGE_TAG}
     container_name: celery-worker
     build:
       context: ./backend/
@@ -69,36 +69,7 @@ services:
       - redis
     volumes:
       - ${CELERY_ARCHIVING_DIR}:/tmp/archiving
-  celery-web:
-    image: ${CELERY_SERVER_IMAGE_NAME}:${CELERY_IMAGE_TAG}
-    container_name: celery-web
-    build:
-      context: ./backend
-      dockerfile: ./web.Dockerfile
-    ports:
-      - 8004:8000
-    environment:
-      - CELERY_BROKER_URL=amqp://guest:guest@rabbitmq
-      - CELERY_RESULT_BACKEND=redis://redis:6379
-      - MINIO_REGION=${MINIO_REGION}
-      - MINIO_USER=${MINIO_USER}
-      - MINIO_PASS=${MINIO_PASS}
-      - MINIO_ARCHIVAL_BUCKET=${MINIO_ARCHIVAL_BUCKET}
-      - MINIO_RETRIEVAL_BUCKET=${MINIO_RETRIEVAL_BUCKET}
-      - MINIO_URL=minio:9000
-      - API_ROOT_PATH=/api/v1
-      - ARCHIVER_ENABLED=${ARCHIVER_ENABLED}
-      - INGESTER_ENABLED=${INGESTER_ENABLED}
-    depends_on:
-      - rabbitmq
-      - redis
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.celery-web.rule=Host(`${HOST}`) && PathPrefix(`/api/v1`)"
-      - "traefik.http.middlewares.celery-web-stripprefix.stripprefix.prefixes=/api/v1"
-      - "traefik.http.routers.celery-web.entrypoints=web"
-      - "traefik.http.routers.celery-web.middlewares=celery-web-stripprefix"
-      - "traefik.http.services.celery-web.loadbalancer.server.port=8000"
+
   redis:
     image: redis:latest
     container_name: redis

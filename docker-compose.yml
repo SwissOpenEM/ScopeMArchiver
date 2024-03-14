@@ -129,6 +129,36 @@ services:
       - "traefik.http.routers.webuploader.entrypoints=web"
       - "traefik.http.services.webuploader.loadbalancer.server.port=3000"
 
+  backend:
+    image: ${OPENEM_BACKEND_IMAGE_NAME}:${OPENEM_IMAGE_TAG}
+    container_name: backend
+    build:
+      context: ./backend
+      dockerfile: ./web.Dockerfile
+    ports:
+      - 8004:8000
+    environment:
+      - CELERY_BROKER_URL=amqp://guest:guest@rabbitmq
+      - CELERY_RESULT_BACKEND=redis://redis:6379
+      - MINIO_REGION=${MINIO_REGION}
+      - MINIO_USER=${MINIO_USER}
+      - MINIO_PASS=${MINIO_PASS}
+      - MINIO_ARCHIVAL_BUCKET=${MINIO_ARCHIVAL_BUCKET}
+      - MINIO_RETRIEVAL_BUCKET=${MINIO_RETRIEVAL_BUCKET}
+      - MINIO_URL=minio:9000
+      - API_ROOT_PATH=/api/v1
+      - ARCHIVER_ENABLED=${ARCHIVER_ENABLED}
+      - INGESTER_ENABLED=${INGESTER_ENABLED}
+    depends_on:
+      - rabbitmq
+      - redis
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.backend.rule=Host(`${HOST}`) && PathPrefix(`/api/v1`)"
+      - "traefik.http.middlewares.backend-stripprefix.stripprefix.prefixes=/api/v1"
+      - "traefik.http.routers.backend.entrypoints=web"
+      - "traefik.http.routers.backend.middlewares=backend-stripprefix"
+      - "traefik.http.services.backend.loadbalancer.server.port=8000"
   uppy-companion:
     image: transloadit/companion
     container_name: uppy-companion
