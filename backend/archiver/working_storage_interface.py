@@ -33,6 +33,8 @@ class MinioStorage(WorkingStorage):
         os.environ.get('MINIO_ARCHIVAL_BUCKET', "archival"))
     RETRIEVAL_BUCKET: Bucket = Bucket(
         os.environ.get('MINIO_RETRIEVAL_BUCKET', "retrieval"))
+    LANDINGZONE_BUCKET: Bucket = Bucket(
+        os.environ.get('MINIO_LANDINGZONE_BUCKET', "landing"))
 
     def __init__(self):
         self._minio = minio.Minio(
@@ -58,8 +60,13 @@ class MinioStorage(WorkingStorage):
             object_name=filename
         )
 
-    def get_objects(self, bucket: Bucket):
-        return self._minio.list_objects(bucket_name=bucket.name)
+    def get_objects(self, folder: str, bucket: Bucket):
+        return self._minio.list_objects(bucket_name=bucket.name, prefix=folder)
+
+    def put_object(self, source_file: os.PathLike, destination_file: os.PathLike,  bucket: Bucket):
+        self._minio.fput_object(
+            bucket.name, destination_file, source_file,
+        )
 
 
 minioClient = MinioStorage()

@@ -5,5 +5,13 @@ class ArchiveJob(BaseModel):
     filename: str
 
 
-class Object(BaseModel):
+class RetrievalJob(BaseModel):
+    filename: str
+
+
+class Dataset(BaseModel):
+    id: str
+
+
+class StorageObject(BaseModel):
     object_name: str

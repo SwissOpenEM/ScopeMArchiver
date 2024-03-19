@@ -149,6 +149,7 @@ services:
       - API_ROOT_PATH=/api/v1
       - ARCHIVER_ENABLED=${ARCHIVER_ENABLED}
       - INGESTER_ENABLED=${INGESTER_ENABLED}
+      - LTS_FOLDER=${LTS_FOLDER}
     depends_on:
       - rabbitmq
       - redis
