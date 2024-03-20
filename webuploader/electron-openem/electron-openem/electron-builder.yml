@@ -11,6 +11,9 @@ files:
   - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
 asarUnpack:
   - resources/**
+extraResources: 
+  - src/renderer/srs/assets/main.py
+  - src/renderer/srs/assets/pyscript.json
 win:
   executableName: electron-openem
 nsis:

@@ -3,18 +3,22 @@
 
 <head>
   <meta charset="UTF-8" />
-  <title>Electron</title>
+  <title>OpenEm Uploader</title>
   <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
   <!-- <meta http-equiv="Content-Security-Policy"
     content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:" /> -->
-  <meta http-equiv="Content-Security-Policy"
-    content="default-src *; style-src 'unsafe-inline' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'unsafe-eval' http://openem-dev.ethz.ch object-src 'self'">
+  <!-- <meta http-equiv="Content-Security-Policy"
+    content="default-src *; style-src 'unsafe-inline' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'unsafe-eval' http://openem-dev.ethz.ch object-src 'unsafe-inline'"> -->
 
 </head>
 <!-- SMUI Styles -->
 <link rel="stylesheet" href="src/assets/smui.css" />
 
 <body>
+  <script>
+    var selectedFiles = []
+    var filesForUpload = []
+  </script>
   <div id="app"></div>
   <script type="module" src="/src/main.ts"></script>
 </body>

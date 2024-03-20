@@ -3,6 +3,9 @@
   import List, { Item, Meta } from '@smui/list'
   import Checkbox from '@smui/checkbox'
   import { onMount } from 'svelte'
+  // import { ipcRenderer } from 'electron'
+  // import { dialog } from 'electron'
+  // window.ipcRenderer = ipcRenderer
 
   async function doPost(object_name: string) {
     // var archive_url = `/fastapi/archiving`
@@ -23,14 +26,14 @@
   }
 
   function onCreateJob() {
-    if (selected.length == 0) {
+    if (selectedFiles.length == 0) {
       console.log('nothing selected')
       return
     }
-    for (let filename of selected) {
+    for (let filename of selectedFiles) {
       doPost(filename)
     }
-    console.log(`Create Jobs for ${selected}`)
+    console.log(`Create Jobs for ${selectedFiles}`)
   }
   let items = [
     { object_name: 'a' },
@@ -39,7 +42,9 @@
     { object_name: 'a' },
     { object_name: 'a' }
   ]
-  let selected = []
+
+  let selectedFiles = []
+  let filesForUpload = []
 
   onMount(async function () {
     // var archivabl1_objects_url = '/fastapi/archivable_objects'
@@ -55,8 +60,8 @@
       console.log(json)
     } catch {}
 
-    // items = JSON.parse(json);
-    // console.log(items);
+    selectedFiles = window.globalThis.selectedFiles
+    filesForUpload = window.globalThis.filesForUpload
   })
 
   let changeEvent: CustomEvent<{ changedIndices: number[] }> | null
@@ -113,96 +118,138 @@
     }
   })
 
+  uppy.on('file-added', (file) => {
+    filesForUpload.push(file)
+  })
+
+  uppy.on('files-added', (files) => {
+    console.log(files)
+    for (let f in files) {
+      filesForUpload.push(files[f])
+      console.log('Added file', files[f])
+    }
+  })
+
+  uppy.on('cancel-all', () => {
+    filesForUpload = []
+  })
+
+  // function onSelectFiles() {
+  //   dialog.showOpenDialogSync({
+  //     properties: ['openFile', 'openDirectory']
+  //   })
+  // }
+
   let calculateChecksum = true
 </script>
 
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>OpenEM Uploader</title>
+  <link rel="stylesheet" href="https://pyscript.net/releases/2024.3.1/core.css" />
+  <script type="module" src="https://pyscript.net/releases/2024.3.1/core.js"></script>
+</head>
+
 <h1>Open EM Network Data Uploader Service</h1>
 
-<center>
-  <Group variant="raised">
-    <Button variant="outlined" href="/minio/browser" class="button-shaped-round" target="_blank">
-      <Label>Minio</Label>
-    </Button>
+<body>
+  <div>
+    <center>
+      <Group variant="raised">
+        <Button
+          variant="outlined"
+          href="/minio/browser"
+          class="button-shaped-round"
+          target="_blank"
+        >
+          <Label>Minio</Label>
+        </Button>
 
-    <Button variant="outlined" class="button-shaped-round" href="/traefik" target="_blank">
-      <Label>Traefik Dashboard</Label>
-    </Button>
+        <Button variant="outlined" class="button-shaped-round" href="/traefik" target="_blank">
+          <Label>Traefik Dashboard</Label>
+        </Button>
 
-    <Button variant="outlined" class="button-shaped-round" href="grafana" target="_blank">
-      <Label>Grafana</Label>
-    </Button>
+        <Button variant="outlined" class="button-shaped-round" href="grafana" target="_blank">
+          <Label>Grafana</Label>
+        </Button>
 
-    <Button variant="outlined" class="button-shaped-round" href="rabbitmq/" target="_blank">
-      <Label>RabbitMQ</Label>
-    </Button>
+        <Button variant="outlined" class="button-shaped-round" href="rabbitmq/" target="_blank">
+          <Label>RabbitMQ</Label>
+        </Button>
 
-    <Button variant="outlined" class="button-shaped-round" href="/celery-flower/" target="_blank">
-      <Label>Celery Flower</Label>
-    </Button>
+        <Button
+          variant="outlined"
+          class="button-shaped-round"
+          href="/celery-flower/"
+          target="_blank"
+        >
+          <Label>Celery Flower</Label>
+        </Button>
 
-    <Button variant="outlined" class="button-shaped-round" href="/celery-insights" target="_blank">
-      <Label>Celery Insights</Label>
-    </Button>
-  </Group>
-</center>
+        <Button
+          variant="outlined"
+          class="button-shaped-round"
+          href="/celery-insights"
+          target="_blank"
+        >
+          <Label>Celery Insights</Label>
+        </Button>
+      </Group>
+      <Group variant="raised">
+        <Button variant="outlined" class="button-shaped-round" href="/tusd-upload">
+          <Label>TuS File Upload</Label>
+        </Button>
+        <Button variant="outlined" class="button-shaped-round" href="/s3-upload">
+          <Label>S3 File Upload</Label>
+        </Button>
+        <!-- <Button variant="outlined" class="button-shaped-round" on:click={onSelectFiles}>
+          <Label>Select Files</Label>
+        </Button> -->
+      </Group>
+    </center>
+    <!-- <Textfield variant="filled" bind:value={selectedFile} label="File Name"></Textfield> -->
 
-<div>
-  <center>
-    <Group variant="raised">
-      <Button variant="outlined" class="button-shaped-round" href="/tusd-upload">
-        <Label>TuS File Upload</Label>
-      </Button>
+    <div class="float-container">
+      <div class="float-child">
+        <List
+          id="list"
+          class="list"
+          checkList
+          on:SMUIList:selectionChange={(event) => (changeEvent = event)}
+        >
+          {#each items as item}
+            <div>
+              <Item>
+                <Label>{item.object_name}</Label>
+                <Meta>
+                  <Checkbox bind:group={selectedFiles} value={item.object_name} />
+                </Meta>
+              </Item>
+            </div>
+          {/each}
+        </List>
+        <Button variant="outlined" class="button-shaped-round" on:click={onCreateJob}>
+          <Label>Archive Selected Files</Label>
+        </Button>
+      </div>
+      <div class="float-child">
+        <h3>File Upload to Minio S3 Storage</h3>
+        <label>
+          <input type="checkbox" bind:checked={calculateChecksum} />
+          Calculate Checksums
+        </label>
+        <Dashboard id="dashboard" {uppy} showProgressDetails="true" />
+      </div>
+    </div>
 
-      <Button variant="outlined" class="button-shaped-round" href="/s3-upload">
-        <Label>S3 File Upload</Label>
-      </Button>
-    </Group>
-  </center>
-</div>
-<!-- <Textfield variant="filled" bind:value={selectedFile} label="File Name"></Textfield> -->
-<div class="float-container">
-  <div class="float-child">
-    <List class="list" checkList on:SMUIList:selectionChange={(event) => (changeEvent = event)}>
-      {#each items as item}
-        <div>
-          <Item>
-            <Label>{item.object_name}</Label>
-            <Meta>
-              <Checkbox bind:group={selected} value={item.object_name} />
-            </Meta>
-          </Item>
-        </div>
-      {/each}
-    </List>
-    <Button variant="outlined" class="button-shaped-round" on:click={onCreateJob}>
-      <Label>Archive Selected Files</Label>
-    </Button>
+    <div id="python_test">
+      <div id="output"></div>
+      <button py-click="extract_metadata">Extract Metadata</button>
+      <script type="py" src="src/assets/main.py" config="src/assets/pyscript.json"></script>
+    </div>
   </div>
-  <div class="float-child">
-    <h3>File Upload to Minio S3 Storage</h3>
-    <label>
-      <input type="checkbox" bind:checked={calculateChecksum} />
-      Calculate Checksums
-    </label>
-    <Dashboard {uppy} showProgressDetails="true" />
-  </div>
-  <!-- <section class="pyscript">
-    <py-script> from js import items console.log(itmes) </py-script>
-    <script type="py" src="./main.py"></script>
-
-    <button id="btn-new-game" py-click="">Extract Metadata</button>
-  </section> -->
-</div>
-
-<head>
-  <!-- Recommended meta tags -->
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-  <!-- PyScript CSS -->
-  <!-- <link rel="stylesheet" href="https://pyscript.net/releases/2024.2.1/core.css" /> -->
-  <!-- This script tag bootstraps PyScript -->
-  <script type="module" src="https://pyscript.net/releases/2024.2.1/core.js"></script>
-</head>
+</body>
 
 <style>
   * :global(.list) {
@@ -218,6 +265,7 @@
     border: 3px solid #fff;
     padding: 20px;
     float: left;
+    display: flex;
   }
 
   .float-child {
