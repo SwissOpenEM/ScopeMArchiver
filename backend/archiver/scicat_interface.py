@@ -19,21 +19,18 @@ class SciCat():
         RETRIEVABLE = 1
 
     _ENDPOINT = "scicat.psi.ch"
-
     _API = "api/v3"
 
     def __init__(self, endpoint: str):
         self._ENDPOINT = endpoint
 
     def update_job_status(self, job_id: int, status: JOBSTATUS):
-        time.sleep(1)
-        requests.put(f"{self._ENDPOINT}/{SciCat._API}/Jobs/{job_id}", data={
+        requests.put(f"{self._ENDPOINT}/{SciCat._API}/Jobs/{job_id}", json={
             "status": "inProgress"
         })
 
     def update_dataset_lifecycle(self, dataset_id: int, status: DATASETSTATUS):
-        time.sleep(1)
-        requests.put(f"{self._ENDPOINT}/{SciCat._API}/Datasets/{dataset_id}", data={
+        requests.post(f"{self._ENDPOINT}/{SciCat._API}/Datasets/{dataset_id}", json={
             "datasetlifecyle": {"archivable": "false", "retrievable": "False",
                                 "archiveStatusMessage": "started"
                                 }
