@@ -1,36 +1,39 @@
-from enum import Enum
+from enum import StrEnum
 import logging
 import requests
-import time
 from typing import List
+from archiver.model import Job, DataBlocks
 
 _LOGGER = logging.getLogger("Jobs")
 
 
 class SciCat():
-    class JOBSTATUS(Enum):
-        IN_PROGRESS = 0
-        FINISHED_SUCCESSFULLY = 1
-        FINISHED_UNSUCCESSFULLY = 2
-        FINISHED_WITHDATASET_ERRORS = 3
+    class JOBSTATUS(StrEnum):
+        IN_PROGRESS = "inProgress"
+        FINISHED_SUCCESSFULLY = "finishedSuccessful"
+        FINISHED_UNSUCCESSFULLY = "finishedUnsuccessful"
+        FINISHED_WITHDATASET_ERRORS = "finishedWithDatasetErrors"
 
-    class DATASETSTATUS(Enum):
-        ARCHIVABLE = 0
-        RETRIEVABLE = 1
+    class DATASETSTATUS(StrEnum):
+        ARCHIVABLE = "archivable"
+        RETRIEVABLE = "retrievable"
+        FAILED = "failed"
 
-    _ENDPOINT = "scicat.psi.ch"
-    _API = "api/v3"
-
-    def __init__(self, endpoint: str):
+    def __init__(self, endpoint: str = "scicat.example.com", prefix: str = "api/v3"):
         self._ENDPOINT = endpoint
+        self._API = prefix
+
+    @property
+    def API(self):
+        return self._API
 
     def update_job_status(self, job_id: int, status: JOBSTATUS):
-        requests.put(f"{self._ENDPOINT}/{SciCat._API}/Jobs/{job_id}", json={
-            "status": "inProgress"
-        })
+        job = Job(id=str(job_id), type="archive", jobStatusMessage=str(status))
+
+        requests.patch(f"{self._ENDPOINT}/{self.API}/Jobs/{job_id}", json=job.model_dump_json())
 
     def update_dataset_lifecycle(self, dataset_id: int, status: DATASETSTATUS):
-        requests.post(f"{self._ENDPOINT}/{SciCat._API}/Datasets/{dataset_id}", json={
+        requests.post(f"{self._ENDPOINT}/{self.API}/Datasets/{dataset_id}", json={
             "datasetlifecyle": {"archivable": "false", "retrievable": "False",
                                 "archiveStatusMessage": "started"
                                 }
@@ -38,5 +41,5 @@ class SciCat():
         _LOGGER.info(
             f"Update dataset lifecycle  to {status} for dataset {dataset_id}")
 
-    def update_datablocks(self, dataset_id: int, datablocks: List):
+    def register_datablocks(self, dataset_id: int, dataFileList: List[DataBlocks]):
         pass

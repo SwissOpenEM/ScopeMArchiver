@@ -41,8 +41,3 @@ def test_create_tarballs(test_folder):
             expected_files.discard("/" + f)
 
     assert len(expected_files) == 0
-
-# @patch()
-# @pytest.mark.celery(result_backend='redis://', )
-# def test_archiving_flow(pytest.celery_app, pystest.celery_worker):
-#     pass
