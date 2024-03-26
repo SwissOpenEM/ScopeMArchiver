@@ -21,18 +21,18 @@ def get_retrievable_objects() -> list[StorageObject]:
     return [StorageObject(object_name=o.object_name) for o in objects]
 
 
-@router.post("/archive_dataset/")
-async def create_archive_job(job: RetrievalJob):
+@router.post("/retrieve_dataset/")
+async def create_retrieval_job(job: RetrievalJob):
     try:
-        j = ArchiveJob.model_validate(job)
-        task = tasks.create_archiving_pipeline(j.filename)
+        j = RetrievalJob.model_validate(job)
+        task = tasks.create_retrieval_pipeline(j.filename)
         task.delay()
         return JSONResponse({"task_id": task.id})
     except:
         return JSONResponse(content={"task_id": -1}, status_code=500)
 
 
-@router.post("/retrieve_dataset/")
+@router.post("/archive_dataset/")
 async def create_archive_job(job: ArchiveJob):
     try:
         j = ArchiveJob.model_validate(job)
@@ -41,14 +41,3 @@ async def create_archive_job(job: ArchiveJob):
         return JSONResponse({"task_id": task.id})
     except:
         return JSONResponse(content={"task_id": -1}, status_code=500)
-
-
-# @router.post("/create_datablocks/")
-# async def create_archive_job(dataset: Dataset):
-#     try:
-#         j = ArchiveJob.model_validate(dataset)
-#         # TODO: check for available dataset in storage
-#         task = tasks.create_datablocks.delay(j.id)
-#         return JSONResponse({"task_id": task.id})
-#     except:
-#         return JSONResponse(content={"task_id": -1}, status_code=500)
