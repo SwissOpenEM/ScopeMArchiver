@@ -167,5 +167,4 @@ def test_datablock_failure(celery_app, celery_worker):
         res = create_archiving_pipeline(1, 2, orig_data_blocks=["", ""])()
         res.get()
 
-        # 3:
-        assert m.adapters["jobs"].called is True
+        assert m.jobs_matcher.called

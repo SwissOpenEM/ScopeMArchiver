@@ -227,5 +227,5 @@ def create_archiving_pipeline(dataset_id: int, job_id: int, orig_data_blocks: Li
     )
 
 
-def create_retrieval_pipeline():
+def create_retrieval_pipeline(dataset_id: int, job_id: int):
     pass
