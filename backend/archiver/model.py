@@ -15,7 +15,8 @@ class DataFile(BaseModel):
     path: str
     #  Uncompressed file size in bytes ,
     size: Optional[int] = None
-    # Time of file creation on disk, format according to chapter 5.6 internet date/time format in RFC 3339. Local times without timezone/offset info are automatically transformed to UTC using the timezone of the API server ,
+    # Time of file creation on disk, format according to chapter 5.6 internet date/time format in RFC 3339. Local times without
+    # timezone/offset info are automatically transformed to UTC using the timezone of the API server ,
     time: Optional[datetime] = None
     # Checksum for the file, e.g. its sha-2 hashstring ,
     chk: Optional[str] = None
@@ -43,10 +44,12 @@ class OrigDataBlock(BaseModel):
     # Defines the group which owns the data, and therefore has unrestricted access to this data. Usually a pgroup like p12151 ,
     ownerGroup: str
 
-    # Optional additional groups which have read access to the data. Users which are member in one of the groups listed here are allowed to access this data. The special group 'public' makes data available to all users ,
+    # Optional additional groups which have read access to the data. Users which are member in one of the groups listed here are allowed to
+    # access this data. The special group 'public' makes data available to all users ,
     accessGroups: Optional[List[str]] = None
 
-    # Optional additional groups which have read and write access to the data. Users which are member in one of the groups listed here are allowed to access this data. ,
+    # Optional additional groups which have read and write access to the data. Users which are member in one of the groups listed here are
+    # allowed to access this data. ,
     instrumentGroup: Optional[str] = None
     # Functional or user account name who created this instance ,
     createdBy: Optional[str] = None
@@ -76,9 +79,11 @@ class DataBlock(BaseModel):
     version: str
     # Defines the group which owns the data, and therefore has unrestricted access to this data. Usually a pgroup like p12151 ,
     ownerGroup: str
-    # Optional additional groups which have read access to the data. Users which are member in one of the groups listed here are allowed to access this data. The special group 'public' makes data available to all users ,
+    # Optional additional groups which have read access to the data. Users which are member in one of the groups listed here are allowed to
+    # access this data. The special group 'public' makes data available to all users ,
     accessGroups: Optional[List[str]] = None
-    # Optional additional groups which have read and write access to the data. Users which are member in one of the groups listed here are allowed to access this data. ,
+    # Optional additional groups which have read and write access to the data. Users which are member in one of the groups listed here are
+    # allowed to access this data. ,
     instrumentGroup: Optional[str] = None
     # Functional or user account name who created this instance ,
     createdBy: Optional[str] = None
@@ -116,7 +121,8 @@ class DatasetLifecycle(BaseModel):
     # Day when dataset was published. ,
     publishedOn: Optional[str] = None
 
-    # Flag which is true, if full dataset is available on central fileserver. If false data needs to be copied from decentral storage place to a cache server before the ingest. This information needs to be transferred to the archive system at archive time ,
+    # Flag which is true, if full dataset is available on central fileserver. If false data needs to be copied from decentral storage place
+    # to a cache server before the ingest. This information needs to be transferred to the archive system at archive time ,
     isOnCentralDisk: Optional[bool] = None
 
     # Short string defining current status of Dataset with respect to storage on disk/tape. ,

@@ -28,7 +28,7 @@ async def create_retrieval_job(job: RetrievalJob):
         task = tasks.create_retrieval_pipeline(j.filename)
         task.delay()
         return JSONResponse({"task_id": task.id})
-    except:
+    except Exception:
         return JSONResponse(content={"task_id": -1}, status_code=500)
 
 
@@ -39,5 +39,5 @@ async def create_archive_job(job: ArchiveJob):
         task = tasks.create_archiving_pipeline(j.filename)
         task.delay()
         return JSONResponse({"task_id": task.id})
-    except:
+    except Exception:
         return JSONResponse(content={"task_id": -1}, status_code=500)

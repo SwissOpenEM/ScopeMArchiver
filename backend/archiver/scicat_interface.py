@@ -33,7 +33,8 @@ class SciCat():
     def update_job_status(self, job_id: int, status: JOBSTATUS):
         job = Job(id=str(job_id), type="archive", jobStatusMessage=str(status))
 
-        requests.patch(f"{self._ENDPOINT}/{self.API}/Jobs/{job_id}", json=job.model_dump_json())
+        requests.patch(
+            f"{self._ENDPOINT}/{self.API}/Jobs/{job_id}", json=job.model_dump_json())
 
     def update_dataset_lifecycle(self, dataset_id: int, status: ARCHIVESTATUSMESSAGE, archivable=None, retrievable=None):
         dataset = Dataset(datasetlifecycle=DatasetLifecycle(
@@ -41,8 +42,10 @@ class SciCat():
             archivable=archivable,
             retrievable=retrievable
         ))
-        requests.post(f"{self._ENDPOINT}/{self.API}/Datasets/{dataset_id}", json=dataset.model_dump_json())
+        requests.post(f"{self._ENDPOINT}/{self.API}/Datasets/{dataset_id}",
+                      json=dataset.model_dump_json())
 
     def register_datablocks(self, dataset_id: int, data_blocks: List[DataBlock]):
         for d in data_blocks:
-            requests.post(f"{self._ENDPOINT}/{self.API}/Datablocks/", json=d.model_dump_json())
+            requests.post(
+                f"{self._ENDPOINT}/{self.API}/Datablocks/", json=d.model_dump_json())

@@ -17,7 +17,8 @@ _LOGGER = logging.getLogger("Jobs")
 
 
 def register_pydantic_with_celery():
-    for cls_name, cls_obj in [(cls_name, cls_obj) for cls_name, cls_obj in inspect.getmembers(models) if inspect.isclass(cls_obj) and cls_obj is not BaseModel and issubclass(cls_obj, BaseModel)]:
+    for cls_name, cls_obj in [(cls_name, cls_obj) for cls_name, cls_obj in inspect.getmembers(models)
+                              if inspect.isclass(cls_obj) and cls_obj is not BaseModel and issubclass(cls_obj, BaseModel)]:
 
         register_type(
             cls_obj,
@@ -125,7 +126,8 @@ def create_tarballs(dataset_id: int, folder: os.PathLike,
 
 
 @shared_task(autoretry_for=(Exception,), retry_backoff=True, retry_kwargs={'max_retries': 5})
-def update_scicat_dataset_lifecycle(result, dataset_id: int, status: SciCat.ARCHIVESTATUSMESSAGE, archivable=None, retrievable=None) -> None:
+def update_scicat_dataset_lifecycle(
+        result, dataset_id: int, status: SciCat.ARCHIVESTATUSMESSAGE, archivable=None, retrievable=None) -> None:
 
     scicat.update_dataset_lifecycle(dataset_id, status, archivable=archivable, retrievable=retrievable)
 

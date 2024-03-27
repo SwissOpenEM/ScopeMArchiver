@@ -17,6 +17,8 @@ fastapi-featureflags = "*"
 requests-mock = "*"
 
 [dev-packages]
+pep8 = "*"
+autopep8 = "*"
 
 [requires]
-python_version = "3.10"
+python_version = "3.11"
