@@ -1,7 +1,6 @@
 from celery import Celery, chain, shared_task
 
 import os
-from .working_storage_interface import minioClient, Bucket
 import logging
 import requests
 import time
@@ -126,13 +125,13 @@ def create_tarballs(dataset_id: int, folder: os.PathLike,
 
 
 @shared_task(autoretry_for=(Exception,), retry_backoff=True, retry_kwargs={'max_retries': 5})
-def update_scicat_dataset_lifecycle(result, dataset_id: int) -> None:
+def update_scicat_dataset_lifecycle(result, dataset_id: int, status: SciCat.ARCHIVESTATUSMESSAGE, archivable=None, retrievable=None) -> None:
 
-    scicat.update_dataset_lifecycle(dataset_id, SciCat.DATASETSTATUS.ARCHIVABLE)
+    scicat.update_dataset_lifecycle(dataset_id, status, archivable=archivable, retrievable=retrievable)
 
 
 @shared_task
-def create_datablocks(result, dataset_id: int, origDataBlocks: List[os.PathLike]) -> List[os.PathLike]:
+def create_datablocks(result, dataset_id: int, origDataBlocks: List[OrigDataBlock]) -> List[DataBlock]:
     return [""]
 
     # get files from landing zone to scratch folder
@@ -154,12 +153,12 @@ def create_datablocks(result, dataset_id: int, origDataBlocks: List[os.PathLike]
 
 
 @shared_task(autoretry_for=(Exception,), retry_backoff=True, retry_kwargs={'max_retries': 5})
-def register_datablocks(datablocks: List[os.PathLike], dataset_id: int) -> None:
-    pass
+def register_datablocks(datablocks: List[DataBlock], dataset_id: int) -> None:
+    scicat.register_datablocks(dataset_id, datablocks)
 
 
 @shared_task
-def move_data_to_archiveable_storage(datablocks: List[os.PathLike]) -> List[os.PathLike]:
+def move_data_to_archiveable_storage(datablocks: List[DataBlock]) -> List[DataBlock]:
     return [""]
 
 
@@ -213,17 +212,17 @@ def on_create_datablocks_error(request, exc, traceback):
     #         request.id, exc, traceback), file=fh)
 
 
-def create_archiving_pipeline(dataset_id: int, job_id: int, origDataBlocks: List[os.PathLike]) -> chain:
+def create_archiving_pipeline(dataset_id: int, job_id: int, orig_data_blocks: List[OrigDataBlock]) -> chain:
     return chain(
         update_scicat_job_status.s(None, job_id, SciCat.JOBSTATUS.IN_PROGRESS),
-        update_scicat_dataset_lifecycle.s(dataset_id),
-        create_datablocks.s(dataset_id, origDataBlocks).on_error(on_create_datablocks_error.s()),
+        update_scicat_dataset_lifecycle.s(dataset_id, SciCat.ARCHIVESTATUSMESSAGE.STARTED),
+        create_datablocks.s(dataset_id, orig_data_blocks).on_error(on_create_datablocks_error.s()),
         move_data_to_archiveable_storage.s().on_error(on_move_data_to_archiveable_storage.s()),
         register_datablocks.s(dataset_id).on_error(on_register_datablocks_error.s()),
-        update_scicat_dataset_lifecycle.s(dataset_id),
         move_data_to_LTS.s().on_error(on_move_data_to_LTS_error.s()),
         validate_data_in_LTS.s().on_error(on_validation_in_LTS_error.s()),
-        update_scicat_dataset_lifecycle.s(dataset_id),
+        update_scicat_dataset_lifecycle.s(
+            dataset_id=dataset_id, status=SciCat.ARCHIVESTATUSMESSAGE.DATASETONARCHIVEDISK, retrievable=True),
         update_scicat_job_status.s(job_id, SciCat.JOBSTATUS.FINISHED_SUCCESSFULLY)
     )
 

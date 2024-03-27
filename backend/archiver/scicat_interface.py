@@ -2,7 +2,7 @@ from enum import StrEnum
 import logging
 import requests
 from typing import List
-from archiver.model import Job, DataBlocks
+from archiver.model import Job, DataBlock, Dataset, DatasetLifecycle
 
 _LOGGER = logging.getLogger("Jobs")
 
@@ -14,10 +14,13 @@ class SciCat():
         FINISHED_UNSUCCESSFULLY = "finishedUnsuccessful"
         FINISHED_WITHDATASET_ERRORS = "finishedWithDatasetErrors"
 
-    class DATASETSTATUS(StrEnum):
-        ARCHIVABLE = "archivable"
-        RETRIEVABLE = "retrievable"
-        FAILED = "failed"
+    class ARCHIVESTATUSMESSAGE(StrEnum):
+        STARTED = "started"
+        ISONCENTRALDISK = "isOnCentralDisk"
+        DATASETONARCHIVEDISK = "datasetOnArchiveDisk"
+
+    class RETRIEVESTATUSMESSAGE(StrEnum):
+        DATASETRETRIEVED = "datasetRetrieved"
 
     def __init__(self, endpoint: str = "scicat.example.com", prefix: str = "api/v3"):
         self._ENDPOINT = endpoint
@@ -32,14 +35,14 @@ class SciCat():
 
         requests.patch(f"{self._ENDPOINT}/{self.API}/Jobs/{job_id}", json=job.model_dump_json())
 
-    def update_dataset_lifecycle(self, dataset_id: int, status: DATASETSTATUS):
-        requests.post(f"{self._ENDPOINT}/{self.API}/Datasets/{dataset_id}", json={
-            "datasetlifecyle": {"archivable": "false", "retrievable": "False",
-                                "archiveStatusMessage": "started"
-                                }
-        })
-        _LOGGER.info(
-            f"Update dataset lifecycle  to {status} for dataset {dataset_id}")
+    def update_dataset_lifecycle(self, dataset_id: int, status: ARCHIVESTATUSMESSAGE, archivable=None, retrievable=None):
+        dataset = Dataset(datasetlifecycle=DatasetLifecycle(
+            archiveStatusMessage=str(status),
+            archivable=archivable,
+            retrievable=retrievable
+        ))
+        requests.post(f"{self._ENDPOINT}/{self.API}/Datasets/{dataset_id}", json=dataset.model_dump_json())
 
-    def register_datablocks(self, dataset_id: int, dataFileList: List[DataBlocks]):
-        pass
+    def register_datablocks(self, dataset_id: int, data_blocks: List[DataBlock]):
+        for d in data_blocks:
+            requests.post(f"{self._ENDPOINT}/{self.API}/Datablocks/", json=d.model_dump_json())

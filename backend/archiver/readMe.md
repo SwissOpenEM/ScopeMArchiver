@@ -15,11 +15,11 @@ sequenceDiagram
   activate S
   S-->>C: PID
   deactivate S
-  C--)S: Create OrigDataBlocks <br> POST api/v3/OrigDatablocks
+  C-)S: Create OrigDataBlocks <br> POST api/v3/OrigDatablocks
   C->>+A: PID
   A-->>-C: Presigned Upload URL
   C->>L: Upload dataset
-  C->>A: Upload finished <br> GET /api/v1/upload
+  C -) S: Task: {"datasetlifecycle": {"archivable":"True" , <br> "archiveStatusMessage": "isOnCentralDisk"}} <br> PATCH /api/v3/Datasets/{DatasetId}
 
 ```
 
@@ -91,11 +91,6 @@ sequenceDiagram
     J -->> S: Task: Register datablocks <br> POST /api/v4/Datasets/{DatasetID}
     deactivate J
   end
-  loop Retry: Exponential backoff
-    activate J
-    J -->> S: Task: {"datasetlifecycle": {"archivable":"True" , <br> "archiveStatusMessage": "isOnCentralDisk"}} <br> PATCH /api/v3/Datasets/{DatasetId}
-    deactivate J
-  end 
   
   critical
     activate J
