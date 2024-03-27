@@ -5,15 +5,35 @@ from .working_storage_interface import minioClient, Bucket
 import logging
 import requests
 import time
+import inspect
 from typing import List
-from archiver.scicat_interface import SciCat
+from kombu.utils.json import register_type
 
+from .working_storage_interface import minioClient, Bucket
+from archiver.scicat_interface import SciCat
+import archiver.model as models
+from archiver.model import OrigDataBlock, BaseModel, DataBlock
 
 _LOGGER = logging.getLogger("Jobs")
+
+
+def register_pydantic_with_celery():
+    for cls_name, cls_obj in [(cls_name, cls_obj) for cls_name, cls_obj in inspect.getmembers(models) if inspect.isclass(cls_obj) and cls_obj is not BaseModel and issubclass(cls_obj, BaseModel)]:
+
+        register_type(
+            cls_obj,
+            cls_name,
+            lambda o: o.model_dump_json(),
+            lambda o, c=cls_obj: c.model_validate_json(o)
+        )
+
 
 celery_app = Celery('tasks',
                     broker=os.environ.get('CELERY_BROKER_URL'),
                     backend=os.environ.get('CELERY_RESULT_BACKEND'))
+
+
+register_pydantic_with_celery()
 
 _SCRATCH_FOLDER = os.environ.get('ARCHIVER_SCRATCH_FOLDER', "/tmp/scratch")
 _ARCHIVER_FOLDER = os.environ.get('LTS_FOLDER', "/data")
