@@ -1,40 +1,15 @@
-from fastapi import FastAPI
+from fastapi import APIRouter
+
+from .working_storage_interface import minioClient
+
 from fastapi.responses import JSONResponse
-from fastapi.middleware.cors import CORSMiddleware
+import archiver.tasks as tasks
+from archiver.model import ArchiveJob, Object
 
-from working_storage_interface import minioClient
-
-from pydantic import BaseModel
-
-
-import tasks
+router = APIRouter()
 
 
-class ArchiveJob(BaseModel):
-    filename: str
-
-
-class Object(BaseModel):
-    object_name: str
-
-
-app = FastAPI()
-
-origins = [
-    "http://127.0.0.1*",
-    "http://localhost:5173",
-]
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-
-@app.get("/tasks", status_code=201)
+@router.get("/tasks", status_code=201)
 def run_task():
     try:
         task = tasks.create_archiving_pipeline()
@@ -44,13 +19,13 @@ def run_task():
         return JSONResponse(status_code=500)
 
 
-@app.get("/archivable_objects")
+@router.get("/archivable_objects")
 def get_archivable_objects() -> list[Object]:
     objects = minioClient.get_objects(bucket=minioClient.ARCHIVAL_BUCKET)
     return [Object(object_name=o.object_name) for o in objects]
 
 
-@app.post("/archiving/")
+@router.post("/archiving/")
 async def create_archive_job(job: ArchiveJob):
     try:
         j = ArchiveJob.model_validate(job)

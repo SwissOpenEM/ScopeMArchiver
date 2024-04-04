@@ -24,10 +24,10 @@ class WorkingStorage(ABC):
 
 class MinioStorage(WorkingStorage):
 
-    _USER = os.environ.get('MINIO_USER')
-    _PASSWORD = os.environ.get('MINIO_PASS')
-    _REGION = os.environ.get('MINIO_REGION')
-    _URL = os.environ.get('MINIO_URL')
+    _USER = os.environ.get('MINIO_USER', "minioadmin")
+    _PASSWORD = os.environ.get('MINIO_PASS', "minioadmin")
+    _REGION = os.environ.get('MINIO_REGION', "eu-west-1")
+    _URL = os.environ.get('MINIO_URL', "localhost:9000")
 
     ARCHIVAL_BUCKET: Bucket = Bucket(
         os.environ.get('MINIO_ARCHIVAL_BUCKET', "archival"))

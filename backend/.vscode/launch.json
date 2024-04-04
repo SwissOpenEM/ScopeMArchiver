@@ -1,0 +1,50 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Backend API",
+      "type": "debugpy",
+      "request": "launch",
+      "env": {
+        "ARCHIVER_ENABLED": "True",
+        "INGESTER_ENABLED": "True"
+      },
+      "module": "uvicorn",
+      "args": [
+        "main:app",
+        "--reload"
+      ],
+      "jinja": true
+    },
+    {
+      "name": "Worker",
+      "type": "debugpy",
+      "request": "launch",
+      "env": {
+        "ARCHIVER_ENABLED": "True",
+        "INGESTER_ENABLED": "True"
+      },
+      "module": "celery",
+      "args": [
+        "-A",
+        "jobsystem.celery",
+        "worker"
+      ],
+      "jinja": true
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Backend",
+      "configurations": [
+        "Backend API",
+        "Worker"
+      ],
+      "preLaunchTask": "${defaultBuildTask}",
+      "stopAll": true
+    }
+  ]
+}

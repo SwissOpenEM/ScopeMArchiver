@@ -17,6 +17,8 @@ USER ${USER}
 
 WORKDIR /home/${USER}
 
+RUN mkdir /tmp/archiving
+
 COPY . ./
 
 RUN echo 'export PATH="${HOME}/.local/bin:$PATH"' >> ~/.bashrc
@@ -24,4 +26,4 @@ RUN PATH="${HOME}/.local/bin:$PATH"
 
 RUN PIPENV_VENV_IN_PROJECT=1 pipenv install --deploy
 
-CMD ["pipenv", "run", "uvicorn", "main:app", "--reload", "--host", "0.0.0.0", "--root-path", "/fastapi"]
+CMD ["pipenv", "run", "celery", "-A", "jobsystem.celery", "worker"]
