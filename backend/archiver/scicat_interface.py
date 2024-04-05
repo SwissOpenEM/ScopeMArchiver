@@ -18,13 +18,14 @@ class SciCat():
         STARTED = "started"
         ISONCENTRALDISK = "isOnCentralDisk"
         DATASETONARCHIVEDISK = "datasetOnArchiveDisk"
+        SCHEDULE_ARCHIVE_JOB_FAILED = "scheduleArchiveJobFailed"
 
     class RETRIEVESTATUSMESSAGE(StrEnum):
         DATASETRETRIEVED = "datasetRetrieved"
 
-    def __init__(self, endpoint: str = "scicat.example.com", prefix: str = "api/v3"):
+    def __init__(self, endpoint: str = "http://scicat.example.com", prefix: str = None):
         self._ENDPOINT = endpoint
-        self._API = prefix
+        self._API = prefix or ""
 
     @property
     def API(self):
@@ -34,7 +35,7 @@ class SciCat():
         job = Job(id=str(job_id), type="archive", jobStatusMessage=str(status))
 
         requests.patch(
-            f"{self._ENDPOINT}/{self.API}/Jobs/{job_id}", json=job.model_dump_json())
+            f"{self._ENDPOINT}{self.API}/Jobs/{job_id}", json=job.model_dump_json())
 
     def update_dataset_lifecycle(self, dataset_id: int, status: ARCHIVESTATUSMESSAGE, archivable=None, retrievable=None):
         dataset = Dataset(datasetlifecycle=DatasetLifecycle(
@@ -42,10 +43,10 @@ class SciCat():
             archivable=archivable,
             retrievable=retrievable
         ))
-        requests.post(f"{self._ENDPOINT}/{self.API}/Datasets/{dataset_id}",
+        requests.post(f"{self._ENDPOINT}{self.API}/Datasets/{dataset_id}",
                       json=dataset.model_dump_json())
 
     def register_datablocks(self, dataset_id: int, data_blocks: List[DataBlock]):
         for d in data_blocks:
             requests.post(
-                f"{self._ENDPOINT}/{self.API}/Datablocks/", json=d.model_dump_json())
+                f"{self._ENDPOINT}{self.API}/Datablocks/", json=d.model_dump_json())

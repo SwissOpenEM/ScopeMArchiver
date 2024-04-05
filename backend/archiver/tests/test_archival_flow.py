@@ -84,7 +84,7 @@ def mock_create_datablocks(result, dataset_id: int, orig_data_blocks: List[OrigD
 
 
 @shared_task
-def mock_move_data_to_archiveable_storage(datablocks: List[DataBlock]) -> List[DataBlock]:
+def mock_move_data_to_staging(datablocks: List[DataBlock]) -> List[DataBlock]:
     return datablocks
 
 
@@ -103,7 +103,7 @@ def mock_validate_data_in_LTS(result: List[DataBlock]) -> None:
 ])
 @patch("archiver.tasks.scicat._ENDPOINT", ScicatMock.ENDPOINT)
 @patch("archiver.tasks.create_datablocks", mock_create_datablocks)
-@patch("archiver.tasks.move_data_to_archiveable_storage", mock_move_data_to_archiveable_storage)
+@patch("archiver.tasks.move_data_to_staging", mock_move_data_to_staging)
 @patch("archiver.tasks.move_data_to_LTS", mock_move_data_to_LTS)
 @patch("archiver.tasks.validate_data_in_LTS", mock_validate_data_in_LTS)
 def test_scicat_api_archiving(celery_app, celery_worker, job_id, dataset_id):
@@ -150,7 +150,7 @@ def test_scicat_api_archiving(celery_app, celery_worker, job_id, dataset_id):
 
 
 @shared_task
-def raise_expection_task(result=None, **args):
+def raise_expection_task(dataset_id: int, **kwargs) -> List[DataBlock]:
     raise Exception("Mock Exception")
 
 
@@ -159,12 +159,179 @@ def on_error(request, exc, traceback):
     pass
 
 
+@pytest.mark.parametrize("job_id,dataset_id", [
+    (123, 456),
+])
 @patch("archiver.tasks.scicat._ENDPOINT", ScicatMock.ENDPOINT)
-@patch("archiver.tasks.create_datablocks", raise_expection_task)
-def test_datablock_failure(celery_app, celery_worker):
+@patch("archiver.datablocks.create_datablocks", raise_expection_task)
+def test_datablock_failure(celery_app, celery_worker, job_id, dataset_id):
 
-    with ScicatMock(job_id=1, dataset_id=2) as m:
-        res = create_archiving_pipeline(1, 2, orig_data_blocks=["", ""])()
-        res.get()
+    num_orig_datablocks = 10
+    num_files_per_block = 10
 
-        assert m.jobs_matcher.called
+    # no datablocks created
+    num_expected_datablocks = 0
+
+    orig_data_blocks = create_orig_datablocks(num_orig_datablocks, num_files_per_block)
+
+    with ScicatMock(job_id, dataset_id) as m:
+        res = create_archiving_pipeline(job_id=job_id, dataset_id=dataset_id, orig_data_blocks=orig_data_blocks)()
+
+        # res.get() will reraise the exception!
+        with pytest.raises(Exception):
+            res.get()
+
+        assert m.jobs_matcher.call_count == 2
+        assert m.datasets_matcher.call_count == 2
+        assert m.datablocks_matcher.call_count == num_expected_datablocks
+
+        # 3: Update job status
+        assert m.jobs_matcher.request_history[0].json() == job_status_json(
+            job_id, "archive", SciCat.JOBSTATUS.IN_PROGRESS)
+
+        # 4: Update dataset lifecycle
+        assert m.datasets_matcher.request_history[0].json() == dataset_lifecycle_json(
+            dataset_id, SciCat.ARCHIVESTATUSMESSAGE.STARTED)
+
+        # 5: Report Error
+        assert m.jobs_matcher.request_history[1].json() == job_status_json(
+            job_id, "archive", SciCat.JOBSTATUS.FINISHED_UNSUCCESSFULLY)
+
+        assert m.datasets_matcher.request_history[1].json() == dataset_lifecycle_json(
+            dataset_id, SciCat.ARCHIVESTATUSMESSAGE.SCHEDULE_ARCHIVE_JOB_FAILED)
+
+
+@pytest.mark.parametrize("job_id,dataset_id", [
+    (123, 456),
+])
+@patch("archiver.tasks.scicat._ENDPOINT", ScicatMock.ENDPOINT)
+@patch("archiver.tasks.create_datablocks", mock_create_datablocks)
+@patch("archiver.tasks.move_data_to_staging", raise_expection_task)
+def test_move_to_staging_failure(celery_app, celery_worker, job_id, dataset_id):
+
+    num_orig_datablocks = 10
+    num_files_per_block = 10
+
+    # datablocks created but not moved to staging, therefore none reported
+    num_expected_datablocks = 0
+
+    orig_data_blocks = create_orig_datablocks(num_orig_datablocks, num_files_per_block)
+
+    with ScicatMock(job_id=job_id, dataset_id=dataset_id) as m:
+        res = create_archiving_pipeline(job_id=job_id, dataset_id=dataset_id, orig_data_blocks=orig_data_blocks)()
+
+        with pytest.raises(Exception):
+            res.get()
+
+        assert m.jobs_matcher.call_count == 2
+        assert m.datasets_matcher.call_count == 2
+        assert m.datablocks_matcher.call_count == num_expected_datablocks
+
+        # 3: Update job status
+        assert m.jobs_matcher.request_history[0].json() == job_status_json(
+            job_id, "archive", SciCat.JOBSTATUS.IN_PROGRESS)
+
+        # 4: Update dataset lifecycle
+        assert m.datasets_matcher.request_history[0].json() == dataset_lifecycle_json(
+            dataset_id, SciCat.ARCHIVESTATUSMESSAGE.STARTED)
+
+        # 5: Report Error
+        assert m.jobs_matcher.request_history[1].json() == job_status_json(
+            job_id, "archive", SciCat.JOBSTATUS.FINISHED_UNSUCCESSFULLY)
+
+        assert m.datasets_matcher.request_history[1].json() == dataset_lifecycle_json(
+            dataset_id, SciCat.ARCHIVESTATUSMESSAGE.SCHEDULE_ARCHIVE_JOB_FAILED)
+
+
+@pytest.mark.parametrize("job_id,dataset_id", [
+    (123, 456),
+])
+@patch("archiver.tasks.scicat._ENDPOINT", ScicatMock.ENDPOINT)
+@patch("archiver.tasks.create_datablocks", mock_create_datablocks)
+@patch("archiver.tasks.move_data_to_staging", mock_move_data_to_staging)
+@patch("archiver.tasks.move_data_to_LTS", raise_expection_task)
+def test_move_to_LTS_failure(celery_app, celery_worker, job_id, dataset_id):
+
+    num_orig_datablocks = 10
+    num_files_per_block = 10
+
+    num_expected_datablocks = num_orig_datablocks
+
+    orig_data_blocks = create_orig_datablocks(num_orig_datablocks, num_files_per_block)
+
+    with ScicatMock(job_id=job_id, dataset_id=dataset_id) as m:
+        res = create_archiving_pipeline(job_id=job_id, dataset_id=dataset_id, orig_data_blocks=orig_data_blocks)()
+
+        with pytest.raises(Exception):
+            res.get()
+
+        assert m.jobs_matcher.call_count == 2
+        assert m.datasets_matcher.call_count == 2
+        assert m.datablocks_matcher.call_count == num_expected_datablocks
+
+        # 3: Update job status
+        assert m.jobs_matcher.request_history[0].json() == job_status_json(
+            job_id, "archive", SciCat.JOBSTATUS.IN_PROGRESS)
+
+        # 4: Update dataset lifecycle
+        assert m.datasets_matcher.request_history[0].json() == dataset_lifecycle_json(
+            dataset_id, SciCat.ARCHIVESTATUSMESSAGE.STARTED)
+
+        # 11: Register Datablocks
+        for i in range(num_expected_datablocks):
+            assert m.datablocks_matcher.request_history[i].json() == datablocks_json(dataset_id, i)
+
+        # 5: Report Error
+        assert m.jobs_matcher.request_history[1].json() == job_status_json(
+            job_id, "archive", SciCat.JOBSTATUS.FINISHED_UNSUCCESSFULLY)
+
+        assert m.datasets_matcher.request_history[1].json() == dataset_lifecycle_json(
+            dataset_id, SciCat.ARCHIVESTATUSMESSAGE.SCHEDULE_ARCHIVE_JOB_FAILED)
+
+
+@pytest.mark.parametrize("job_id,dataset_id", [
+    (123, 456),
+])
+@patch("archiver.tasks.scicat._ENDPOINT", ScicatMock.ENDPOINT)
+@patch("archiver.tasks.create_datablocks", mock_create_datablocks)
+@patch("archiver.tasks.move_data_to_staging", mock_move_data_to_staging)
+@patch("archiver.tasks.move_data_to_LTS", mock_move_data_to_LTS)
+@patch("archiver.tasks.validate_data_in_LTS", raise_expection_task)
+def test_LTS_validation_failure(celery_app, celery_worker, job_id, dataset_id):
+
+    num_orig_datablocks = 10
+    num_files_per_block = 10
+
+    num_expected_datablocks = num_orig_datablocks
+
+    orig_data_blocks = create_orig_datablocks(num_orig_datablocks, num_files_per_block)
+
+    with ScicatMock(job_id=job_id, dataset_id=dataset_id) as m:
+        res = create_archiving_pipeline(job_id=job_id, dataset_id=dataset_id, orig_data_blocks=orig_data_blocks)()
+
+        with pytest.raises(Exception):
+            res.get()
+
+        assert m.jobs_matcher.call_count == 2
+        assert m.datasets_matcher.call_count == 2
+        assert m.datablocks_matcher.call_count == num_expected_datablocks
+
+        # 3: Update job status
+        assert m.jobs_matcher.request_history[0].json() == job_status_json(
+            job_id, "archive", SciCat.JOBSTATUS.IN_PROGRESS)
+
+        # 4: Update dataset lifecycle
+        assert m.datasets_matcher.request_history[0].json() == dataset_lifecycle_json(
+            dataset_id, SciCat.ARCHIVESTATUSMESSAGE.STARTED)
+
+        # 11: Register Datablocks
+        for i in range(num_expected_datablocks):
+            assert m.datablocks_matcher.request_history[i].json() == datablocks_json(dataset_id, i)
+
+        # TODO: check for different message, specific to validation
+        # 5: Report Error
+        assert m.jobs_matcher.request_history[1].json() == job_status_json(
+            job_id, "archive", SciCat.JOBSTATUS.FINISHED_UNSUCCESSFULLY)
+
+        assert m.datasets_matcher.request_history[1].json() == dataset_lifecycle_json(
+            dataset_id, SciCat.ARCHIVESTATUSMESSAGE.SCHEDULE_ARCHIVE_JOB_FAILED)

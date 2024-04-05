@@ -18,7 +18,7 @@ class WorkingStorage(ABC):
         pass
 
     # @abstractmethod
-    def list_archiveable_objects(self) -> List[str]:
+    def list_archivable_objects(self) -> List[str]:
         pass
 
 
@@ -63,7 +63,7 @@ class MinioStorage(WorkingStorage):
     def get_objects(self, folder: str, bucket: Bucket):
         return self._minio.list_objects(bucket_name=bucket.name, prefix=folder)
 
-    def put_object(self, source_file: os.PathLike, destination_file: os.PathLike,  bucket: Bucket):
+    def put_object(self, source_file: os.PathLike, destination_file: os.PathLike, bucket: Bucket):
         self._minio.fput_object(
             bucket.name, destination_file, source_file,
         )
