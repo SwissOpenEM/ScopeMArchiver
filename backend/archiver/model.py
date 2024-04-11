@@ -65,7 +65,7 @@ class OrigDataBlock(BaseModel):
 
 
 class DataBlock(BaseModel):
-    # id (string),
+    # Catalog internal UUIDv4 for datablock ,
     id: str
     # Unique identifier given bey archive system to the stored datablock. This id is used when data is retrieved back. ,
     archiveId: str
@@ -145,7 +145,8 @@ class DatasetLifecycle(BaseModel):
 
 
 class ArchiveJob(BaseModel):
-    origDataBlocks: List[DataFile]
+    job_id: int
+    origDataBlocks: List[DataBlock]
 
 
 class RetrievalJob(BaseModel):

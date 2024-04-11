@@ -32,11 +32,11 @@ async def create_retrieval_job(job: RetrievalJob):
         return JSONResponse(content={"task_id": -1}, status_code=500)
 
 
-@router.post("/archive_dataset/")
-async def create_archive_job(job: ArchiveJob):
+@router.post("/archive_dataset/{datasetid}")
+async def create_archive_job(datasetid: int, job: ArchiveJob):
     try:
         j = ArchiveJob.model_validate(job)
-        task = tasks.create_archiving_pipeline(j.filename)
+        task = tasks.create_archiving_pipeline(dataset_id=datasetid, job_id=j.job_id, orig_data_blocks=j.origDataBlocks)
         task.delay()
         return JSONResponse({"task_id": task.id})
     except Exception:
