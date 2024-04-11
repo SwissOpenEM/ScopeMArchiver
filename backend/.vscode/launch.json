@@ -25,25 +25,59 @@
       "request": "launch",
       "env": {
         "ARCHIVER_ENABLED": "True",
-        "INGESTER_ENABLED": "True"
+        "INGESTER_ENABLED": "True",
+        "SCICAT_ENDPOINT": "http://127.0.0.1:3000"
       },
       "module": "celery",
       "args": [
         "-A",
         "jobsystem.celery",
-        "worker"
+        "worker",
+        "--concurrency=1"
       ],
       "jinja": true
-    }
+    },
+    {
+      "name": "Flower",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "celery",
+      "env": {
+        "FLOWER_UNAUTHENTICATED_API": "True"
+      },
+      "args": [
+        "-A",
+        "jobsystem.celery",
+        "flower"
+      ],
+      "jinja": true
+    },
+    {
+      "name": "SciCat API Mock",
+      "type": "debugpy",
+      "request": "launch",
+      "env": {},
+      "module": "uvicorn",
+      "args": [
+        "archiver.scicat_api_mock:app",
+        "--reload",
+        "--port",
+        "3000",
+      ],
+      "jinja": true
+    },
   ],
   "compounds": [
     {
-      "name": "Backend",
+      "name": "Archiver Service",
       "configurations": [
         "Backend API",
-        "Worker"
+        "Worker",
+        "SciCat API Mock",
+        "Flower"
       ],
-      "preLaunchTask": "${defaultBuildTask}",
+      "preLaunchTask": "Start RabbitMQ",
+      "postLaunchTask": "",
       "stopAll": true
     }
   ]
