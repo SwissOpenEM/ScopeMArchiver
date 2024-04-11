@@ -114,26 +114,39 @@ def create_datablock_entries(dataset_id, origDataBlocks, tarballs) -> List[DataB
 
 
 def create_datablocks(dataset_id: int, origDataBlocks: List[OrigDataBlock]) -> List[DataBlock]:
-    if len(origDataBlocks) == 0:
-        return
-
-    scratch_folder = os.path.join(_SCRATCH_FOLDER, str(dataset_id))
-    if not os.path.exists(scratch_folder):
-        os.makedirs(scratch_folder)
-
-    download_objects(minio_prefix=dataset_id, bucket=minioClient.LANDINGZONE_BUCKET,
-                     destination_folder=scratch_folder)
-
-    tarballs = create_tarballs(dataset_id=dataset_id, folder=scratch_folder)
-
-    datablocks = create_datablock_entries(dataset_id, origDataBlocks, tarballs)
-
-    upload_objects(minio_prefix=dataset_id, bucket=minioClient.ARCHIVAL_BUCKET,
-                   source_folder=scratch_folder)
-
-    delete_objects(minio_prefix=dataset_id, bucket=minioClient.LANDINGZONE_BUCKET)
-
+    datablocks = []
+    for o in origDataBlocks:
+        d = DataBlock(
+            id=o.id,
+            archiveId=f"/path/to/archived/{o.id}.tar.gz",
+            size=o.size,
+            packedSize=o.size / 2,
+            version=str(1),
+            ownerGroup="me"
+        )
+        datablocks.append(d)
     return datablocks
+
+    # if len(origDataBlocks) == 0:
+    #     return
+
+    # scratch_folder = os.path.join(_SCRATCH_FOLDER, str(dataset_id))
+    # if not os.path.exists(scratch_folder):
+    #     os.makedirs(scratch_folder)
+
+    # download_objects(minio_prefix=dataset_id, bucket=minioClient.LANDINGZONE_BUCKET,
+    #                  destination_folder=scratch_folder)
+
+    # tarballs = create_tarballs(dataset_id=dataset_id, folder=scratch_folder)
+
+    # datablocks = create_datablock_entries(dataset_id, origDataBlocks, tarballs)
+
+    # upload_objects(minio_prefix=dataset_id, bucket=minioClient.ARCHIVAL_BUCKET,
+    #                source_folder=scratch_folder)
+
+    # delete_objects(minio_prefix=dataset_id, bucket=minioClient.LANDINGZONE_BUCKET)
+
+    # return datablocks
 
 
 __all__ = [

@@ -85,7 +85,7 @@ def register_datablocks(datablocks: List[DataBlock], dataset_id: int) -> None:
 
 @shared_task
 def move_data_to_staging(datablocks: List[DataBlock]) -> List[DataBlock]:
-    return [""]
+    return datablocks
 
 
 @shared_task
@@ -127,7 +127,7 @@ def on_move_data_to_LTS_error(request, exc, traceback, job_id, dataset_id):
 
 
 @shared_task
-def on_move_data_to_staging(request, exc, traceback, job_id, dataset_id):
+def on_move_data_to_staging_error(request, exc, traceback, job_id, dataset_id):
     # TODO: make async and add retries
     report_error(dataset_id, job_id)
     # TODO: cleanup files
@@ -155,7 +155,7 @@ def create_archiving_pipeline(dataset_id: int, job_id: int, orig_data_blocks: Li
         create_datablocks.s(dataset_id, orig_data_blocks).on_error(
             on_create_datablocks_error.s(job_id=job_id, dataset_id=dataset_id)),
         move_data_to_staging.s().on_error(
-            on_move_data_to_staging.s(job_id=job_id, dataset_id=dataset_id)),
+            on_move_data_to_staging_error.s(job_id=job_id, dataset_id=dataset_id)),
         register_datablocks.s(dataset_id).on_error(
             on_register_datablocks_error.s(job_id=job_id, dataset_id=dataset_id)),
         move_data_to_LTS.s().on_error(
