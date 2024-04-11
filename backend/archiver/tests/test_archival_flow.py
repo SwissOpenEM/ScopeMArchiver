@@ -150,7 +150,7 @@ def test_scicat_api_archiving(celery_app, celery_worker, job_id, dataset_id):
 
 
 @shared_task
-def raise_expection_task(dataset_id: int, **kwargs) -> List[DataBlock]:
+def raise_exception_task(*args, **kwargs):
     raise Exception("Mock Exception")
 
 
@@ -163,7 +163,7 @@ def on_error(request, exc, traceback):
     (123, 456),
 ])
 @patch("archiver.tasks.scicat._ENDPOINT", ScicatMock.ENDPOINT)
-@patch("archiver.datablocks.create_datablocks", raise_expection_task)
+@patch("archiver.tasks.create_datablocks", raise_exception_task)
 def test_datablock_failure(celery_app, celery_worker, job_id, dataset_id):
 
     num_orig_datablocks = 10
@@ -206,7 +206,7 @@ def test_datablock_failure(celery_app, celery_worker, job_id, dataset_id):
 ])
 @patch("archiver.tasks.scicat._ENDPOINT", ScicatMock.ENDPOINT)
 @patch("archiver.tasks.create_datablocks", mock_create_datablocks)
-@patch("archiver.tasks.move_data_to_staging", raise_expection_task)
+@patch("archiver.tasks.move_data_to_staging", raise_exception_task)
 def test_move_to_staging_failure(celery_app, celery_worker, job_id, dataset_id):
 
     num_orig_datablocks = 10
@@ -249,7 +249,7 @@ def test_move_to_staging_failure(celery_app, celery_worker, job_id, dataset_id):
 @patch("archiver.tasks.scicat._ENDPOINT", ScicatMock.ENDPOINT)
 @patch("archiver.tasks.create_datablocks", mock_create_datablocks)
 @patch("archiver.tasks.move_data_to_staging", mock_move_data_to_staging)
-@patch("archiver.tasks.move_data_to_LTS", raise_expection_task)
+@patch("archiver.tasks.move_data_to_LTS", raise_exception_task)
 def test_move_to_LTS_failure(celery_app, celery_worker, job_id, dataset_id):
 
     num_orig_datablocks = 10
@@ -296,7 +296,7 @@ def test_move_to_LTS_failure(celery_app, celery_worker, job_id, dataset_id):
 @patch("archiver.tasks.create_datablocks", mock_create_datablocks)
 @patch("archiver.tasks.move_data_to_staging", mock_move_data_to_staging)
 @patch("archiver.tasks.move_data_to_LTS", mock_move_data_to_LTS)
-@patch("archiver.tasks.validate_data_in_LTS", raise_expection_task)
+@patch("archiver.tasks.validate_data_in_LTS", raise_exception_task)
 def test_LTS_validation_failure(celery_app, celery_worker, job_id, dataset_id):
 
     num_orig_datablocks = 10
