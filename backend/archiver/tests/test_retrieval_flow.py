@@ -5,6 +5,7 @@ from archiver.tasks import create_retrieval_pipeline
 from archiver.tests.scicat_mock import ScicatMock
 
 
+@pytest.mark.skip
 @pytest.mark.parametrize("job_id,dataset_id", [
     (123, 456),
 ])

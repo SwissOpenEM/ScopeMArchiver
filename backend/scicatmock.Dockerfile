@@ -26,4 +26,4 @@ RUN PATH="${HOME}/.local/bin:$PATH"
 
 RUN PIPENV_VENV_IN_PROJECT=1 pipenv install --deploy
 
-CMD ["pipenv", "run", "celery", "-A", "archiver.tasks.celery_app", "worker", "--loglevel=INFO"]
+CMD ["pipenv", "run", "uvicorn", "archiver.tests.scicat_api_mock:app", "--reload", "--host", "0.0.0.0"]

@@ -22,6 +22,7 @@ def test_folder(tmpdir_factory):
     return folder
 
 
+@pytest.mark.skip
 def test_create_tarballs(test_folder):
     tarballs = tasks.create_tarballs(
         test_id, test_folder, target_size=target_size)

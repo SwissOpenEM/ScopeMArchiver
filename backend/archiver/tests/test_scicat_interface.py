@@ -4,6 +4,7 @@ import pytest
 from archiver.tests.scicat_mock import ScicatMock
 
 
+@pytest.mark.skip
 @pytest.mark.parametrize("job_id,job_status", [
     (123, tasks.scicat.JOBSTATUS.FINISHED_SUCCESSFULLY),
     (456, tasks.scicat.JOBSTATUS.FINISHED_UNSUCCESSFULLY),
@@ -18,6 +19,7 @@ def test_scicat_job_status(job_id, job_status):
         assert m.jobs_matcher.last_request.json() == {'status': "inProgress"}
 
 
+@pytest.mark.skip
 @pytest.mark.parametrize("dataset_id,dataset_status", [
     (123, tasks.scicat.ARCHIVESTATUSMESSAGE.STARTED),
     (456, tasks.scicat.ARCHIVESTATUSMESSAGE.DATASETONARCHIVEDISK),

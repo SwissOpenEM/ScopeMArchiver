@@ -10,13 +10,25 @@
       "request": "launch",
       "env": {
         "ARCHIVER_ENABLED": "True",
-        "INGESTER_ENABLED": "True"
+        "INGESTER_ENABLED": "True",
+        "PREFECT_API_URL": "http://127.0.0.1:4200/api"
       },
       "module": "uvicorn",
       "args": [
         "main:app",
         "--reload"
       ],
+      "jinja": true
+    },
+    {
+      "name": "Prefect Worker",
+      "type": "debugpy",
+      "request": "launch",
+      "env": {
+        "PREFECT_API_URL": "http://127.0.0.1:4200/api",
+        "SCICAT_ENDPOINT": "http://127.0.0.1:3000"
+      },
+      "module": "archiver.archiving_flow",
       "jinja": true
     },
     {
