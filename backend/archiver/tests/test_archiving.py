@@ -1,8 +1,8 @@
-import archiver.tasks as tasks
 import pytest
 import os
 import tarfile
 
+from archiver.datablocks import create_tarballs
 
 test_id = 1234
 num_files = 10
@@ -22,9 +22,8 @@ def test_folder(tmpdir_factory):
     return folder
 
 
-@pytest.mark.skip
 def test_create_tarballs(test_folder):
-    tarballs = tasks.create_tarballs(
+    tarballs = create_tarballs(
         test_id, test_folder, target_size=target_size)
 
     tars = [t for t in os.listdir(test_folder) if t.endswith(".tar.gz")]
