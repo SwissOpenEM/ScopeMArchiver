@@ -75,7 +75,8 @@ services:
       - INGESTER_ENABLED=${INGESTER_ENABLED}
       - SCICAT_ENDPOINT=http://scicatmock:8000
     depends_on:
-      - prefect-server
+      prefect-server:
+        condition: service_started
 
   ## Prefect Database
   postgres:

@@ -5,7 +5,7 @@ A ingester and archiver service that allows uploading data and registering it wi
 ## Development
 
 ```bash
-docker compose --env_file .production.env --env-file .development.env up -d
+docker compose --env-file .production.env --env-file .development.env up -d
 ```
 
 > **Note:** .env files are picked up by VSCode and variables defined there are added to the shell that is used. This can lead to confusion as the files is not reloaded after changing values and the values in the session of the shell take precedence.
@@ -49,8 +49,14 @@ docker compose --env-file .production.env --env-file .development.env --profile 
 
 Deploying it locally for development provide the following endpoints
 
-| Service | Endpoint |
-|-- |-- |
-| Archiver Frontend | <http://localhost> |
-| Traefik | <http://traefik.localhost/dashboard/> |
-| Jobs API | <http://localhost/api/v1/docs> |
+| Service           | Endpoint                              |
+| ----------------- | ------------------------------------- |
+| Archiver Frontend | <http://localhost>                    |
+| Traefik           | <http://traefik.localhost/dashboard/> |
+| Jobs API          | <http://localhost/api/v1/docs>        |
+
+## Elastic Search
+
+```bash
+sudo sysctl -w vm.max_map_count=262144
+```
