@@ -7,7 +7,7 @@ services:
     image: "traefik:v2.10"
     container_name: "traefik"
     command:
-      - "--log.level=INFO"
+      - "--log.level=DEBUG"
       - "--api.insecure=true"
       - "--api.dashboard=true"
       - "--providers.docker=true"
@@ -22,12 +22,13 @@ services:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.mydashboard.rule=Host(`traefik.${HOST}`) && PathPrefix(`/dashboard`, `/api`)"
-      # - "traefik.http.middlewares.mydashboard-strip.stripprefix.prefixes=/traefik"
+      - "traefik.http.routers.mydashboard.rule=Host(`${HOST}`) && (PathPrefix(`/traefik/api`, `/traefik/dashboard`) ||  HeadersRegexp(`Referer`, `/traefik`))"
+      - "traefik.http.middlewares.mydashboard-strip.stripprefix.prefixes=/traefik"
       - "traefik.http.routers.mydashboard.service=api@internal"
       - "traefik.http.routers.mydashboard.entrypoints=web"
-      # - "traefik.http.routers.mydashboard.middlewares=mydashboard-strip"
+      - "traefik.http.routers.mydashboard.middlewares=mydashboard-strip"
       - "traefik.frontend.headers.passHostHeader=true"
+      - "traefik.http.services.dashboard.loadbalancer.server.port=8080"
 
   tusd:
     image: tusio/tusd:latest
@@ -146,17 +147,16 @@ services:
       - MINIO_ARCHIVAL_BUCKET=${MINIO_ARCHIVAL_BUCKET}
       - MINIO_RETRIEVAL_BUCKET=${MINIO_RETRIEVAL_BUCKET}
       - MINIO_URL=minio:9000
-      - API_ROOT_PATH=/api/v1
+      - API_ROOT_PATH=/backend/api/v1
       - ARCHIVER_ENABLED=${ARCHIVER_ENABLED}
       - INGESTER_ENABLED=${INGESTER_ENABLED}
       - LTS_FOLDER=${LTS_FOLDER}
     depends_on:
-      - rabbitmq
-      - redis
+      - prefect-server
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.backend.rule=Host(`${HOST}`) && PathPrefix(`/api/v1`)"
-      - "traefik.http.middlewares.backend-stripprefix.stripprefix.prefixes=/api/v1"
+      - "traefik.http.routers.backend.rule=Host(`${HOST}`) && PathPrefix(`/backend/api/v1`)"
+      - "traefik.http.middlewares.backend-stripprefix.stripprefix.prefixes=/backend/api/v1"
       - "traefik.http.routers.backend.entrypoints=web"
       - "traefik.http.routers.backend.middlewares=backend-stripprefix"
       - "traefik.http.services.backend.loadbalancer.server.port=8000"
