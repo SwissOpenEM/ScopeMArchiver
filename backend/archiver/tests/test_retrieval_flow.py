@@ -1,7 +1,7 @@
 from unittest.mock import patch
 import pytest
 
-from archiver.tasks import create_retrieval_pipeline
+from archiver.flows.retrieval_flow import create_retrieval_pipeline
 from archiver.tests.scicat_mock import ScicatMock
 
 

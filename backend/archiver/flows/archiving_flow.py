@@ -1,40 +1,18 @@
 from prefect import flow, task, State, Task, Flow
 from prefect.client.schemas import TaskRun, FlowRun
 from functools import partial
-import os
 from typing import List
 
 
-from .scicat_interface import SciCat
-from .model import OrigDataBlock, DataBlock
-from . import datablocks as datablocks_operations
-
-
-scicat = SciCat(endpoint=os.environ.get(
-    'SCICAT_ENDPOINT', 'http://scicat.psi.ch'), prefix="")
-
-
-@task
-def update_scicat_job_status(job_id: int, status: SciCat.JOBSTATUS):
-    scicat.update_job_status(job_id, status)
-
-
-@task
-def update_scicat_dataset_lifecycle(
-        dataset_id: int, status: SciCat.ARCHIVESTATUSMESSAGE, archivable=None, retrievable=None) -> None:
-
-    scicat.update_dataset_lifecycle(
-        dataset_id, status, archivable=archivable, retrievable=retrievable)
+from ..model import OrigDataBlock, DataBlock
+from .. import datablocks as datablocks_operations
+from ..scicat_tasks import update_scicat_dataset_lifecycle, update_scicat_job_status, register_datablocks, report_error
+from ..scicat_interface import SciCat
 
 
 @task
 def create_datablocks(dataset_id: int, origDataBlocks: List[OrigDataBlock]) -> List[DataBlock]:
     return datablocks_operations.create_datablocks(dataset_id, origDataBlocks)
-
-
-@task
-def register_datablocks(datablocks: List[DataBlock], dataset_id: int) -> None:
-    scicat.register_datablocks(dataset_id, datablocks)
 
 
 @task
@@ -50,14 +28,6 @@ def move_data_to_LTS(datablocks: List[DataBlock]) -> None:
 @task
 def validate_data_in_LTS(datablocks: List[DataBlock]) -> None:
     return datablocks_operations.validate_data_in_LTS(datablocks)
-
-
-@task
-def report_error(dataset_id: int, job_id: int):
-    scicat.update_job_status(
-        job_id=job_id, status=SciCat.JOBSTATUS.FINISHED_UNSUCCESSFULLY)
-    scicat.update_dataset_lifecycle(dataset_id=dataset_id, status=SciCat.ARCHIVESTATUSMESSAGE.SCHEDULE_ARCHIVE_JOB_FAILED,
-                                    archivable=None, retrievable=None)
 
 
 def on_create_datablocks_error(dataset_id: int, job_id: int, task: Task, task_run: TaskRun, state: State):
@@ -133,7 +103,17 @@ async def create_archiving_pipeline(dataset_id: int, job_id: int, orig_data_bloc
     return res
 
 
-if __name__ == "__main__":
-    archiving_flow.serve(name="archiving_flow")
-#     # archiving_flow(123, 123, [OrigDataBlock(id="0", size=0, ownerGroup="0")])
-#     # update_scicat_job_status(None, 123, SciCat.JOBSTATUS.IN_PROGRESS),
+@task
+def wait_task():
+    import time
+    time.sleep(10)
+
+
+@flow()
+def test_flow1():
+    wait_task()
+
+
+@flow()
+def test_flow2():
+    wait_task()

@@ -1,5 +1,5 @@
 import requests_mock
-import archiver.tasks as tasks
+import archiver.scicat_tasks as tasks
 
 
 class ScicatMock(requests_mock.Mocker):

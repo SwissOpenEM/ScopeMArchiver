@@ -5,7 +5,7 @@ from .working_storage_interface import minioClient
 from fastapi.responses import JSONResponse
 # import tasks as tasks
 from .model import ArchiveJob, RetrievalJob, StorageObject, OrigDataBlock
-from .archiving_flow import create_archiving_pipeline
+from .flows.archiving_flow import create_archiving_pipeline
 router = APIRouter()
 
 

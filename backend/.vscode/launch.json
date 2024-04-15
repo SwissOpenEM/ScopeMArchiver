@@ -28,40 +28,7 @@
         "PREFECT_API_URL": "http://127.0.0.1:4200/api",
         "SCICAT_ENDPOINT": "http://127.0.0.1:3000"
       },
-      "module": "archiver.archiving_flow",
-      "jinja": true
-    },
-    {
-      "name": "Worker",
-      "type": "debugpy",
-      "request": "launch",
-      "env": {
-        "ARCHIVER_ENABLED": "True",
-        "INGESTER_ENABLED": "True",
-        "SCICAT_ENDPOINT": "http://127.0.0.1:3000"
-      },
-      "module": "celery",
-      "args": [
-        "-A",
-        "jobsystem.celery",
-        "worker",
-        "--concurrency=1"
-      ],
-      "jinja": true
-    },
-    {
-      "name": "Flower",
-      "type": "debugpy",
-      "request": "launch",
-      "module": "celery",
-      "env": {
-        "FLOWER_UNAUTHENTICATED_API": "True"
-      },
-      "args": [
-        "-A",
-        "jobsystem.celery",
-        "flower"
-      ],
+      "module": "archiver.flows",
       "jinja": true
     },
     {
@@ -84,12 +51,9 @@
       "name": "Archiver Service",
       "configurations": [
         "Backend API",
-        "Worker",
+        "Prefect Worker",
         "SciCat API Mock",
-        "Flower"
       ],
-      "preLaunchTask": "Start RabbitMQ",
-      "postLaunchTask": "",
       "stopAll": true
     }
   ]
