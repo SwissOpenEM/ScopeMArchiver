@@ -4,10 +4,10 @@ from functools import partial
 from typing import List
 
 
-from ..model import OrigDataBlock, DataBlock
-from .. import datablocks as datablocks_operations
-from ..scicat_tasks import update_scicat_dataset_lifecycle, update_scicat_job_status, register_datablocks, report_error
-from ..scicat_interface import SciCat
+from archiver.model import OrigDataBlock, DataBlock
+import archiver.datablocks as datablocks_operations
+from archiver.scicat_tasks import update_scicat_dataset_lifecycle, update_scicat_job_status, register_datablocks, report_error
+from archiver.scicat_interface import SciCat
 
 
 @task
