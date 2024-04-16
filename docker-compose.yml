@@ -108,7 +108,7 @@ services:
       /bin/sh -c " /usr/bin/mc alias set local-minio http://minio:9000 ${MINIO_USER} ${MINIO_PASS}; /usr/bin/mc mb -p local-minio/${MINIO_ARCHIVAL_BUCKET}; /usr/bin/mc mb -p local-minio/${MINIO_RETRIEVAL_BUCKET}; exit 0; "
 
   frontend:
-    image: ${WEBUPLOADER_IMAGE_NAME}:${WEBUPLOADER_IMAGE_TAG}
+    image: ${WEBUPLOADER_IMAGE_NAME}:${OPENEM_IMAGE_TAG}
     container_name: frontend
     pull_policy: if_not_present
     build:
