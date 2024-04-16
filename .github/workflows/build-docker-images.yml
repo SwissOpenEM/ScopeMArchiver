@@ -7,9 +7,9 @@ env:
     # github.repository as <account>/<repo>
     MOCKARCHIVER_IMAGE_NAME: ${{ github.repository }}-mockarchiver
     WEBUPLOADER_IMAGE_NAME: ${{ github.repository }}-webuploader
-    CELERY_WORKER_IMAGE_NAME: ${{ github.repository }}-openem-worker
+    OPENEM_WORKER_IMAGE_NAME: ${{ github.repository }}-openem-worker
     OPENEM_BACKEND_IMAGE_NAME: ${{ github.repository }}-openem-backend
-    CELERY_FLOWER_IMAGE_NAME: ${{ github.repository }}-openem-flower
+    SCICAT_MOCK_IMAGE_NAME: ${{ github.repository }}-openem-scicat-mock
 
 on:
   push:
@@ -85,7 +85,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
-  build_backend:
+  test_backend:
     runs-on: ubuntu-latest
     needs: detect_changes
     steps:
@@ -115,7 +115,7 @@ jobs:
       packages: write
       contents: read
 
-    needs: build_backend
+    needs: test_backend
     if: ${{ needs.detect_changes.outputs.backend == 'true' }} || github.event_name != 'pull_request'
       
     steps:
@@ -136,7 +136,7 @@ jobs:
       id: meta
       uses: docker/metadata-action@96383f45573cb7f253c731d3b3ab81c87ef81934 # v5.0.0
       with:
-        images: ${{ env.REGISTRY }}/${{ env.CELERY_WORKER_IMAGE_NAME }}
+        images: ${{ env.REGISTRY }}/${{ env.OPENEM_WORKER_IMAGE_NAME }}
 
       # Build and push Docker image with Buildx (don't push on PR)
       # https://github.com/docker/build-push-action
@@ -157,7 +157,7 @@ jobs:
       packages: write
       contents: read
 
-    needs: build_backend
+    needs: test_backend
     if: ${{ needs.detect_changes.outputs.backend == 'true' }} || github.event_name != 'pull_request'
       
     steps:
@@ -230,6 +230,49 @@ jobs:
       uses: docker/build-push-action@v5
       with:
           context: ./webuploader
+          push: true # ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+
+  build_scicat_mock:
+    runs-on: ubuntu-latest
+
+    permissions:
+      packages: write
+      contents: read
+
+    needs: detect_changes
+    if: ${{ needs.detect_changes.outputs.backend == 'true' }} || github.event_name != 'pull_request'
+      
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Log into registry ${{ env.REGISTRY }}
+      # if: github.event_name != 'pull_request'
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Extract metadata (tags, labels) for Docker
+      # https://github.com/docker/metadata-action
+
+    - name: Extract Docker metadata
+      id: meta
+      uses: docker/metadata-action@96383f45573cb7f253c731d3b3ab81c87ef81934 # v5.0.0
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.SCICAT_MOCK_IMAGE_NAME }}
+
+      # Build and push Docker image with Buildx (don't push on PR)
+      # https://github.com/docker/build-push-action
+    - name: Build and push Docker image
+      id: build-and-push
+      uses: docker/build-push-action@v5
+      with:
+          context: ./backend
+          file: ./backend/scicatmock.Dockerfile
           push: true # ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
