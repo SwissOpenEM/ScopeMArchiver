@@ -1,4 +1,7 @@
 version: "3.9"
+env_file:
+  - path: .production.env
+    required: true
 include:
   - jobs.docker-compose.yml
   # - monitoring.docker-compose.yml
