@@ -92,7 +92,7 @@ services:
       - ${DATA_DIR}/postgres:/var/lib/postgresql/data
 
   scicatmock:
-    image: scicatmock:latest
+    image: ${SCICAT_MOCK_IMAGE_NAME}:${OPENEM_IMAGE_TAG}
     container_name: scicatmock
     build:
       context: ./backend
