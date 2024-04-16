@@ -2,7 +2,7 @@ from enum import StrEnum
 import logging
 import requests
 from typing import List
-from archiver.model import Job, DataBlock, Dataset, DatasetLifecycle
+from .model import Job, DataBlock, Dataset, DatasetLifecycle
 
 _LOGGER = logging.getLogger("Jobs")
 
@@ -35,7 +35,7 @@ class SciCat():
         job = Job(id=str(job_id), type="archive", jobStatusMessage=str(status))
 
         requests.patch(
-            f"{self._ENDPOINT}{self.API}/Jobs/{job_id}", json=job.model_dump_json())
+            f"{self._ENDPOINT}{self.API}/Jobs/{job_id}", data=job.model_dump_json(exclude_none=True))
 
     def update_dataset_lifecycle(self, dataset_id: int, status: ARCHIVESTATUSMESSAGE, archivable=None, retrievable=None):
         dataset = Dataset(datasetlifecycle=DatasetLifecycle(
@@ -44,9 +44,9 @@ class SciCat():
             retrievable=retrievable
         ))
         requests.post(f"{self._ENDPOINT}{self.API}/Datasets/{dataset_id}",
-                      json=dataset.model_dump_json())
+                      data=dataset.model_dump_json(exclude_none=True))
 
     def register_datablocks(self, dataset_id: int, data_blocks: List[DataBlock]):
         for d in data_blocks:
             requests.post(
-                f"{self._ENDPOINT}{self.API}/Datablocks/", json=d.model_dump_json())
+                f"{self._ENDPOINT}{self.API}/Datablocks/", data=d.model_dump_json(exclude_none=True))

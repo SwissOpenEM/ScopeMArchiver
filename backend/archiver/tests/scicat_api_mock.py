@@ -1,9 +1,10 @@
-import os
-import logging
-from fastapi import FastAPI, Body
-from fastapi.middleware.cors import CORSMiddleware
-
 from archiver.model import Job, Dataset, DataBlock
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI, Body
+import logging
+from typing import List
+import os
+
 
 app = FastAPI(root_path="")
 
@@ -26,6 +27,11 @@ app.add_middleware(
 @app.patch("/Jobs/{JobId}/")
 def jobs(JobId: int, job: Job):
     _LOGGER.info(f"{JobId}: {job.model_dump_json()}")
+
+
+@app.post("/Datablocks/")
+def datablock_post(datablocks: DataBlock):
+    _LOGGER.info(f"{datablocks}: {datablocks.model_dump_json()}")
 
 
 @app.patch("/Datasets/{DatasetId}")

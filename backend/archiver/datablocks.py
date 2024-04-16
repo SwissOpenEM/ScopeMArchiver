@@ -1,9 +1,10 @@
+from .working_storage_interface import minioClient, Bucket
+import tarfile
+import os
+from .model import OrigDataBlock, DataBlock, DataFile
+from archiver.model import OrigDataBlock, DataBlock, DataFile
 import datetime
 from typing import List
-from archiver.model import OrigDataBlock, DataBlock, DataFile
-import os
-import tarfile
-from .working_storage_interface import minioClient, Bucket
 
 _SCRATCH_FOLDER = os.environ.get('ARCHIVER_SCRATCH_FOLDER', "/tmp/scratch")
 
@@ -113,14 +114,26 @@ def create_datablock_entries(dataset_id, origDataBlocks, tarballs) -> List[DataB
     return datablocks
 
 
+def move_data_to_staging(datablocks: List[DataBlock]) -> List[DataBlock]:
+    pass
+
+
+def move_data_to_LTS(datablocks: List[DataBlock]) -> None:
+    pass
+
+
+def validate_data_in_LTS(datablocks: List[DataBlock]) -> None:
+    pass
+
+
 def create_datablocks(dataset_id: int, origDataBlocks: List[OrigDataBlock]) -> List[DataBlock]:
     datablocks = []
     for o in origDataBlocks:
         d = DataBlock(
-            id=o.id,
+            id=str(o.id),
             archiveId=f"/path/to/archived/{o.id}.tar.gz",
             size=o.size,
-            packedSize=o.size / 2,
+            packedSize=o.size,
             version=str(1),
             ownerGroup="me"
         )
@@ -150,5 +163,8 @@ def create_datablocks(dataset_id: int, origDataBlocks: List[OrigDataBlock]) -> L
 
 
 __all__ = [
-    "create_datablocks"
+    "create_datablocks",
+    "move_data_to_staging",
+    "move_data_to_LTS",
+    "validate_data_in_LTS"
 ]
