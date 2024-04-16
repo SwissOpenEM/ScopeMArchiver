@@ -1,5 +1,5 @@
 import requests_mock
-import archiver.tasks as tasks
+import archiver.scicat_tasks as tasks
 
 
 class ScicatMock(requests_mock.Mocker):
@@ -10,13 +10,13 @@ class ScicatMock(requests_mock.Mocker):
         self.matchers: dict[str, requests_mock.Request.matcher] = {}
 
         self.matchers["jobs"] = self.patch(
-            f"{self.ENDPOINT}/{tasks.scicat.API}/Jobs/{job_id}", json=None)
+            f"{self.ENDPOINT}{tasks.scicat.API}/Jobs/{job_id}", json=None)
 
         self.matchers["datasets"] = self.post(
-            f"{self.ENDPOINT}/{tasks.scicat.API}/Datasets/{dataset_id}", json=None)
+            f"{self.ENDPOINT}{tasks.scicat.API}/Datasets/{dataset_id}", json=None)
 
         self.matchers["datablocks"] = self.post(
-            f"{self.ENDPOINT}/{tasks.scicat.API}/Datablocks/", json=None)
+            f"{self.ENDPOINT}{tasks.scicat.API}/Datablocks/", json=None)
 
     @property
     def jobs_matcher(self):

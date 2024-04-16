@@ -3,4 +3,7 @@ import pytest
 
 @pytest.fixture(scope="function")
 def celery_config():
-    return {"broker_url": "pyamqp://", "result_backend": "rpc://"}
+    return {
+        "broker_url": 'memory://localhost/',
+        "result_backend": "rpc://"
+    }

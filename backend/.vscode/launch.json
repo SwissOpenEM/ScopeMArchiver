@@ -10,7 +10,8 @@
       "request": "launch",
       "env": {
         "ARCHIVER_ENABLED": "True",
-        "INGESTER_ENABLED": "True"
+        "INGESTER_ENABLED": "True",
+        "PREFECT_API_URL": "http://127.0.0.1:4200/api"
       },
       "module": "uvicorn",
       "args": [
@@ -20,30 +21,39 @@
       "jinja": true
     },
     {
-      "name": "Worker",
+      "name": "Prefect Worker",
       "type": "debugpy",
       "request": "launch",
       "env": {
-        "ARCHIVER_ENABLED": "True",
-        "INGESTER_ENABLED": "True"
+        "PREFECT_API_URL": "http://127.0.0.1:4200/api",
+        "SCICAT_ENDPOINT": "http://127.0.0.1:3000"
       },
-      "module": "celery",
+      "module": "archiver.flows",
+      "jinja": true
+    },
+    {
+      "name": "SciCat API Mock",
+      "type": "debugpy",
+      "request": "launch",
+      "env": {},
+      "module": "uvicorn",
       "args": [
-        "-A",
-        "jobsystem.celery",
-        "worker"
+        "archiver.tests.scicat_api_mock:app",
+        "--reload",
+        "--port",
+        "3000",
       ],
       "jinja": true
-    }
+    },
   ],
   "compounds": [
     {
-      "name": "Backend",
+      "name": "Archiver Service",
       "configurations": [
         "Backend API",
-        "Worker"
+        "Prefect Worker",
+        "SciCat API Mock",
       ],
-      "preLaunchTask": "${defaultBuildTask}",
       "stopAll": true
     }
   ]

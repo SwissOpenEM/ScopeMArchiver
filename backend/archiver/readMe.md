@@ -49,7 +49,7 @@ sequenceDiagram
   participant AS as Archival Service
   participant L as Landing Zone
   participant J as Worker
-  participant A as Archiveable Storage
+  participant A as Staging
   participant S as SciCat
   participant LTS as LTS
 
@@ -78,11 +78,11 @@ sequenceDiagram
   end
   critical
     activate J
-    L -->> A: Move to Archivable Storage
+    L -->> A: Move to Staging
     deactivate J
   option Failure (Disk space, ...)
     activate J
-    J -->> J: Cleanup archiveable storage
+    J -->> J: Cleanup Staging
     J -->> S: Report Error
     deactivate J
   end
@@ -132,7 +132,7 @@ sequenceDiagram
   autonumber
   participant AS as Archival Service
   participant J as Worker
-  participant R as Retrieval Storage
+  participant R as Staging
   participant S as SciCat
   participant LTS as LTS
 
@@ -146,6 +146,11 @@ sequenceDiagram
   critical
     activate J
     LTS -->> R: Task: Download Datablocks from LTS
+    deactivate J
+  option Retrieval Failure
+    activate J
+    J -->> S: Report Error
+    J -->> R: Cleanup Files
     deactivate J
   end
   critical
