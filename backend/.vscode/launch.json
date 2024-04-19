@@ -34,7 +34,8 @@
         "MINIO_STAGING_BUCKET": "staging.openem-dev.ethz.ch",
         "MINIO_LANDINGZONE_BUCKET": "landingzone.openem-dev.ethz.ch",
         "SCICAT_ENDPOINT": "http://localhost/scicatmock",
-        "LTS_STORAGE_ROOT": "${workspaceRoot}/../data/LTS/"
+        "LTS_STORAGE_ROOT": "${workspaceRoot}/../data/LTS/",
+        "ARCHIVER_SCRATCH_FOLDER": "${workspaceRoot}/../data/archiving/"
       },
       "module": "archiver.flows",
       "jinja": true
