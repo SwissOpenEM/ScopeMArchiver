@@ -25,8 +25,16 @@
       "type": "debugpy",
       "request": "launch",
       "env": {
-        "PREFECT_API_URL": "http://127.0.0.1:4200/api",
-        "SCICAT_ENDPOINT": "http://127.0.0.1:3000"
+        "PREFECT_API_URL": "http://localhost/api",
+        "PREFECT_LOGGING_LEVEL": "DEBUG",
+        "MINIO_URL": "localhost:9000",
+        "MINIO_USER": "minioadmin",
+        "MINIO_PASS": "minioadmin",
+        "MINIO_RETRIEVAL_BUCKET": "retrieval.openem-dev.ethz.ch",
+        "MINIO_STAGING_BUCKET": "staging.openem-dev.ethz.ch",
+        "MINIO_LANDINGZONE_BUCKET": "landingzone.openem-dev.ethz.ch",
+        "SCICAT_ENDPOINT": "http://localhost/scicatmock",
+        "LTS_STORAGE_ROOT": "${workspaceRoot}/../data/LTS/"
       },
       "module": "archiver.flows",
       "jinja": true
