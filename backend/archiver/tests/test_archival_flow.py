@@ -57,7 +57,7 @@ def expected_datablocks(dataset_id: int, idx: int):
         id=f"Block_{idx}",
         archiveId=f"/path/to/archived/Block_{idx}.tar.gz",
         size=size_per_file * 10,
-        packedSize=size_per_file * 10 / 2,
+        packedSize=size_per_file * 10,
         version=str(1),
         ownerGroup="me"
     ).model_dump(exclude_none=True)
@@ -68,13 +68,13 @@ def dataset_datablocks() -> str:
 
 
 def mock_create_datablocks(dataset_id: int, origDataBlocks: List[OrigDataBlock]) -> List[DataBlock]:
-    datablocks = []
+    datablocks: List[DataBlock] = []
     for o in origDataBlocks:
         d = DataBlock(
             id=o.id,
             archiveId=f"/path/to/archived/{o.id}.tar.gz",
             size=o.size,
-            packedSize=o.size / 2,
+            packedSize=o.size,
             version=str(1),
             ownerGroup="me"
         )
@@ -82,11 +82,7 @@ def mock_create_datablocks(dataset_id: int, origDataBlocks: List[OrigDataBlock])
     return datablocks
 
 
-def mock_move_data_to_staging(datablocks: List[DataBlock]) -> List[DataBlock]:
-    return datablocks
-
-
-def mock_move_data_to_LTS(datablocks: List[DataBlock]) -> None:
+def mock_move_data_to_LTS(dataset_id: int, datablocks: List[DataBlock]) -> None:
     pass
 
 
@@ -98,14 +94,13 @@ def raise_exception_task(*args, **kwargs):
     raise Exception("Mock Exception")
 
 
-@pytest.mark.parametrize("job_id,dataset_id", [
+@ pytest.mark.parametrize("job_id,dataset_id", [
     (123, 456),
 ])
-@patch("archiver.scicat_tasks.scicat._ENDPOINT", ScicatMock.ENDPOINT)
-@patch("archiver.datablocks.create_datablocks", mock_create_datablocks)
-@patch("archiver.datablocks.move_data_to_staging", mock_move_data_to_staging)
-@patch("archiver.datablocks.move_data_to_LTS", mock_move_data_to_LTS)
-@patch("archiver.datablocks.validate_data_in_LTS", mock_validate_data_in_LTS)
+@ patch("archiver.scicat_tasks.scicat._ENDPOINT", ScicatMock.ENDPOINT)
+@ patch("archiver.datablocks.create_datablocks", mock_create_datablocks)
+@ patch("archiver.datablocks.move_data_to_LTS", mock_move_data_to_LTS)
+@ patch("archiver.datablocks.validate_data_in_LTS", mock_validate_data_in_LTS)
 def test_scicat_api_archiving(job_id, dataset_id):
 
     num_orig_datablocks = 10
@@ -188,12 +183,11 @@ def test_datablock_failure(job_id, dataset_id):
             dataset_id, SciCat.ARCHIVESTATUSMESSAGE.SCHEDULE_ARCHIVE_JOB_FAILED)
 
 
-@pytest.mark.parametrize("job_id,dataset_id", [
+@ pytest.mark.parametrize("job_id,dataset_id", [
     (123, 456),
 ])
-@patch("archiver.scicat_tasks.scicat._ENDPOINT", ScicatMock.ENDPOINT)
-@patch("archiver.datablocks.create_datablocks", mock_create_datablocks)
-@patch("archiver.datablocks.move_data_to_staging", raise_exception_task)
+@ patch("archiver.scicat_tasks.scicat._ENDPOINT", ScicatMock.ENDPOINT)
+@ patch("archiver.datablocks.create_datablocks", raise_exception_task)
 def test_move_to_staging_failure(job_id, dataset_id):
 
     num_orig_datablocks = 10
@@ -233,7 +227,6 @@ def test_move_to_staging_failure(job_id, dataset_id):
 ])
 @ patch("archiver.scicat_tasks.scicat._ENDPOINT", ScicatMock.ENDPOINT)
 @ patch("archiver.datablocks.create_datablocks", mock_create_datablocks)
-@ patch("archiver.datablocks.move_data_to_staging", mock_move_data_to_staging)
 @ patch("archiver.datablocks.move_data_to_LTS", raise_exception_task)
 def test_move_to_LTS_failure(job_id, dataset_id):
 
@@ -277,7 +270,6 @@ def test_move_to_LTS_failure(job_id, dataset_id):
 ])
 @ patch("archiver.scicat_tasks.scicat._ENDPOINT", ScicatMock.ENDPOINT)
 @ patch("archiver.datablocks.create_datablocks", mock_create_datablocks)
-@ patch("archiver.datablocks.move_data_to_staging", mock_move_data_to_staging)
 @ patch("archiver.datablocks.move_data_to_LTS", mock_move_data_to_LTS)
 @ patch("archiver.datablocks.validate_data_in_LTS", raise_exception_task)
 def test_LTS_validation_failure(job_id, dataset_id):
