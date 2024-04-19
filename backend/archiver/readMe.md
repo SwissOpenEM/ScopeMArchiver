@@ -30,26 +30,17 @@ sequenceDiagram
   end
   critical 
     activate J
-      J -->> L:  Create Datablocks
+      J -->> L: Create Datablocks
+      L -->> A: Move Datablocks to Staging
     deactivate J
   option Failure
     activate J
       J -->> L: Cleanup, restore files
+      J -->> A: Cleanup, restore files
       J --) S: Report Error: PATCH /api/v3/Jobs/{JobId}
       Note left of S: {"jobStatusMessage": "finishedWithDatasetErrors" Scicat specific?,<br>  "updatedAt": "...",<br>  "updatedBy": "...", <br> "jobResultObject" Storage specific?
       J --) S: Report Error: PATCH /api/v3/Dataset/{DatasetId}
       Note left of S: {"archiveStatusMessage": Scicat specific? valid values?<br>, "archiveReturnMessage": storage specific? free to choose?, <br> "updatedAt": "...", <br> "updatedBy": "..."}
-    deactivate J
-  end
-  critical
-    activate J
-    L -->> A: Move to Staging
-    deactivate J
-  option Failure
-    activate J
-    J -->> J: Cleanup Staging
-    J -->> S: Report Error
-    Note left of S: ?
     deactivate J
   end
   loop Retry: Exponential backoff

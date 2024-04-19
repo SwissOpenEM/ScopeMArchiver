@@ -11,14 +11,14 @@ router = APIRouter()
 
 @router.get("/archivable_objects")
 def get_archivable_objects() -> list[StorageObject]:
-    objects = minioClient.get_objects(bucket=minioClient.ARCHIVAL_BUCKET)
-    return [StorageObject(object_name=o.object_name) for o in objects]
+    objects = minioClient.get_objects(bucket=minioClient.STAGING_BUCKET)
+    return [StorageObject(object_name=o.object_name or "") for o in objects]
 
 
 @router.get("/retrievable_objects")
 def get_retrievable_objects() -> list[StorageObject]:
     objects = minioClient.get_objects(bucket=minioClient.RETRIEVAL_BUCKET)
-    return [StorageObject(object_name=o.object_name) for o in objects]
+    return [StorageObject(object_name=o.object_name or "") for o in objects]
 
 
 # @router.post("/retrieve_dataset/")

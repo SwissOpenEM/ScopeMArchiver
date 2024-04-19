@@ -31,13 +31,14 @@ class SciCat():
     def API(self):
         return self._API
 
-    def update_job_status(self, job_id: int, status: JOBSTATUS):
+    def update_job_status(self, job_id: int, status: JOBSTATUS) -> None:
         job = Job(id=str(job_id), type="archive", jobStatusMessage=str(status))
 
         requests.patch(
             f"{self._ENDPOINT}{self.API}/Jobs/{job_id}", data=job.model_dump_json(exclude_none=True))
 
-    def update_dataset_lifecycle(self, dataset_id: int, status: ARCHIVESTATUSMESSAGE, archivable=None, retrievable=None):
+    def update_dataset_lifecycle(self, dataset_id: int, status: ARCHIVESTATUSMESSAGE, archivable: bool | None = None,
+                                 retrievable: bool | None = None) -> None:
         dataset = Dataset(datasetlifecycle=DatasetLifecycle(
             archiveStatusMessage=str(status),
             archivable=archivable,

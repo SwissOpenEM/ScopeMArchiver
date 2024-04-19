@@ -1,9 +1,14 @@
-from typing import List
+from typing import List, Iterable
 from abc import ABC, abstractmethod
 from datetime import timedelta
 import os
 import minio
+import minio.datatypes
+from minio.deleteobjects import DeleteObject
 from dataclasses import dataclass
+from pathlib import Path
+
+from .logging import getLogger
 
 
 @dataclass
@@ -11,26 +16,15 @@ class Bucket():
     name: str
 
 
-class WorkingStorage(ABC):
-
-    @abstractmethod
-    def get_presigned_url(self, filename: str, bucket: Bucket) -> str:
-        pass
-
-    # @abstractmethod
-    def list_archivable_objects(self) -> List[str]:
-        pass
-
-
-class MinioStorage(WorkingStorage):
+class MinioStorage():
 
     _USER = os.environ.get('MINIO_USER', "minioadmin")
     _PASSWORD = os.environ.get('MINIO_PASS', "minioadmin")
     _REGION = os.environ.get('MINIO_REGION', "eu-west-1")
     _URL = os.environ.get('MINIO_URL', "localhost:9000")
 
-    ARCHIVAL_BUCKET: Bucket = Bucket(
-        os.environ.get('MINIO_ARCHIVAL_BUCKET', "archival"))
+    STAGING_BUCKET: Bucket = Bucket(
+        os.environ.get('MINIO_STAGING_BUCKET', "staging"))
     RETRIEVAL_BUCKET: Bucket = Bucket(
         os.environ.get('MINIO_RETRIEVAL_BUCKET', "retrieval"))
     LANDINGZONE_BUCKET: Bucket = Bucket(
@@ -45,7 +39,11 @@ class MinioStorage(WorkingStorage):
             secure=False
         )
 
-    def get_presigned_url(self, filename: str, bucket: Bucket) -> str:
+    @property
+    def url(self):
+        return self._URL
+
+    def get_presigned_url(self, bucket: Bucket, filename: str) -> str:
         url = self._minio.presigned_get_object(
             bucket_name=bucket.name,
             object_name=filename,
@@ -54,19 +52,34 @@ class MinioStorage(WorkingStorage):
 
         return url
 
-    def stat_object(self, filename: str, bucket: Bucket) -> minio.Minio.stat_object:
+    def stat_object(self, bucket: Bucket, filename: str) -> minio.datatypes.Object:
         return self._minio.stat_object(
             bucket_name=bucket.name,
             object_name=filename
         )
 
-    def get_objects(self, folder: str, bucket: Bucket):
-        return self._minio.list_objects(bucket_name=bucket.name, prefix=folder)
+    def get_objects(self, bucket: Bucket, folder: str | None = None):
+        f = folder or ""
+        return self._minio.list_objects(bucket_name=bucket.name, prefix=f + "/", start_after=f"{f}/")
 
-    def put_object(self, source_file: os.PathLike, destination_file: os.PathLike, bucket: Bucket):
-        self._minio.fput_object(
-            bucket.name, destination_file, source_file,
+    def put_object(self, source_file: Path, destination_file: Path, bucket: Bucket):
+        self._minio.fput_object(bucket.name, str(destination_file), str(source_file))
+
+    def delete_object(self, minio_prefix: Path, bucket: Bucket) -> None:
+        delete_object_list: Iterable[DeleteObject] = list(
+            map(
+                lambda x: DeleteObject(x.object_name or ""),
+                self._minio.list_objects(
+                    bucket.name,
+                    str(minio_prefix),
+                    recursive=True,
+                ),
+            )
         )
+
+        errors = self._minio.remove_objects(bucket.name, delete_object_list)
+        for e in errors:
+            getLogger().error(f"Failed to remove objects from Minio {e}")
 
 
 minioClient = MinioStorage()

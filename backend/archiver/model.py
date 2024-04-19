@@ -146,7 +146,7 @@ class DatasetLifecycle(BaseModel):
 
 class ArchiveJob(BaseModel):
     job_id: int
-    origDataBlocks: List[DataBlock]
+    origDataBlocks: List[OrigDataBlock]
 
 
 class RetrievalJob(BaseModel):
@@ -156,6 +156,7 @@ class RetrievalJob(BaseModel):
 class Dataset(BaseModel):
     id: Optional[str] = None
     datasetlifecycle: DatasetLifecycle
+    updatedAt: Optional[datetime] = None
 
 
 class StorageObject(BaseModel):
