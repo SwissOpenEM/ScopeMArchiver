@@ -213,9 +213,16 @@ def create_datablocks(dataset_id: int, origDataBlocks: List[OrigDataBlock]) -> L
 
     # regular cleanup
     delete_objects(minio_prefix=Path(str(dataset_id)), bucket=minioClient.LANDINGZONE_BUCKET)
-    cleanup_scratch(dataset_id, "archival", datablocks)
+    cleanup_scratch(dataset_id, "archival")
 
     return datablocks
+
+
+def cleanup_lts_folder(dataset_id: int) -> None:
+    lts_folder = create_lts_path(dataset_id)
+
+    # import shutil
+    # shutil.rmtree(lts_folder, ignore_errors=True)
 
 
 def cleanup_staging(dataset_id: int) -> None:
@@ -232,16 +239,17 @@ def verify_objects(uploaded_objects: List[Path],
     return missing_files
 
 
-def cleanup_scratch(dataset_id: int, folder_type: str, datablocks: List[DataBlock]):
+def cleanup_scratch(dataset_id: int, folder_type: str):
     if folder_type not in ["archival", "retrieval"]:
         raise Exception(f"No valid folder_type to delete: {folder_type}")
-    scratch_folder = _SCRATCH_FOLDER / folder_type / str(dataset_id)
+    scratch_folder = settings.ARCHIVER_SCRATCH_FOLDER / folder_type / str(dataset_id)
     getLogger().debug(f"Cleaning up objects in scratch folder: {scratch_folder}")
-    for d in datablocks:
-        for f in d.dataFileList or []:
-            os.remove(f.path)
 
-    # TODO: remove datablock, tar.gz
+    # import shutil
+    # shutil.rmtree(scratch_folder)
+    # for d in datablocks:
+    #     for f in d.dataFileList or []:
+    #         os.remove(f.path)
 
 
 def create_dummy_dataset(dataset_id: int):

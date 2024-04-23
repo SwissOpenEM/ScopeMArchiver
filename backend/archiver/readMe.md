@@ -1,7 +1,40 @@
 # Archiving Flow
 
-## [Archival Task Chain](./flows/archiving_flow.py)
+## Upload flow
 
+```mermaid
+sequenceDiagram
+  autonumber
+  participant C as Client
+  participant S as Scicat
+  participant A as Archiver Service
+
+    C --> C: Select Dataset
+    C --) S: Register Dataset: POST /Datasets
+   activate S 
+      Note left of S: { "isOnCentralDisk" : false, "archivable" : false, "archiveStatusMessage: "filesNotReadyYet"}
+      S --) C: PID
+   deactivate S
+    C -->> A: Upload dataset
+      Note left of A: Dataset
+    C -->> S: PUT /Datasets/{datasetId}
+      Note left of S: { "datasetlifecycle": {"archiveStatusMessage" : "datasetCreated, "archivable" : false, "archiveStatusMessage: "filesNotReadyYet"}}
+    C -->> S: POST /api/v3/OrigDatablocks
+      Note left of S: {fileBlock, "datasetId": "datasetId"}
+    S -->> A: Trigger Archive Job: POST /api/v1/Job
+      Note left of A: {}
+
+```
+
+- Source folder never used: why?
+- Datafile list vs origdatablocks?
+
+
+## [Archival Task Flow](./flows/archiving_flow.py)
+
+Archiving is split into two subflows, `Create Datablocks` and  `Move Datablocks to LTS`. That can be triggered separately.
+
+### Creating Datablocks
 ```mermaid
 sequenceDiagram
   autonumber
@@ -12,9 +45,12 @@ sequenceDiagram
   participant S as SciCat
   participant LTS as LTS
 
+
+  Note over AS, S: Subflow to create and register datablocks
+
   S --) AS: Archive: POST /api/v1/jobs
   Note right of AS: Job {"id" : "id", "type":"archive", "datasetlist": [], ... } as defined in Scicat
-  
+
    AS --) J: Create Archiving Pipeline
   loop Retry: Exponential backoff
     activate J
@@ -32,44 +68,50 @@ sequenceDiagram
     activate J
       J -->> L: Create Datablocks
       L -->> A: Move Datablocks to Staging
+      loop Retry: Exponential backoff
+        activate J
+        J -->> S: Register datablocks POST /api/v4/Datasets/{DatasetID}
+        Note left of S: ?
+        deactivate J
+      end
+      J -->> L: Cleanup Dataset files, Datablocks
+      Note right of L: Dataset files only get cleaned up when everythings succeeds
     deactivate J
   option Failure
     activate J
-      J -->> L: Cleanup, restore files
-      J -->> A: Cleanup, restore files
       J --) S: Report Error: PATCH /api/v3/Jobs/{JobId}
       Note left of S: {"jobStatusMessage": "finishedWithDatasetErrors" Scicat specific?,<br>  "updatedAt": "...",<br>  "updatedBy": "...", <br> "jobResultObject" Storage specific?
       J --) S: Report Error: PATCH /api/v3/Dataset/{DatasetId}
       Note left of S: {"archiveStatusMessage": Scicat specific? valid values?<br>, "archiveReturnMessage": storage specific? free to choose?, <br> "updatedAt": "...", <br> "updatedBy": "..."}
-    deactivate J
-  end
-  loop Retry: Exponential backoff
-    activate J
-    J -->> S: Register datablocks POST /api/v4/Datasets/{DatasetID}
-    Note left of S: ?
+      J -->> A: Cleanup Datablocks
+      J -->> L: Cleanup Datablocks
+      Note right of L: No cleanup of dataset files
     deactivate J
   end
   
+
+  Note over J, LTS: Subflow to move datablocks to LTS
+    S -->> AS: Optional re-trigger from Scicat
+    AS --) J: Create `Move datablock to LTS` Pipeline
   critical
     activate J
     A -->> LTS: Move Datablocks to LTS
     deactivate J
-  option Archival Failure
+  option Move to LTS Failure
     activate J
-    J -->> LTS: Cleanup
+    J -->> LTS: Cleanup LTS folder
     J -->> S: Report Error
     Note left of S: ?
     deactivate J
   end
-  critical 
-    activate J
+  critical
     J -->> LTS:  Validate Datablocks in LTS
-    deactivate J
+    J -->> L: Cleanup Dataset files, Datablocks
   option Validation Failure
     activate J
-    A -->> LTS: Retry once: Move datablocks to LTS
     J -->> S: Report Error
     Note left of S: ?
+    J -->> LTS: Cleanup Datablocks
     deactivate J
   end
   loop Retry: Exponential backoff
@@ -85,7 +127,6 @@ sequenceDiagram
     deactivate J
   end 
 ```
-
 
 ## Retrieval Task Chain
 
