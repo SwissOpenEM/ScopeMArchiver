@@ -1,7 +1,5 @@
-from typing import List, Iterable
-from abc import ABC, abstractmethod
+from typing import Iterable
 from datetime import timedelta
-import os
 import minio
 import minio.datatypes
 from minio.deleteobjects import DeleteObject
@@ -9,6 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from .logging import getLogger
+from .config import settings
 
 
 @dataclass
@@ -18,17 +17,14 @@ class Bucket():
 
 class MinioStorage():
 
-    _USER = os.environ.get('MINIO_USER', "minioadmin")
-    _PASSWORD = os.environ.get('MINIO_PASS', "minioadmin")
-    _REGION = os.environ.get('MINIO_REGION', "eu-west-1")
-    _URL = os.environ.get('MINIO_URL', "localhost:9000")
+    _USER = settings.MINIO_USER
+    _PASSWORD = settings.MINIO_PASSWORD
+    _REGION = settings.MINIO_REGION
+    _URL = settings.MINIO_URL
 
-    STAGING_BUCKET: Bucket = Bucket(
-        os.environ.get('MINIO_STAGING_BUCKET', "staging"))
-    RETRIEVAL_BUCKET: Bucket = Bucket(
-        os.environ.get('MINIO_RETRIEVAL_BUCKET', "retrieval"))
-    LANDINGZONE_BUCKET: Bucket = Bucket(
-        os.environ.get('MINIO_LANDINGZONE_BUCKET', "landing"))
+    STAGING_BUCKET: Bucket = Bucket(settings.MINIO_STAGING_BUCKET)
+    RETRIEVAL_BUCKET: Bucket = Bucket(settings.MINIO_RETRIEVAL_BUCKET)
+    LANDINGZONE_BUCKET: Bucket = Bucket(settings.MINIO_LANDINGZONE_BUCKET)
 
     def __init__(self):
         self._minio = minio.Minio(

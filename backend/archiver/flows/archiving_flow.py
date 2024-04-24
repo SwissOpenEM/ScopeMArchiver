@@ -1,5 +1,5 @@
 from prefect import flow, task, State, Task, Flow
-from prefect.client.schemas import TaskRun, FlowRun
+from prefect.client.schemas.objects import TaskRun, FlowRun
 from prefect.concurrency.sync import concurrency
 from functools import partial
 from typing import List
@@ -100,4 +100,3 @@ def archiving_flow(dataset_id: int, job_id: int, orig_data_blocks: List[OrigData
 
     # run as subflow so this flow can be run separately as well
     move_datablocks_to_lts(dataset_id=dataset_id, job_id=job_id, datablocks=datablocks, wait_for=[register_result])
-

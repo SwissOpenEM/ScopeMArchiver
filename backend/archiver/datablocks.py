@@ -9,9 +9,7 @@ from pathlib import Path
 from .working_storage_interface import minioClient, Bucket
 from .model import OrigDataBlock, DataBlock, DataFile
 from .logging import getLogger
-
-_SCRATCH_FOLDER = Path(os.environ.get('ARCHIVER_SCRATCH_FOLDER', "/tmp/scratch"))
-_LTS_ROOT = Path(os.environ.get('LTS_STORAGE_ROOT', "/tmp/LTS"))
+from .config import settings
 
 
 def create_tarballs(dataset_id: int, folder: Path,
@@ -138,13 +136,17 @@ def create_datablock_entries(
     return datablocks
 
 
+def create_lts_path(dataset_id: int) -> Path:
+    return settings.LTS_STORAGE_ROOT / str(dataset_id)
+
+
 def move_data_to_LTS(dataset_id: int, datablocks: List[DataBlock]) -> None:
 
     # mount target dir and check access
-    if not _LTS_ROOT.exists():
-        raise FileNotFoundError(f"Can't open LTS root {_LTS_ROOT}")
+    if not settings.LTS_STORAGE_ROOT.exists():
+        raise FileNotFoundError(f"Can't open LTS root {settings.LTS_STORAGE_ROOT}")
 
-    lts_target_dir: Path = _LTS_ROOT / str(dataset_id)
+    lts_target_dir = create_lts_path(dataset_id)
     lts_target_dir.mkdir(parents=False, exist_ok=True)
 
     # TODO: set permissions
@@ -162,7 +164,8 @@ def move_data_to_LTS(dataset_id: int, datablocks: List[DataBlock]) -> None:
     #     raise Exception(f"Not all datablocks found: {missing_blocks}")
 
     # download to target dir
-    archived_objects = download_objects(minio_prefix=str(dataset_id), bucket=minioClient.STAGING_BUCKET, destination_folder=_LTS_ROOT)
+    archived_objects = download_objects(minio_prefix=str(dataset_id), bucket=minioClient.STAGING_BUCKET,
+                                        destination_folder=settings.LTS_STORAGE_ROOT)
 
     assert len(archived_objects) == len(datablocks)
 
@@ -187,12 +190,12 @@ def create_datablocks(dataset_id: int, origDataBlocks: List[OrigDataBlock]) -> L
     if all(False for _ in find_objects(str(dataset_id), minioClient.LANDINGZONE_BUCKET)):
         raise Exception(f"No objects found for dataset {dataset_id}")
 
-    scratch_folder = _SCRATCH_FOLDER / "archival" / str(dataset_id)
+    scratch_folder = settings.ARCHIVER_SCRATCH_FOLDER / "archival" / str(dataset_id)
     if not scratch_folder.exists():
         scratch_folder.mkdir(parents=True)
 
     file_paths = download_objects(minio_prefix=str(dataset_id), bucket=minioClient.LANDINGZONE_BUCKET,
-                                  destination_folder=_SCRATCH_FOLDER / "archival")
+                                  destination_folder=settings.ARCHIVER_SCRATCH_FOLDER / "archival")
 
     getLogger().info(f"Downloaded {len(file_paths)} objects from {minioClient.LANDINGZONE_BUCKET}")
 
@@ -253,7 +256,7 @@ def cleanup_scratch(dataset_id: int, folder_type: str):
 
 
 def create_dummy_dataset(dataset_id: int):
-    scratch_folder = _SCRATCH_FOLDER / str(dataset_id)
+    scratch_folder = settings.ARCHIVER_SCRATCH_FOLDER / str(dataset_id)
     if not scratch_folder.exists():
         scratch_folder.mkdir(parents=True)
 

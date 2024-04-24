@@ -1,12 +1,12 @@
-from .scicat_interface import SciCat
-from .model import DataBlock
 from typing import List
 from prefect import task
-import os
+
+from .scicat_interface import SciCat
+from .model import DataBlock
+from .config import settings
 
 
-scicat = SciCat(endpoint=os.environ.get(
-    'SCICAT_ENDPOINT', 'http://scicat.psi.ch'), prefix="")
+scicat = SciCat(endpoint=settings.SCICAT_ENDPOINT, prefix=settings.SCICAT_API_PREFIX)
 
 
 @task

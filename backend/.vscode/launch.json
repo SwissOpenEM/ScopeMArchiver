@@ -9,14 +9,15 @@
       "type": "debugpy",
       "request": "launch",
       "env": {
-        "ARCHIVER_ENABLED": "True",
-        "INGESTER_ENABLED": "True",
-        "PREFECT_API_URL": "http://127.0.0.1:4200/api"
+        "PREFECT_API_URL": "http://localhost/api",
+        "SCICAT_ENDPOINT": "http://localhost/scicatmock",
+        "API_ROOT_PATH": "/",
+        "API_RELOAD": "true"
       },
-      "module": "uvicorn",
+      "module": "api",
       "args": [
-        "main:app",
-        "--reload"
+        "--config",
+        "${workspaceRoot}/config.toml"
       ],
       "jinja": true
     },
@@ -27,17 +28,14 @@
       "env": {
         "PREFECT_API_URL": "http://localhost/api",
         "PREFECT_LOGGING_LEVEL": "DEBUG",
-        "MINIO_URL": "localhost:9000",
-        "MINIO_USER": "minioadmin",
-        "MINIO_PASS": "minioadmin",
-        "MINIO_RETRIEVAL_BUCKET": "retrieval.openem-dev.ethz.ch",
-        "MINIO_STAGING_BUCKET": "staging.openem-dev.ethz.ch",
-        "MINIO_LANDINGZONE_BUCKET": "landingzone.openem-dev.ethz.ch",
-        "SCICAT_ENDPOINT": "http://localhost/scicatmock",
         "LTS_STORAGE_ROOT": "${workspaceRoot}/../data/LTS/",
         "ARCHIVER_SCRATCH_FOLDER": "${workspaceRoot}/../data/archiving/"
       },
       "module": "archiver.flows",
+      "args": [
+        "--config",
+        "${workspaceRoot}/config.toml"
+      ],
       "jinja": true
     },
     {

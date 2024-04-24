@@ -1,0 +1,25 @@
+
+[archiver]
+scratch_folder = "/tmp/scratch"
+
+
+[lts]
+storage_root = "/tmp/LTS"
+
+[api]
+root_path = '/api/v1'
+port = 5000
+log_level = "info"
+
+[minio]
+region = "eu-west1"
+password = "minioadmin"
+user = "minioadmin"
+retrieval_bucket = "retrieval"
+landingzone_bucket = "landingzone"
+staging_bucket = "staging"
+url = "http://minio:9000"
+
+[scicat]
+endpoint = "http://scicatmock:8000"
+api_prefix = "/"
