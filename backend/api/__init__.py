@@ -1,10 +1,9 @@
 import api.api as archiver_api
-from archiver.config import parse_settings
+from archiver.config import settings
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-settings = parse_settings()
 
 app = FastAPI(root_path=settings.API_ROOT_PATH)
 

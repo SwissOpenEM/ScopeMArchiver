@@ -18,7 +18,7 @@ user = "minioadmin"
 retrieval_bucket = "retrieval"
 landingzone_bucket = "landingzone"
 staging_bucket = "staging"
-url = "http://minio:9000"
+url = "minio:9000"
 
 [scicat]
 endpoint = "http://scicatmock:8000"

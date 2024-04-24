@@ -9,8 +9,7 @@
       "type": "debugpy",
       "request": "launch",
       "env": {
-        "PREFECT_API_URL": "http://localhost/api",
-        "SCICAT_ENDPOINT": "http://localhost/scicatmock",
+        "PREFECT_API_URL": "http://test-host/api",
         "API_ROOT_PATH": "/",
         "API_RELOAD": "true"
       },
@@ -26,10 +25,12 @@
       "type": "debugpy",
       "request": "launch",
       "env": {
-        "PREFECT_API_URL": "http://localhost/api",
+        "PREFECT_API_URL": "http://test-host/api",
         "PREFECT_LOGGING_LEVEL": "DEBUG",
+        "SCICAT_ENDPOINT": "http://test-host/scicatmock",
         "LTS_STORAGE_ROOT": "${workspaceRoot}/../data/LTS/",
-        "ARCHIVER_SCRATCH_FOLDER": "${workspaceRoot}/../data/archiving/"
+        "ARCHIVER_SCRATCH_FOLDER": "${workspaceRoot}/../data/archiving/",
+        "MINIO_URL": "test-host:9000"
       },
       "module": "archiver.flows",
       "args": [

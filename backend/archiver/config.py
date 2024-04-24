@@ -5,6 +5,7 @@ from typing import Self
 import tomllib
 import os
 import pprint
+from functools import lru_cache
 
 
 @dataclass
@@ -48,18 +49,15 @@ class Settings():
             return s
 
 
-settings = Settings()
-
-
+@lru_cache
 def parse_settings():
-    global settings
     parser = argparse.ArgumentParser(
         prog='ProgramName',
         description='What the program does',
         epilog='Text at the bottom of help')
 
-    parser.add_argument('-c', '--config', type=Path)
-    args = parser.parse_args()
+    parser.add_argument('-c', '--config', default=None, type=Path)
+    args, _ = parser.parse_known_args()
 
     if args.config is not None:
         settings = Settings.from_file(args.config)
@@ -73,7 +71,8 @@ def parse_settings():
     return settings
 
 
+settings = parse_settings()
+
 __all__ = [
-    "parse_settings",
     "settings"
 ]
