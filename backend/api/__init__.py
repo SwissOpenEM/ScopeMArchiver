@@ -1,4 +1,4 @@
-import api.api as archiver_api
+import api.router as archiver_api
 from archiver.config import settings
 
 from fastapi import FastAPI

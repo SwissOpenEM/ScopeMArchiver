@@ -3,11 +3,38 @@ from typing import List, Optional
 from datetime import datetime
 
 
+class DatasetListEntry(BaseModel):
+    # Array of objects with keys: pid, files. The value for the pid key defines the dataset ID, the value for the files key is an array of file names. This array is either an empty array, implying that all files within the dataset are selected or an explicit list of dataset-relative file paths, which should be selected ,
+    pid: str
+    files: List[str]
+
+
 class Job(BaseModel):
     id: str
+    # Type of job, e.g. archive, retrieve etc ,
     type: str
-    jobResultObject: Optional[object] = None
+    # The email of the person initiating the job request ,
+    emailJobInitiator: Optional[str] = None  # TODO: remove optionality
+    # Time when job is created. Format according to chapter 5.6 internet date/time format in RFC 3339 ,
+    creationTime: Optional[str] = None
+    # Time when job should be executed. If not specified then the Job will be executed asap. Format according to chapter 5.6 internet date/time format in RFC 3339 ,
+    executionTime: Optional[str] = None
+    # Object of key-value pairs defining job input parameters, e.g. 'desinationPath' for retrieve jobs or 'tapeCopies' for archive jobs ,
+    jobParams: Optional[object] = None
+    # Defines current status of job lifecycle,
     jobStatusMessage: Optional[str] = None
+    # Array of objects with keys: pid, files. The value for the pid key defines the dataset ID, the value for the files key is an array of file names. This array is either an empty array, implying that all files within the dataset are selected or an explicit list of dataset-relative file paths, which should be selected,
+    datasetList: Optional[List[DatasetListEntry]] = None
+    # Detailed return value after job is finished ,
+    jobResultObject: Optional[object] = None
+    # Functional or user account name who created this instance ,
+    createdBy: Optional[str] = None
+    # Functional or user account name who last updated this instance ,
+    updatedBy: Optional[str] = None
+    # createdAt (string, optional),
+    createdAt: Optional[datetime] = None
+    # updatedAt (string, optional)
+    updatedAt: Optional[datetime] = None
 
 
 class DataFile(BaseModel):

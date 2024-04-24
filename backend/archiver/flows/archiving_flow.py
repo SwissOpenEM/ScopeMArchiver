@@ -1,11 +1,13 @@
 from prefect import flow, task, State, Task, Flow
 from prefect.client.schemas.objects import TaskRun, FlowRun
 from prefect.concurrency.sync import concurrency
+
+from prefect.deployments.deployments import run_deployment
 from functools import partial
 from typing import List
 
 
-from archiver.model import OrigDataBlock, DataBlock
+from archiver.model import OrigDataBlock, DataBlock, Job
 import archiver.datablocks as datablocks_operations
 from archiver.scicat_tasks import update_scicat_dataset_lifecycle, update_scicat_job_status, register_datablocks, report_error
 from archiver.scicat_interface import SciCat
@@ -100,3 +102,10 @@ def archiving_flow(dataset_id: int, job_id: int, orig_data_blocks: List[OrigData
 
     # run as subflow so this flow can be run separately as well
     move_datablocks_to_lts(dataset_id=dataset_id, job_id=job_id, datablocks=datablocks, wait_for=[register_result])
+
+
+def run_archiving_deployment(job: Job):
+    run_deployment("archiving_flow/archival", parameters={
+        "job_id": job.id,
+        "dataset_id": job.datasetList[0].pid,
+    }, timeout=0)

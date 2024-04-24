@@ -3,9 +3,10 @@ from prefect.client.schemas import TaskRun, FlowRun
 from functools import partial
 import os
 from typing import List
+from prefect.deployments.deployments import run_deployment
 
 from ..scicat_interface import SciCat
-from ..model import OrigDataBlock, DataBlock
+from ..model import OrigDataBlock, DataBlock, Job
 from .. import datablocks as datablocks_operations
 
 from ..scicat_tasks import update_scicat_dataset_lifecycle, update_scicat_job_status, register_datablocks, report_error
@@ -24,7 +25,5 @@ def retrieval_flow(dataset_id: int, job_id: int, orig_data_blocks: List[OrigData
         dataset_id, SciCat.ARCHIVESTATUSMESSAGE.STARTED)
 
 
-async def create_retrieval_flow(dataset_id: int, job_id: int, orig_data_blocks: List[OrigDataBlock]):
-    from prefect.deployments import run_deployment
-    res = await run_deployment(name="archiving_flow/archiving_flow", timeout=0)
-    return res
+def run_retrieval_deployment(job: Job):
+    run_deployment(name="archiving_flow/archiving_flow", timeout=0)

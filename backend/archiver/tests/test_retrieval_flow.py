@@ -1,7 +1,7 @@
 from unittest.mock import patch
 import pytest
 
-from archiver.flows.retrieval_flow import create_retrieval_flow
+from archiver.flows.retrieval_flow import run_retrieval_deployment
 from archiver.tests.scicat_mock import ScicatMock
 
 
@@ -12,7 +12,7 @@ from archiver.tests.scicat_mock import ScicatMock
 @patch("archiver.tasks.scicat._ENDPOINT", ScicatMock.ENDPOINT)
 def test_scicat_api_retrieval(celery_app, celery_worker, job_id, dataset_id):
     with ScicatMock(job_id=job_id, dataset_id=dataset_id) as m:
-        res = create_retrieval_flow(job_id=job_id, dataset_id=dataset_id)()
+        res = run_retrieval_deployment(job_id=job_id, dataset_id=dataset_id)()
         res.get()
 
         assert m.jobs_matcher.call_count == 2
