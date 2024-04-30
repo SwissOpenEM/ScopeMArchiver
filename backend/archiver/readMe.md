@@ -19,7 +19,7 @@ sequenceDiagram
       Note left of A: Dataset
     C -->> S: PUT /Datasets/{datasetId}
       Note left of S: { "datasetlifecycle": {"archiveStatusMessage" : "datasetCreated, "archivable" : false, "archiveStatusMessage: "filesNotReadyYet"}}
-    C -->> S: POST /api/v3/OrigDatablocks
+    C -->> S: POST /api/v4/OrigDatablocks
       Note left of S: {fileBlock, "datasetId": "datasetId"}
     S -->> A: Trigger Archive Job: POST /api/v1/Job
       Note left of A: {}
@@ -32,9 +32,8 @@ sequenceDiagram
 
 ## [Archival Task Flow](./flows/archiving_flow.py)
 
-Archiving is split into two subflows, `Create Datablocks` and  `Move Datablocks to LTS`. That can be triggered separately.
+Archival is split into two subflows, `Create Datablocks` and  `Move Datablocks to LTS`. That can be triggered separately.
 
-### Creating Datablocks
 ```mermaid
 sequenceDiagram
   autonumber
@@ -46,23 +45,34 @@ sequenceDiagram
   participant LTS as LTS
 
 
-  Note over AS, S: Subflow to create and register datablocks
+  Note over AS, S: Subflow `Create Datablocks`
 
   S --) AS: Archive: POST /api/v1/jobs
+  activate AS
   Note right of AS: Job {"id" : "id", "type":"archive", "datasetlist": [], ... } as defined in Scicat
 
-   AS --) J: Create Archiving Pipeline
+  AS --) J: Create Archival Flow
+
+  AS -->> S: Reply?
+  Note left of S: {}
+  deactivate AS
   loop Retry: Exponential backoff
-    activate J
-      J --) S: PATCH /api/v3/Jobs/{JobId}
+    activate S
+      J --) S: PATCH /api/v4/Jobs/{JobId}
       Note left of S: {"jobStatusMessage": "inProgress", "updatedAt": "...", "updatedBy": "..."}, 
-    deactivate J
+    deactivate S
   end
   loop Retry: Exponential backoff
     activate J
-      J --) S:  PATCH /api/v3/Dataset/{DatasetId}
+      J --) S:  PATCH /api/v4/Dataset/{DatasetId}
       Note left of S: {"datasetlifecycle": {"archiveStatusMessage": "started"}, "updatedAt": "...", "updatedBy": "..."}  
     deactivate J
+  end
+  loop Retry: Exponential backoff
+      J --> S: GET /api/v4/Datasets/{dataset_id}/origdatablocks
+    activate S
+      S --) J:sdf
+      Note right of J: {""}, 
   end
   critical 
     activate J
@@ -79,9 +89,9 @@ sequenceDiagram
     deactivate J
   option Failure
     activate J
-      J --) S: Report Error: PATCH /api/v3/Jobs/{JobId}
+      J --) S: Report Error: PATCH /api/v4/Jobs/{JobId}
       Note left of S: {"jobStatusMessage": "finishedWithDatasetErrors" Scicat specific?,<br>  "updatedAt": "...",<br>  "updatedBy": "...", <br> "jobResultObject" Storage specific?
-      J --) S: Report Error: PATCH /api/v3/Dataset/{DatasetId}
+      J --) S: Report Error: PATCH /api/v4/Dataset/{DatasetId}
       Note left of S: {"archiveStatusMessage": Scicat specific? valid values?<br>, "archiveReturnMessage": storage specific? free to choose?, <br> "updatedAt": "...", <br> "updatedBy": "..."}
       J -->> A: Cleanup Datablocks
       J -->> L: Cleanup Datablocks
@@ -90,7 +100,7 @@ sequenceDiagram
   end
   
 
-  Note over J, LTS: Subflow to move datablocks to LTS
+  Note over J, LTS: Subflow `Move Datablocks to LTS`
     S -->> AS: Optional re-trigger from Scicat
     AS --) J: Create `Move datablock to LTS` Pipeline
   critical
@@ -116,19 +126,19 @@ sequenceDiagram
   end
   loop Retry: Exponential backoff
     activate J
-    J -->> S:  PATCH /api/v3/Datasets/{DatasetId}
+    J -->> S:  PATCH /api/v4/Datasets/{DatasetId}
     Note left of S: {"datasetlifecycle": {"retrievable": True, "archiveStatusMessage": "datasetOnArchiveDisk"}, <br> "updatedAt": "...", <br> "updatedBy": "..."} 
     deactivate J
   end 
   loop Retry: Exponential backoff
     activate J
-    J -->> S: PATCH /api/v3/Jobs/{JobId}
+    J -->> S: PATCH /api/v4/Jobs/{JobId}
     Note left of S: {"jobStatusMessage": "finishedSuccessful",<br>  "updatedAt": "...", <br> "updatedBy": "..."} 
     deactivate J
   end 
 ```
 
-## Retrieval Task Chain
+## [Retrieval Task Flow](./flows/retrieval_flow.py)
 
 ```mermaid
 sequenceDiagram
@@ -139,14 +149,20 @@ sequenceDiagram
   participant S as SciCat
   participant LTS as LTS
 
+  activate AS
   S --) AS: Retrieve: POST /api/v1/jobs
   Note right of AS: Job {"id" : "id", "type":"retrieve", "datasetlist": [], ... } as defined in Scicat
-  
+
+  AS --) J: Create Retrieval Flow
+
+  AS -->> S: Reply?
+  Note left of S: {}
+  deactivate AS 
   loop Retry: Exponential backoff
     activate J
-      J -->> S: PATCH /api/v3/Jobs/{JobId}
+      J -->> S: PATCH /api/v4/Jobs/{JobId}
       Note left of S: {"jobStatusMessage": "inProgress",<br> "updatedAt": "...", <br> "updatedBy": "..."}  
-      J -->> S: PATCH /api/v3/Datasets/{DatasetId}
+      J -->> S: PATCH /api/v4/Datasets/{DatasetId}
       Note left of S: {"datasetlifecycle": {"retrieveStatusMessage": "started"},<br> "updatedAt": "...", <br> "updatedBy": "..."}  
     deactivate J
   end
@@ -156,9 +172,9 @@ sequenceDiagram
     deactivate J
   option Retrieval Failure
     activate J
-      J --) S: Report Error: PATCH /api/v3/Dataset/{DatasetId}
+      J --) S: Report Error: PATCH /api/v4/Dataset/{DatasetId}
           Note left of S: {"retrieveStatusMessage": Scicat specific? valid values?<br>, "retrieveReturnMessage": storage specific? free to choose?, <br> "updatedAt": "...", <br> "updatedBy": "..."}
-      J --) S: Report Error: PATCH /api/v3/Jobs/{JobId}
+      J --) S: Report Error: PATCH /api/v4/Jobs/{JobId}
          Note left of S: {"jobStatusMessage": "finishedWithDatasetErrors" Scicat specific?,<br>  "updatedAt": "...",<br>  "updatedBy": "...", <br> "jobResultObject" Storage specific?
       J -->> R: Cleanup Files
     deactivate J
@@ -175,9 +191,9 @@ sequenceDiagram
   end
   loop Retry: Exponential backoff
     activate J
-      J -->> S: PATCH /api/v3/Jobs/{JobId}
+      J -->> S: PATCH /api/v4/Jobs/{JobId}
       Note left of S: {"jobStatusMessage": "finishedSuccessful"} 
-      J -->> S: PATCH /api/v3/Datasets/{DatasetId}
+      J -->> S: PATCH /api/v4/Datasets/{DatasetId}
       Note left of S: {"datasetlifecycle":<br> {"retrieveStatusMessage": "datasetRetrieved"}} ? where to put download url? 
     deactivate J
   end 
