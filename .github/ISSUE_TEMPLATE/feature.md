@@ -2,7 +2,7 @@
 name: Feature
 about: Adding a feature
 title: "[Feature] <Title>"
-labels: ''
+labels: enhancement
 assignees: phwissmann
 
 ---
