@@ -2,55 +2,84 @@
   // import logo from "./assets/images/logo-universal.png";
   import logo from "./assets/images/logo-wide-1024x317.png";
   import { Upload } from "../wailsjs/go/main/App.js";
-  import { SelectFolder, ClearSelection } from "../wailsjs/go/main/App.js";
+  import {
+    SelectFolder,
+    RemoveUpload,
+    ScheduleUpload,
+  } from "../wailsjs/go/main/App.js";
   import List from "./List.svelte";
   import ListElement from "./ListElement.svelte";
   import { EventsOn } from "../wailsjs/runtime/runtime";
+  import { v4 as uuidv4 } from "uuid";
 
-  let resultText: string = "";
-  let minio_host: string = "localhost:9000";
+  let minio_host: string = "openem-dev.ethz.ch:9000";
+  let minio_bucket: string = "go-minio-testbucket";
+  let md5checksum = false;
 
-  let items = [{ value: "<Please Select Items>", component: ListElement }];
+  let items = {};
+
+  function newItem(id: string): string {
+    items[id] = {
+      value: "<Please Select Folder> ",
+      id: id,
+      status: "",
+      progress: 0,
+      selectFolder: selectFolder,
+      removeUpload: removeUpload,
+      scheduleUpload: scheduleUpload,
+      component: ListElement,
+    };
+    items = items;
+    return id;
+  }
+
   function selectFolder(): void {
-    SelectFolder().then((result: Array<string>) => {});
-  }
-  function clearSelection(): void {
-    ClearSelection();
-    items = [];
-    resultText = "";
+    SelectFolder();
   }
 
-  EventsOn("files-added", (file_names: string[]) => {
-    items = [];
-    for (let r in file_names) {
-      items.push({ value: file_names[r], component: ListElement });
-    }
+  function removeUpload(id: string): void {
+    RemoveUpload(id);
+  }
+
+  function secondsToStr(elapsed_seconds): string {
+    return new Date(elapsed_seconds * 1000).toISOString().substr(11, 8);
+  }
+
+  function scheduleUpload(id: string): void {
+    ScheduleUpload(id, minio_host, minio_bucket);
+  }
+
+  EventsOn("folder-added", (id, folder) => {
+    newItem(id);
+    items[id].value = folder;
+  });
+
+  EventsOn("folder-removed", (id) => {
+    delete items[id];
+    items = items;
+  });
+
+  EventsOn("upload-scheduled", (id) => {
+    items[id].status = "Scheduled";
+  });
+
+  EventsOn("upload-completed", (id, elapsed_seconds) => {
+    items[id].status = "Completed in " + secondsToStr(elapsed_seconds);
   });
 
   EventsOn(
     "progress-update",
-    (current_percentage, current_file, total_files) => {
-      resultText = `${(current_percentage * 100).toFixed(4)} % of file ${current_file} out of ${total_files}`;
-      console.log(resultText);
+    (id, current_percentage, current_file, total_files, elapsed_seconds) => {
+      const perc = (parseFloat(current_file) / parseFloat(total_files)) * 100;
+      // items[id].progress = (parseFloat(current_percentage) * 100).toFixed(0);
+      items[id].progress = perc.toFixed(0);
+      items[id].status = "Uploading... " + secondsToStr(elapsed_seconds);
     },
   );
-
-  function upload(): void {
-    Upload(minio_host).then((result) => {
-      resultText = result;
-    });
-  }
 </script>
 
 <main>
   <img alt="Wails logo" id="logo" src={logo} />
-  <div>
-    <button class="btn" on:click={selectFolder}>Select</button>
-    <button class="btn" on:click={clearSelection}>Clear</button>
-    <div>
-      <List {items} />
-    </div>
-  </div>
   <div class="input-box" id="input">
     <input
       autocomplete="off"
@@ -59,8 +88,28 @@
       id="name"
       type="text"
     />
-    <button class="btn" on:click={upload}>Upload</button>
-    <div class="result" id="result">{resultText}</div>
+    <input
+      autocomplete="off"
+      bind:value={minio_bucket}
+      class="input"
+      id="name"
+      type="text"
+    />
+    <label>
+      <input type="checkbox" bind:checked={md5checksum} />
+      Send md5 checksum
+    </label>
+    <button
+      class="btn"
+      on:click={() => {
+        selectFolder();
+      }}>Add Folder</button
+    >
+  </div>
+  <div>
+    <div id="upload-list">
+      <List {items} />
+    </div>
   </div>
 </main>
 
@@ -84,7 +133,7 @@
   }
 
   .input-box .btn {
-    width: 60px;
+    width: 90px;
     height: 30px;
     line-height: 30px;
     border-radius: 3px;

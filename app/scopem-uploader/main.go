@@ -17,9 +17,11 @@ func main() {
 
 	// Create application with options
 	err := wails.Run(&options.App{
-		Title:  "scopem-uploader",
-		Width:  1024,
-		Height: 768,
+		Title:             "ScopeM Uploader",
+		Width:             1024,
+		Height:            768,
+		HideWindowOnClose: false,
+		OnBeforeClose:     app.beforeClose,
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},
@@ -28,6 +30,12 @@ func main() {
 		Bind: []interface{}{
 			app,
 		},
+		// Linux: &linux.Options{
+		// 	Icon:                icon,
+		// 	WindowIsTranslucent: false,
+		// 	WebviewGpuPolicy:    linux.WebviewGpuPolicyAlways,
+		// 	ProgramName:         "scopem-uploader",
+		// },
 	})
 
 	if err != nil {
