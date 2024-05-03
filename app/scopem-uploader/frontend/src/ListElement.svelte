@@ -2,9 +2,9 @@
   export let value;
   export let status;
   export let progress;
-  export let selectFolder;
-  export let removeUpload;
+  export let cancelUpload;
   export let scheduleUpload;
+  export let removeUpload;
   export let id;
 </script>
 
@@ -28,8 +28,14 @@
     <button
       class="btn"
       on:click={() => {
+        cancelUpload(id);
+      }}>Cancel</button
+    >
+    <button
+      class="btn"
+      on:click={() => {
         removeUpload(id);
-      }}>Clear</button
+      }}>Remove</button
     >
   </div>
 </div>
@@ -42,7 +48,7 @@
   }
   .buttongrid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(3, 1fr);
   }
   .path {
     text-align: left;
