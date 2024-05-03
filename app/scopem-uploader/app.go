@@ -19,6 +19,7 @@ import (
 type SelectedFolder struct {
 	files  []fs.DirEntry
 	folder string
+	cancel context.CancelFunc
 }
 
 // App struct
@@ -80,7 +81,13 @@ func (a *App) startup(ctx context.Context) {
 // Go routine that listens on the channel continously for upload requests and executes uploads.
 func (a *App) uploadWorker() {
 	for uploadRequest := range a.folderInputChannel {
-		result := a.Upload(uploadRequest.endpoint, uploadRequest.bucket, uploadRequest.id, uploadRequest.md5checksum)
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+		// folder.cancel = cancel
+		f, _ := a.folders[uploadRequest.id]
+		f.cancel = cancel
+		a.folders[uploadRequest.id] = f
+		result := a.Upload(ctx, uploadRequest.endpoint, uploadRequest.bucket, uploadRequest.id, uploadRequest.md5checksum)
 		a.resultChannel <- result
 	}
 }
@@ -133,9 +140,24 @@ func (pn ProgressNotifier) Read(p []byte) (n int, err error) {
 	return
 }
 
+func (a *App) CancelUpload(id string) {
+	f, found := a.folders[id]
+	if found {
+		if f.cancel != nil {
+			f.cancel()
+		}
+	}
+}
+
 func (a *App) RemoveUpload(id string) {
-	delete(a.folders, id)
-	runtime.EventsEmit(a.ctx, "folder-removed", id)
+	f, found := a.folders[id]
+	if found {
+		if f.cancel != nil {
+			f.cancel()
+		}
+		delete(a.folders, id)
+		runtime.EventsEmit(a.ctx, "folder-removed", id)
+	}
 }
 
 func (a *App) ScheduleUpload(id string, endpoint string, bucket string, md5checksum bool) {
@@ -157,17 +179,18 @@ func (a *App) ScheduleUpload(id string, endpoint string, bucket string, md5check
 	}()
 
 	// Go routine to schedule the upload asynchronously
-	go func() {
-		fmt.Println("Scheduled upload for: ", selectedFolder.folder)
+	go func(folder SelectedFolder) {
+		fmt.Println("Scheduled upload for: ", folder)
 		runtime.EventsEmit(a.ctx, "upload-scheduled", id)
+
 		// this channel is read by the go routines that does the actual upload
-		a.folderInputChannel <- UploadRequest{id, selectedFolder.folder, endpoint, bucket, md5checksum}
-	}()
+		a.folderInputChannel <- UploadRequest{id: id, folder: folder.folder, endpoint: endpoint, bucket: bucket, md5checksum: md5checksum}
+	}(selectedFolder)
 
 }
 
 // Upload all files in a folder to a minio bucket
-func (a *App) Upload(endpoint string, bucket string, id string, md5checksum bool) string {
+func (a *App) Upload(ctx context.Context, endpoint string, bucket string, id string, md5checksum bool) string {
 	accessKeyID := "minioadmin"
 	secretAccessKey := "minioadmin"
 	useSSL := false
@@ -211,28 +234,34 @@ func (a *App) Upload(endpoint string, bucket string, id string, md5checksum bool
 	pn := ProgressNotifier{files_count: len(folder.files), ctx: a.ctx, previous_percentage: 0.0, start_time: time.Now(), id: id}
 
 	for idx, f := range folder.files {
+		select {
+		case <-ctx.Done():
+			runtime.EventsEmit(a.ctx, "upload-canceled", id)
+			return "Upload canceled"
 
-		filePath := path.Join(folder.folder, f.Name())
-		objectName := f.Name()
+		default:
+			filePath := path.Join(folder.folder, f.Name())
+			objectName := f.Name()
 
-		pn.current_file = idx + 1
-		fileinfo, _ := os.Stat(filePath)
-		pn.total_file_size = fileinfo.Size()
+			pn.current_file = idx + 1
+			fileinfo, _ := os.Stat(filePath)
+			pn.total_file_size = fileinfo.Size()
 
-		log.Printf("progress: %d of %d", pn.current_file, pn.files_count)
+			// log.Printf("progress: %d of %d", pn.current_file, pn.files_count)
 
-		runtime.EventsEmit(a.ctx, "progress-update", id, 0.0, pn.current_file, pn.files_count)
+			runtime.EventsEmit(a.ctx, "progress-update", id, 0.0, pn.current_file, pn.files_count)
 
-		_, err := minioClient.FPutObject(a.ctx, bucketName, objectName, filePath, minio.PutObjectOptions{
-			ContentType:           contentType,
-			Progress:              pn,
-			SendContentMd5:        true,
-			NumThreads:            4,
-			DisableMultipart:      false,
-			ConcurrentStreamParts: true,
-		})
-		if err != nil {
-			log.Fatalln(err)
+			_, err := minioClient.FPutObject(a.ctx, bucketName, objectName, filePath, minio.PutObjectOptions{
+				ContentType:           contentType,
+				Progress:              pn,
+				SendContentMd5:        true,
+				NumThreads:            4,
+				DisableMultipart:      false,
+				ConcurrentStreamParts: true,
+			})
+			if err != nil {
+				log.Fatalln(err)
+			}
 		}
 	}
 

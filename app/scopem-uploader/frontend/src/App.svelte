@@ -4,6 +4,7 @@
   import { Upload } from "../wailsjs/go/main/App.js";
   import {
     SelectFolder,
+    CancelUpload,
     RemoveUpload,
     ScheduleUpload,
   } from "../wailsjs/go/main/App.js";
@@ -25,8 +26,9 @@
       status: "",
       progress: 0,
       selectFolder: selectFolder,
-      removeUpload: removeUpload,
+      cancelUpload: cancelUpload,
       scheduleUpload: scheduleUpload,
+      removeUpload: removeUpload,
       component: ListElement,
     };
     items = items;
@@ -37,6 +39,9 @@
     SelectFolder();
   }
 
+  function cancelUpload(id: string): void {
+    CancelUpload(id);
+  }
   function removeUpload(id: string): void {
     RemoveUpload(id);
   }
@@ -65,6 +70,10 @@
 
   EventsOn("upload-completed", (id, elapsed_seconds) => {
     items[id].status = "Completed in " + secondsToStr(elapsed_seconds);
+  });
+
+  EventsOn("upload-canceled", (id) => {
+    items[id].status = "Canceled";
   });
 
   EventsOn(
