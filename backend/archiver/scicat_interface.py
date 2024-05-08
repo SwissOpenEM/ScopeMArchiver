@@ -68,5 +68,8 @@ class SciCat():
 
         origdatablocks: List[OrigDataBlock] = []
         for r in result.json():
-            origdatablocks.append(OrigDataBlock.model_validate(r))
+            try:
+                origdatablocks.append(OrigDataBlock.model_validate(r))
+            except:
+                origdatablocks.append(OrigDataBlock.model_validate_json(r))
         return origdatablocks

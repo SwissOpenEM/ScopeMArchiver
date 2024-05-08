@@ -32,13 +32,13 @@ class ScicatMock(requests_mock.Mocker):
         self.matchers: dict[str, requests_mock.Request.matcher] = {}
 
         self.matchers["jobs"] = self.patch(
-            f"{self.ENDPOINT}{tasks.scicat.API}/Jobs/{job_id}", json=None)
+            f"{self.ENDPOINT}{tasks.scicat.API}Jobs/{job_id}", json=None)
 
         self.matchers["datasets"] = self.post(
-            f"{self.ENDPOINT}{tasks.scicat.API}/Datasets/{dataset_id}", json=None)
+            f"{self.ENDPOINT}{tasks.scicat.API}Datasets/{dataset_id}", json=None)
 
         self.matchers["datablocks"] = self.post(
-            f"{self.ENDPOINT}{tasks.scicat.API}/Datablocks/", json=None)
+            f"{self.ENDPOINT}{tasks.scicat.API}Datablocks/", json=None)
 
         origdatablocks = self.create_orig_datablocks(
             num_blocks, num_files_per_block)
@@ -47,7 +47,7 @@ class ScicatMock(requests_mock.Mocker):
             json_list.append(o.model_dump_json())
 
         self.matchers["origdatablocks"] = self.get(
-            f"{self.ENDPOINT}{tasks.scicat.API}/Datasets/{dataset_id}/origdatablocks", json=json_list)
+            f"{self.ENDPOINT}{tasks.scicat.API}Datasets/{dataset_id}/origdatablocks", json=json_list)
 
     @property
     def jobs_matcher(self):
