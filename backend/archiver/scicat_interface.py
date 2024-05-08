@@ -34,8 +34,11 @@ class SciCat():
     def update_job_status(self, job_id: int, status: JOBSTATUS) -> None:
         job = Job(id=str(job_id), type="archive", jobStatusMessage=str(status))
 
-        requests.patch(
-            f"{self._ENDPOINT}{self.API}/Jobs/{job_id}", data=job.model_dump_json(exclude_none=True))
+        result = requests.patch(
+            f"{self._ENDPOINT}{self.API}Jobs/{job_id}", data=job.model_dump_json(exclude_none=True))
+
+        # returns none if status_code is 200
+        result.raise_for_status()
 
     def update_dataset_lifecycle(self, dataset_id: int, status: ARCHIVESTATUSMESSAGE, archivable: bool | None = None,
                                  retrievable: bool | None = None) -> None:
@@ -44,11 +47,19 @@ class SciCat():
             archivable=archivable,
             retrievable=retrievable
         ))
-        requests.post(f"{self._ENDPOINT}{self.API}/Datasets/{dataset_id}",
-                      data=dataset.model_dump_json(exclude_none=True))
+        result = requests.post(f"{self._ENDPOINT}{self.API}Datasets/{dataset_id}",
+                               data=dataset.model_dump_json(exclude_none=True))
+        # returns none if status_code is 200
+        result.raise_for_status()
 
-    def register_datablocks(self, dataset_id: int, data_blocks: List[DataBlock]):
+    def register_datablocks(self, dataset_id: int, data_blocks: List[DataBlock]) -> None:
+
         for d in data_blocks:
+            result = requests.post(
+                f"{self._ENDPOINT}{self.API}Datablocks/", data=d.model_dump_json(exclude_none=True))
+            # returns none if status_code is 200
+            result.raise_for_status()
+
     def get_origdatablocks(self, dataset_id: int) -> List[OrigDataBlock]:
         result = requests.get(
             f"{self._ENDPOINT}{self.API}Datasets/{dataset_id}/origdatablocks")
