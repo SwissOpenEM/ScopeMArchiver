@@ -255,23 +255,10 @@ def cleanup_scratch(dataset_id: int, folder_type: str):
     #         os.remove(f.path)
 
 
-def create_dummy_dataset(dataset_id: int):
-    scratch_folder = settings.ARCHIVER_SCRATCH_FOLDER / str(dataset_id)
-    if not scratch_folder.exists():
-        scratch_folder.mkdir(parents=True)
-
-    for i in range(10):
-        os.system(f"dd if=/dev/urandom of={scratch_folder}/file_{i}.bin bs=64M count=2 iflag=fullblock")
-
-    upload_objects(minio_prefix=Path(str(dataset_id)), bucket=minioClient.LANDINGZONE_BUCKET,
-                   source_folder=scratch_folder)
-
-
 __all__ = [
     "create_datablocks",
     "move_data_to_LTS",
     "validate_data_in_LTS",
-    "create_dummy_dataset",
     "cleanup_scratch",
     "cleanup_staging"
 ]

@@ -2,7 +2,7 @@ from enum import StrEnum
 import logging
 import requests
 from typing import List
-from .model import Job, DataBlock, Dataset, DatasetLifecycle
+from .model import Job, DataBlock, Dataset, DatasetLifecycle, OrigDataBlock
 
 _LOGGER = logging.getLogger("Jobs")
 
@@ -49,5 +49,13 @@ class SciCat():
 
     def register_datablocks(self, dataset_id: int, data_blocks: List[DataBlock]):
         for d in data_blocks:
-            requests.post(
-                f"{self._ENDPOINT}{self.API}/Datablocks/", data=d.model_dump_json(exclude_none=True))
+    def get_origdatablocks(self, dataset_id: int) -> List[OrigDataBlock]:
+        result = requests.get(
+            f"{self._ENDPOINT}{self.API}Datasets/{dataset_id}/origdatablocks")
+        # returns none if status_code is 200
+        result.raise_for_status()
+
+        origdatablocks: List[OrigDataBlock] = []
+        for r in result.json():
+            origdatablocks.append(OrigDataBlock.model_validate(r))
+        return origdatablocks

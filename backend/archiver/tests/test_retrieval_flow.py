@@ -2,7 +2,7 @@ from unittest.mock import patch
 import pytest
 
 from archiver.flows.retrieval_flow import run_retrieval_deployment
-from archiver.tests.scicat_mock import ScicatMock
+from archiver.tests.scicat_unittest_mock import ScicatMock
 
 
 @pytest.mark.skip

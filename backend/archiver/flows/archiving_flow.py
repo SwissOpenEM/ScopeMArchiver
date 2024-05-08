@@ -9,7 +9,7 @@ from typing import List
 
 from archiver.model import OrigDataBlock, DataBlock, Job
 import archiver.datablocks as datablocks_operations
-from archiver.scicat_tasks import update_scicat_dataset_lifecycle, update_scicat_job_status, register_datablocks, report_error
+from archiver.scicat_tasks import update_scicat_dataset_lifecycle, update_scicat_job_status, register_datablocks, report_error, get_origdatablocks
 from archiver.scicat_interface import SciCat
 
 
@@ -26,7 +26,7 @@ def move_data_to_LTS(dataset_id: int, datablocks: List[DataBlock]) -> None:
 
 @task
 def validate_data_in_LTS(datablocks: List[DataBlock]) -> None:
-    return datablocks_operations.validate_data_in_LTS(datablocks)
+    datablocks_operations.validate_data_in_LTS(datablocks)
 
 
 def on_create_datablocks_error(dataset_id: int, job_id: int, task: Task, task_run: TaskRun, state: State):
@@ -65,11 +65,6 @@ def on_flow_failure(flow: Flow, flow_run: FlowRun, state: State):
     # report_error(job_id=flow_run.parameters['job_id'], dataset_id=flow_run.parameters['dataset_id'])
 
 
-@flow(name="create_test_dataset")
-def create_test_dataset_flow(dataset_id: int):
-    return datablocks_operations.create_dummy_dataset(dataset_id)
-
-
 @flow(name="move_datablocks_to_lts", log_prints=True, on_failure=[on_flow_failure])
 def move_datablocks_to_lts(dataset_id: int, job_id: int, datablocks: List[DataBlock]):
     move_to_lts_result = move_data_to_LTS.with_options(
@@ -87,21 +82,24 @@ def move_datablocks_to_lts(dataset_id: int, job_id: int, datablocks: List[DataBl
 
 
 @flow(name="archiving_flow", log_prints=True, on_failure=[on_flow_failure])
-def archiving_flow(dataset_id: int, job_id: int, orig_data_blocks: List[OrigDataBlock]):
+def archiving_flow(dataset_id: int, job_id: int):
 
     job_update = update_scicat_job_status.submit(
         job_id, SciCat.JOBSTATUS.IN_PROGRESS)
     dataset_update = update_scicat_dataset_lifecycle.submit(
         dataset_id, SciCat.ARCHIVESTATUSMESSAGE.STARTED)
 
+    orig_datablocks = get_origdatablocks.submit(dataset_id, wait_for=[dataset_update, job_update])
+
     datablocks = create_datablocks.with_options(
         on_failure=[partial(on_create_datablocks_error, dataset_id, job_id)]).submit(
-            dataset_id=dataset_id, origDataBlocks=orig_data_blocks, wait_for=[job_update, dataset_update])
+            dataset_id=dataset_id, origDataBlocks=orig_datablocks, wait_for=[job_update, dataset_update])
 
     register_result = register_datablocks.submit(datablocks, dataset_id)
 
     # run as subflow so this flow can be run separately as well
-    move_datablocks_to_lts(dataset_id=dataset_id, job_id=job_id, datablocks=datablocks, wait_for=[register_result])
+    move_datablocks_to_lts(dataset_id=dataset_id, job_id=job_id,
+                           datablocks=datablocks, wait_for=[register_result])
 
 
 def run_archiving_deployment(job: Job):

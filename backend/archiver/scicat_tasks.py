@@ -2,7 +2,7 @@ from typing import List
 from prefect import task
 
 from .scicat_interface import SciCat
-from .model import DataBlock
+from .model import DataBlock, OrigDataBlock
 from .config import settings
 
 
@@ -20,6 +20,11 @@ def update_scicat_dataset_lifecycle(
 
     scicat.update_dataset_lifecycle(
         dataset_id, status, archivable=archivable, retrievable=retrievable)
+
+
+@task
+def get_origdatablocks(dataset_id: int) -> List[OrigDataBlock]:
+    return scicat.get_origdatablocks(dataset_id)
 
 
 @task

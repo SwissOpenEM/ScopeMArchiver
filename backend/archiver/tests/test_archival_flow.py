@@ -6,28 +6,8 @@ from prefect.testing.utilities import prefect_test_harness
 
 from archiver.flows.archiving_flow import archiving_flow
 from archiver.scicat_interface import SciCat
-from archiver.tests.scicat_mock import ScicatMock
-from archiver.model import Job, OrigDataBlock, Dataset, DatasetLifecycle, DataFile, DataBlock
-
-
-def create_orig_datablocks(num_blocks: int = 10, num_files_per_block: int = 10) -> List[OrigDataBlock]:
-    size_per_file = 1024 * 1024 * 100
-    blocks: List[OrigDataBlock] = []
-    for k in range(num_blocks):
-        b = OrigDataBlock(
-            id=f"Block_{k}",
-            size=size_per_file * num_files_per_block,
-            ownerGroup="me",
-            dataFileList=[]
-        )
-        for i in range(num_files_per_block):
-            d = DataFile(
-                path=f"/some/path/file_{i}.png",
-                size=size_per_file
-            )
-            b.dataFileList.append(d)
-        blocks.append(b)
-    return blocks
+from archiver.tests.scicat_unittest_mock import ScicatMock
+from archiver.model import Job, OrigDataBlock, Dataset, DatasetLifecycle, DataBlock
 
 
 def expected_job_status(job_id: int, job_type: str, status: SciCat.JOBSTATUS) -> Dict[str, Any]:
@@ -42,7 +22,9 @@ def expected_job_status(job_id: int, job_type: str, status: SciCat.JOBSTATUS) ->
             return Job(id=str(job_id), type=job_type, jobStatusMessage="finishedWithDatasetErrors").model_dump(exclude_none=True)
 
 
-def expected_dataset_lifecycle(datasets_id: int, status: SciCat.ARCHIVESTATUSMESSAGE, archivable=None, retrievable=None) -> Dict[str, Any]:
+def expected_dataset_lifecycle(
+        datasets_id: int, status: SciCat.ARCHIVESTATUSMESSAGE, archivable: bool | None = None, retrievable: bool | None = None) -> Dict[
+        str, Any]:
     return Dataset(datasetlifecycle=DatasetLifecycle(
         archiveStatusMessage=str(status),
         archivable=archivable,
@@ -101,10 +83,8 @@ def test_scicat_api_archiving(job_id: int, dataset_id: int):
     num_files_per_block = 10
     num_expected_datablocks = num_orig_datablocks
 
-    orig_data_blocks = create_orig_datablocks(num_orig_datablocks, num_files_per_block)
-
-    with ScicatMock(job_id=job_id, dataset_id=dataset_id) as m, prefect_test_harness():
-        archiving_flow(job_id=job_id, dataset_id=dataset_id, orig_data_blocks=orig_data_blocks)
+    with ScicatMock(job_id=job_id, dataset_id=dataset_id, num_blocks=num_orig_datablocks, num_files_per_block=num_files_per_block) as m, prefect_test_harness():
+        archiving_flow(job_id=job_id, dataset_id=dataset_id)
 
         assert m.jobs_matcher.call_count == 2
         assert m.datasets_matcher.call_count == 2
@@ -122,7 +102,8 @@ def test_scicat_api_archiving(job_id: int, dataset_id: int):
 
         # 11: Register Datablocks
         for i in range(num_expected_datablocks):
-            assert m.datablocks_matcher.request_history[i].json() == expected_datablocks(dataset_id, i)
+            assert m.datablocks_matcher.request_history[i].json(
+            ) == expected_datablocks(dataset_id, i)
 
             # 12: Move datablocks: mocked
 
@@ -152,11 +133,9 @@ def test_move_to_staging_failure(mock_cleanup_staging: MagicMock, mock_cleanup_s
     # datablocks created but not moved to staging, therefore none reported
     num_expected_datablocks = 0
 
-    orig_data_blocks = create_orig_datablocks(num_orig_datablocks, num_files_per_block)
-
-    with ScicatMock(job_id=job_id, dataset_id=dataset_id) as m, prefect_test_harness():
+    with ScicatMock(job_id=job_id, dataset_id=dataset_id, num_blocks=num_orig_datablocks, num_files_per_block=num_files_per_block)as m, prefect_test_harness():
         with pytest.raises(Exception):
-            archiving_flow(job_id=job_id, dataset_id=dataset_id, orig_data_blocks=orig_data_blocks)
+            archiving_flow(job_id=job_id, dataset_id=dataset_id)
 
         assert m.jobs_matcher.call_count == 2
         assert m.datasets_matcher.call_count == 2
@@ -195,11 +174,9 @@ def test_move_to_LTS_failure(mock_cleanup_lts_folder: MagicMock, job_id: int, da
 
     num_expected_datablocks = num_orig_datablocks
 
-    orig_data_blocks = create_orig_datablocks(num_orig_datablocks, num_files_per_block)
-
-    with ScicatMock(job_id=job_id, dataset_id=dataset_id) as m, prefect_test_harness():
+    with ScicatMock(job_id=job_id, dataset_id=dataset_id, num_blocks=num_orig_datablocks, num_files_per_block=num_files_per_block) as m, prefect_test_harness():
         with pytest.raises(Exception):
-            archiving_flow(job_id=job_id, dataset_id=dataset_id, orig_data_blocks=orig_data_blocks)
+            archiving_flow(job_id=job_id, dataset_id=dataset_id)
 
         assert m.jobs_matcher.call_count == 2
         assert m.datasets_matcher.call_count == 2
@@ -215,7 +192,8 @@ def test_move_to_LTS_failure(mock_cleanup_lts_folder: MagicMock, job_id: int, da
 
         # 11: Register Datablocks
         for i in range(num_expected_datablocks):
-            assert m.datablocks_matcher.request_history[i].json() == expected_datablocks(dataset_id, i)
+            assert m.datablocks_matcher.request_history[i].json(
+            ) == expected_datablocks(dataset_id, i)
 
         # 5: Report Error
         assert m.jobs_matcher.request_history[1].json() == expected_job_status(
@@ -243,11 +221,9 @@ def test_LTS_validation_failure(mock_cleanup_lts_folder: MagicMock, job_id: int,
 
     num_expected_datablocks = num_orig_datablocks
 
-    orig_data_blocks = create_orig_datablocks(num_orig_datablocks, num_files_per_block)
-
-    with ScicatMock(job_id=job_id, dataset_id=dataset_id) as m, prefect_test_harness():
+    with ScicatMock(job_id=job_id, dataset_id=dataset_id, num_blocks=num_orig_datablocks, num_files_per_block=num_files_per_block) as m, prefect_test_harness():
         with pytest.raises(Exception):
-            archiving_flow(job_id=job_id, dataset_id=dataset_id, orig_data_blocks=orig_data_blocks)
+            archiving_flow(job_id=job_id, dataset_id=dataset_id)
 
         assert m.jobs_matcher.call_count == 2
         assert m.datasets_matcher.call_count == 2
@@ -263,7 +239,8 @@ def test_LTS_validation_failure(mock_cleanup_lts_folder: MagicMock, job_id: int,
 
         # 11: Register Datablocks
         for i in range(num_expected_datablocks):
-            assert m.datablocks_matcher.request_history[i].json() == expected_datablocks(dataset_id, i)
+            assert m.datablocks_matcher.request_history[i].json(
+            ) == expected_datablocks(dataset_id, i)
 
         # TODO: check for different message, specific to validation
         # 5: Report Error
