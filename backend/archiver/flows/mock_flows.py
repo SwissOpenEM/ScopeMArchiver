@@ -2,14 +2,14 @@ from prefect import flow
 import os
 import requests
 from pathlib import Path
-from archiver.config import settings
+from archiver.config import Variables
 from archiver.datablocks import upload_objects
-from archiver.working_storage_interface import minioClient
+from archiver.working_storage_interface import MinioStorage
 from archiver.model import OrigDataBlock, DataFile
 
 
 def create_dummy_dataset(dataset_id: int):
-    scratch_folder = settings.ARCHIVER_SCRATCH_FOLDER / str(dataset_id)
+    scratch_folder = Variables().ARCHIVER_SCRATCH_FOLDER / str(dataset_id)
     if not scratch_folder.exists():
         scratch_folder.mkdir(parents=True)
 
@@ -18,7 +18,7 @@ def create_dummy_dataset(dataset_id: int):
     for i in range(10):
         os.system(f"dd if=/dev/urandom of={scratch_folder}/file_{i}.bin bs={size_MB}M count=2 iflag=fullblock")
 
-    files = upload_objects(minio_prefix=Path(str(dataset_id)), bucket=minioClient.LANDINGZONE_BUCKET,
+    files = upload_objects(minio_prefix=Path(str(dataset_id)), bucket=MinioStorage().LANDINGZONE_BUCKET,
                            source_folder=scratch_folder)
 
     # create orig datablocks
@@ -31,7 +31,7 @@ def create_dummy_dataset(dataset_id: int):
     j = origdatablock.model_dump_json()
 
     # register orig datablocks
-    requests.post(f"{settings.SCICAT_ENDPOINT}{settings.SCICAT_API_PREFIX}OrigDatablocks/",
+    requests.post(f"{Variables().SCICAT_ENDPOINT}{Variables().SCICAT_API_PREFIX}OrigDatablocks/",
                   data=j)
 
 

@@ -1,15 +1,20 @@
-import argparse
-from dataclasses import dataclass
 from pathlib import Path
-from typing import Self
-import tomllib
-import os
-import pprint
-from functools import lru_cache
+from prefect.variables import Variable
+import argparse
+from pydantic_settings import (
+    BaseSettings,
+    SettingsConfigDict,
+)
 
 
-@dataclass
-class Settings():
+class AppConfig(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file_encoding="utf-8",
+        case_sensitive=True,
+        extra="forbid",
+        validate_default=True,
+    )
+
     MINIO_REGION: str = ""
     MINIO_USER: str = ""
     MINIO_PASSWORD: str = ""
@@ -29,50 +34,83 @@ class Settings():
     SCICAT_ENDPOINT: str = ""
     SCICAT_API_PREFIX: str = ""
 
-    def get_env_overrides(self: Self):
-        for a in [a for a in dir(self) if not a.startswith('__')]:
-            if a in os.environ.keys():
-                setattr(self, a, os.environ.get(a))
 
-    @classmethod
-    def from_file(cls, file: Path) -> Self:
-        with open(file, "rb") as f:
-            data = tomllib.load(f)
-            s = cls()
-            for k, v in data.items():
-                for k2, v1 in v.items():
-                    full_key = f"{k.upper()}_{k2.upper()}"
-                    if not hasattr(s, full_key):
-                        raise Exception("key not found")
-                    setattr(s, full_key, v1)
+class Variables:
+    _instance = None
 
-            return s
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super(Variables, cls).__new__(cls)
+            # Put any initialization here.
+        return cls._instance
+
+    def __get(self, name: str) -> str:
+        c = Variable.get(name)
+        return c.value if c is not None else ""
+
+    @property
+    def SCICAT_ENDPOINT(self) -> str:
+        return self.__get("scicat_endpoint")
+
+    @property
+    def SCICAT_API_PREFIX(self) -> str:
+        return self.__get("scicat_api_prefix")
+
+    @property
+    def MINIO_RETRIEVAL_BUCKET(self) -> str:
+        return self.__get("minio_retrieval_bucket")
+
+    @property
+    def MINIO_LANDINGZONE_BUCKET(self) -> str:
+        return self.__get("minio_landingzone_bucket")
+
+    @property
+    def MINIO_STAGING_BUCKET(self) -> str:
+        return self.__get("minio_staging_bucket")
+
+    @property
+    def MINIO_REGION(self) -> str:
+        return self.__get("minio_region")
+
+    @property
+    def MINIO_USER(self) -> str:
+        return self.__get("minio_user")
+
+    @property
+    def MINIO_PASSWORD(self) -> str:
+        return self.__get("minio_password")
+
+    @property
+    def MINIO_URL(self) -> str:
+        return self.__get("minio_url")
+
+    @property
+    def ARCHIVER_SCRATCH_FOLDER(self) -> Path:
+        return Path(self.__get("archiver_scratch_folder"))
+
+    @property
+    def LTS_STORAGE_ROOT(self) -> Path:
+        return Path(self.__get("lts_storage_root"))
 
 
-@lru_cache
-def parse_settings():
+def parse_config():
     parser = argparse.ArgumentParser(
         prog='ProgramName',
         description='What the program does',
         epilog='Text at the bottom of help')
 
     parser.add_argument('-c', '--config', default=None, type=Path)
+
     args, _ = parser.parse_known_args()
 
-    if args.config is not None:
-        settings = Settings.from_file(args.config)
-    else:
-        settings = Settings()
-
-    settings.get_env_overrides()
-
-    pprint.pprint(settings)
-
-    return settings
+    global config
+    config = AppConfig(_env_file=args.config)
+    return config
 
 
-settings = parse_settings()
-
-__all__ = [
-    "settings"
-]
+def register_variables_from_config() -> AppConfig:
+    config = parse_config()
+    model = config.model_dump()
+    for s in [s for s in dir(Variables()) if not s.startswith('__') and not s.startswith('_')]:
+        Variable.set(s.lower(), str(model[s]), overwrite=True)
+    return config

@@ -27,7 +27,7 @@
       "env": {
         "PREFECT_API_URL": "http://test-host/api",
         "PREFECT_LOGGING_LEVEL": "DEBUG",
-        "SCICAT_ENDPOINT": "http://test-host/scicatmock",
+        "SCICAT_ENDPOINT": "http://localhost:3000",
         "LTS_STORAGE_ROOT": "${workspaceRoot}/../data/LTS/",
         "ARCHIVER_SCRATCH_FOLDER": "${workspaceRoot}/../data/archiving/",
         "MINIO_URL": "test-host:9000"
@@ -46,7 +46,7 @@
       "env": {},
       "module": "uvicorn",
       "args": [
-        "archiver.tests.scicat_api_mock:app",
+        "archiver.tests.scicat_service_mock:app",
         "--reload",
         "--port",
         "3000",

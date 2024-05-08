@@ -25,7 +25,7 @@ class SciCat():
 
     def __init__(self, endpoint: str = "http://scicat.example.com", prefix: str = None):
         self._ENDPOINT = endpoint
-        self._API = prefix or ""
+        self._API = prefix or "/"
 
     @property
     def API(self):

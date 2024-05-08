@@ -6,10 +6,10 @@ from typing import List, Set
 
 from pathlib import Path
 
-from .working_storage_interface import minioClient, Bucket
+from .working_storage_interface import MinioStorage, Bucket
 from .model import OrigDataBlock, DataBlock, DataFile
 from .logging import getLogger
-from .config import settings
+from .config import Variables
 
 
 def create_tarballs(dataset_id: int, folder: Path,
@@ -43,8 +43,8 @@ def create_tarballs(dataset_id: int, folder: Path,
 
 
 def find_objects(minio_prefix: str, bucket: Bucket):
-    getLogger().debug(f"Minio: {minioClient.url}")
-    return minioClient.get_objects(bucket, minio_prefix)
+    getLogger().debug(f"Minio: {MinioStorage().url}")
+    return MinioStorage().get_objects(bucket, minio_prefix)
 
 
 def download_objects(minio_prefix: str, bucket: Bucket, destination_folder: Path) -> List[Path]:
@@ -54,11 +54,11 @@ def download_objects(minio_prefix: str, bucket: Bucket, destination_folder: Path
 
     files: List[Path] = []
 
-    for object in minioClient.get_objects(bucket, minio_prefix):
+    for object in MinioStorage().get_objects(bucket, minio_prefix):
         object_name = object.object_name if object.object_name is not None else ""
-        presigned_url = minioClient.get_presigned_url(
+        presigned_url = MinioStorage().get_presigned_url(
             filename=object_name, bucket=bucket)
-        minioClient.stat_object(
+        MinioStorage().stat_object(
             filename=object_name, bucket=bucket)
         local_filepath = destination_folder / object_name
 
@@ -76,14 +76,14 @@ def upload_objects(minio_prefix: Path, bucket: Bucket, source_folder: Path, ext:
     uploaded_files: List[Path] = []
     for filepath in (f for f in source_folder.iterdir() if not ext or f.suffix == ext):
         minio_path: Path = minio_prefix / filepath.name
-        minioClient.put_object(source_folder / filepath, minio_path, bucket)
+        MinioStorage().put_object(source_folder / filepath, minio_path, bucket)
         uploaded_files.append(filepath)
     return uploaded_files
 
 
 def delete_objects(minio_prefix: Path, bucket: Bucket):
     getLogger().info(f"Cleaning up objects in {bucket.name}/{minio_prefix}")
-    minioClient.delete_object(minio_prefix=minio_prefix, bucket=bucket)
+    MinioStorage().delete_object(minio_prefix=minio_prefix, bucket=bucket)
 
 
 def create_datablock_entries(
@@ -137,14 +137,14 @@ def create_datablock_entries(
 
 
 def create_lts_path(dataset_id: int) -> Path:
-    return settings.LTS_STORAGE_ROOT / str(dataset_id)
+    return Variables().LTS_STORAGE_ROOT / str(dataset_id)
 
 
 def move_data_to_LTS(dataset_id: int, datablocks: List[DataBlock]) -> None:
 
     # mount target dir and check access
-    if not settings.LTS_STORAGE_ROOT.exists():
-        raise FileNotFoundError(f"Can't open LTS root {settings.LTS_STORAGE_ROOT}")
+    if not Variables().LTS_STORAGE_ROOT.exists():
+        raise FileNotFoundError(f"Can't open LTS root {Variables().LTS_STORAGE_ROOT}")
 
     lts_target_dir = create_lts_path(dataset_id)
     lts_target_dir.mkdir(parents=False, exist_ok=True)
@@ -154,7 +154,7 @@ def move_data_to_LTS(dataset_id: int, datablocks: List[DataBlock]) -> None:
     archive_ids: Set[str] = set(map(lambda d: d.archiveId, datablocks))
 
     # find objects
-    for obj in find_objects(str(dataset_id), minioClient.STAGING_BUCKET):
+    for obj in find_objects(str(dataset_id), MinioStorage().STAGING_BUCKET):
         archive_ids.discard(obj.object_name)
 
     # TODO: set correct id/path in LTS
@@ -164,8 +164,8 @@ def move_data_to_LTS(dataset_id: int, datablocks: List[DataBlock]) -> None:
     #     raise Exception(f"Not all datablocks found: {missing_blocks}")
 
     # download to target dir
-    archived_objects = download_objects(minio_prefix=str(dataset_id), bucket=minioClient.STAGING_BUCKET,
-                                        destination_folder=settings.LTS_STORAGE_ROOT)
+    archived_objects = download_objects(minio_prefix=str(dataset_id), bucket=MinioStorage().STAGING_BUCKET,
+                                        destination_folder=Variables().LTS_STORAGE_ROOT)
 
     assert len(archived_objects) == len(datablocks)
 
@@ -187,17 +187,17 @@ def create_datablocks(dataset_id: int, origDataBlocks: List[OrigDataBlock]) -> L
     if len(origDataBlocks) == 0:
         return []
 
-    if all(False for _ in find_objects(str(dataset_id), minioClient.LANDINGZONE_BUCKET)):
+    if all(False for _ in find_objects(str(dataset_id), MinioStorage().LANDINGZONE_BUCKET)):
         raise Exception(f"No objects found for dataset {dataset_id}")
 
-    scratch_folder = settings.ARCHIVER_SCRATCH_FOLDER / "archival" / str(dataset_id)
+    scratch_folder = Variables().ARCHIVER_SCRATCH_FOLDER / "archival" / str(dataset_id)
     if not scratch_folder.exists():
         scratch_folder.mkdir(parents=True)
 
-    file_paths = download_objects(minio_prefix=str(dataset_id), bucket=minioClient.LANDINGZONE_BUCKET,
-                                  destination_folder=settings.ARCHIVER_SCRATCH_FOLDER / "archival")
+    file_paths = download_objects(minio_prefix=str(dataset_id), bucket=MinioStorage().LANDINGZONE_BUCKET,
+                                  destination_folder=Variables().ARCHIVER_SCRATCH_FOLDER / "archival")
 
-    getLogger().info(f"Downloaded {len(file_paths)} objects from {minioClient.LANDINGZONE_BUCKET}")
+    getLogger().info(f"Downloaded {len(file_paths)} objects from {MinioStorage().LANDINGZONE_BUCKET}")
 
     tarballs = create_tarballs(dataset_id=dataset_id, folder=scratch_folder)
 
@@ -205,17 +205,17 @@ def create_datablocks(dataset_id: int, origDataBlocks: List[OrigDataBlock]) -> L
 
     datablocks = create_datablock_entries(dataset_id, scratch_folder, origDataBlocks, tarballs)
 
-    uploaded_objects = upload_objects(minio_prefix=Path(str(dataset_id)), bucket=minioClient.STAGING_BUCKET,
+    uploaded_objects = upload_objects(minio_prefix=Path(str(dataset_id)), bucket=MinioStorage().STAGING_BUCKET,
                                       source_folder=scratch_folder, ext=".gz")
 
-    missing_objects = verify_objects(uploaded_objects, minio_prefix=Path(str(dataset_id)), bucket=minioClient.STAGING_BUCKET,
+    missing_objects = verify_objects(uploaded_objects, minio_prefix=Path(str(dataset_id)), bucket=MinioStorage().STAGING_BUCKET,
                                      source_folder=scratch_folder)
 
     if len(missing_objects) > 0:
         raise Exception(f"{len(missing_objects)} datablocks missing")
 
     # regular cleanup
-    delete_objects(minio_prefix=Path(str(dataset_id)), bucket=minioClient.LANDINGZONE_BUCKET)
+    delete_objects(minio_prefix=Path(str(dataset_id)), bucket=MinioStorage().LANDINGZONE_BUCKET)
     cleanup_scratch(dataset_id, "archival")
 
     return datablocks
@@ -229,14 +229,14 @@ def cleanup_lts_folder(dataset_id: int) -> None:
 
 
 def cleanup_staging(dataset_id: int) -> None:
-    delete_objects(minio_prefix=Path(str(dataset_id)), bucket=minioClient.STAGING_BUCKET)
+    delete_objects(minio_prefix=Path(str(dataset_id)), bucket=MinioStorage().STAGING_BUCKET)
 
 
 def verify_objects(uploaded_objects: List[Path],
                    minio_prefix: Path, bucket: Bucket, source_folder: Path) -> List[Path]:
     missing_files: List[Path] = []
     for f in uploaded_objects:
-        if not minioClient.stat_object(
+        if not MinioStorage().stat_object(
                 filename=str(minio_prefix / f.name), bucket=bucket):
             missing_files.append(f)
     return missing_files
@@ -245,7 +245,7 @@ def verify_objects(uploaded_objects: List[Path],
 def cleanup_scratch(dataset_id: int, folder_type: str):
     if folder_type not in ["archival", "retrieval"]:
         raise Exception(f"No valid folder_type to delete: {folder_type}")
-    scratch_folder = settings.ARCHIVER_SCRATCH_FOLDER / folder_type / str(dataset_id)
+    scratch_folder = Variables().ARCHIVER_SCRATCH_FOLDER / folder_type / str(dataset_id)
     getLogger().debug(f"Cleaning up objects in scratch folder: {scratch_folder}")
 
     # import shutil

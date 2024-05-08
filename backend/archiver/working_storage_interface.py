@@ -7,7 +7,8 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from .logging import getLogger
-from .config import settings
+
+from .config import Variables
 
 
 @dataclass
@@ -17,16 +18,23 @@ class Bucket():
 
 class MinioStorage():
 
-    _USER = settings.MINIO_USER
-    _PASSWORD = settings.MINIO_PASSWORD
-    _REGION = settings.MINIO_REGION
-    _URL = settings.MINIO_URL
+    _instance = None
 
-    STAGING_BUCKET: Bucket = Bucket(settings.MINIO_STAGING_BUCKET)
-    RETRIEVAL_BUCKET: Bucket = Bucket(settings.MINIO_RETRIEVAL_BUCKET)
-    LANDINGZONE_BUCKET: Bucket = Bucket(settings.MINIO_LANDINGZONE_BUCKET)
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super(MinioStorage, cls).__new__(cls)
+            # Put any initialization here.
+        return cls._instance
 
     def __init__(self):
+        self._USER = Variables().MINIO_USER
+        self._PASSWORD = Variables().MINIO_PASSWORD
+        self._REGION = Variables().MINIO_REGION
+        self._URL = Variables().MINIO_URL
+
+        self.STAGING_BUCKET: Bucket = Bucket(Variables().MINIO_STAGING_BUCKET)
+        self.RETRIEVAL_BUCKET: Bucket = Bucket(Variables().MINIO_RETRIEVAL_BUCKET)
+        self.LANDINGZONE_BUCKET: Bucket = Bucket(Variables().MINIO_LANDINGZONE_BUCKET)
         self._minio = minio.Minio(
             endpoint=self._URL,
             access_key=self._USER,
@@ -78,8 +86,6 @@ class MinioStorage():
             getLogger().error(f"Failed to remove objects from Minio {e}")
 
 
-minioClient = MinioStorage()
-
 __attributes__ = [
-    minioClient
+    "MinioStorage"
 ]

@@ -3,10 +3,11 @@ from prefect import task
 
 from .scicat_interface import SciCat
 from .model import DataBlock, OrigDataBlock
-from .config import settings
+from .config import Variables
 
 
-scicat = SciCat(endpoint=settings.SCICAT_ENDPOINT, prefix=settings.SCICAT_API_PREFIX)
+scicat = SciCat(endpoint=Variables().SCICAT_ENDPOINT,
+                prefix=Variables().SCICAT_API_PREFIX)
 
 
 @task

@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
-from archiver.working_storage_interface import minioClient
+from archiver.working_storage_interface import MinioStorage
 from archiver.model import StorageObject, Job
 from archiver.flows import archiving_flow, retrieval_flow
 
@@ -10,13 +10,13 @@ router = APIRouter()
 
 @router.get("/archivable_objects")
 def get_archivable_objects() -> list[StorageObject]:
-    objects = minioClient.get_objects(bucket=minioClient.STAGING_BUCKET)
+    objects = MinioStorage().get_objects(bucket=MinioStorage().STAGING_BUCKET)
     return [StorageObject(object_name=o.object_name or "") for o in objects]
 
 
 @router.get("/retrievable_objects")
 def get_retrievable_objects() -> list[StorageObject]:
-    objects = minioClient.get_objects(bucket=minioClient.RETRIEVAL_BUCKET)
+    objects = MinioStorage().get_objects(bucket=MinioStorage().RETRIEVAL_BUCKET)
     return [StorageObject(object_name=o.object_name or "") for o in objects]
 
 
