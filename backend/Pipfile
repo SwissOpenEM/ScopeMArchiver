@@ -16,6 +16,8 @@ pytest = "*"
 fastapi-featureflags = "*"
 requests-mock = "*"
 prefect = "==2.17.1"
+pydantic-settings = "*"
+pytest-env = "*"
 
 [dev-packages]
 pep8 = "*"
