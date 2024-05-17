@@ -1,4 +1,3 @@
-version: "3.9"
 include:
   - jobs.docker-compose.yml
   # - monitoring.docker-compose.yml
@@ -6,6 +5,9 @@ services:
   traefik:
     image: "traefik:v2.10"
     container_name: "traefik"
+    profiles:
+      - development
+      - production
     command:
       - "--log.level=DEBUG"
       - "--api.insecure=true"
@@ -33,6 +35,9 @@ services:
   minio:
     image: minio/minio
     container_name: minio
+    profiles:
+      - development
+      - production
     # S3 specs for presigned urls require minio to be directly exposed, with path?
     ports:
       - 9000:9000
@@ -73,12 +78,17 @@ services:
     image: minio/mc
     depends_on:
       - minio
+    profiles:
+      - development
+      - production
     entrypoint: >
       /bin/sh -c " /usr/bin/mc alias set local-minio http://minio:9000 ${MINIO_USER} ${MINIO_PASS}; /usr/bin/mc mb -p local-minio/${MINIO_RETRIEVAL_BUCKET}; /usr/bin/mc mb -p local-minio/${MINIO_LANDINGZONE_BUCKET}; /usr/bin/mc mb -p local-minio/${MINIO_STAGING_BUCKET}; exit 0; "
 
   frontend:
     image: ${WEBUPLOADER_IMAGE_NAME}:${OPENEM_IMAGE_TAG}
     container_name: frontend
+    profiles:
+      - disabled
     pull_policy: if_not_present
     build:
       context: ./webuploader
@@ -96,25 +106,23 @@ services:
   backend:
     image: ${OPENEM_BACKEND_IMAGE_NAME}:${OPENEM_IMAGE_TAG}
     container_name: backend
+    volumes:
+      - ./backend/config.toml:/var/local/config.toml
+    command: "/var/local/config.toml"
+    profiles:
+      - development
+      - production
+    depends_on:
+      prefect-config:
+        condition: service_completed_successfully
     build:
       context: ./backend
       dockerfile: ./web.Dockerfile
+    environment:
+      - PREFECT_LOGGING_LEVEL=DEBUG
+      - PREFECT_API_URL=http://prefect-server:4200/api
     ports:
       - 8004:8000
-    environment:
-      - MINIO_REGION=${MINIO_REGION}
-      - MINIO_USER=${MINIO_USER}
-      - MINIO_PASS=${MINIO_PASS}
-      - MINIO_RETRIEVAL_BUCKET=${MINIO_RETRIEVAL_BUCKET}
-      - MINIO_STAGING_BUCKET=${MINIO_STAGING_BUCKET}
-      - MINIO_LANDINGZONE_BUCKET=${MINIO_LANDINGZONE_BUCKET}
-      - MINIO_URL=minio:9000
-      - API_ROOT_PATH=/backend/api/v1
-      - ARCHIVER_ENABLED=${ARCHIVER_ENABLED}
-      - INGESTER_ENABLED=${INGESTER_ENABLED}
-      - LTS_FOLDER=${LTS_FOLDER}
-    depends_on:
-      - prefect-server
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.backend.rule=Host(`${HOST}`) && PathPrefix(`/backend/api/v1`)"

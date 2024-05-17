@@ -9,7 +9,8 @@ from pathlib import Path
 from .working_storage_interface import MinioStorage, Bucket
 from .model import OrigDataBlock, DataBlock, DataFile
 from .logging import getLogger
-from .config import Variables
+from .config.variables import Variables
+from .flows.utils import DatasetError, SystemError
 
 
 def create_tarballs(dataset_id: int, folder: Path,
@@ -24,7 +25,7 @@ def create_tarballs(dataset_id: int, folder: Path,
     tar = tarfile.open(filepath, 'x:gz', compresslevel=6)
 
     for f in folder.iterdir():
-        file = folder / f
+        file = f
         if file.suffix == ".gz":
             continue
         tar.add(file, recursive=False)
@@ -76,7 +77,7 @@ def upload_objects(minio_prefix: Path, bucket: Bucket, source_folder: Path, ext:
     uploaded_files: List[Path] = []
     for filepath in (f for f in source_folder.iterdir() if not ext or f.suffix == ext):
         minio_path: Path = minio_prefix / filepath.name
-        MinioStorage().put_object(source_folder / filepath, minio_path, bucket)
+        MinioStorage().put_object(source_folder / filepath.name, minio_path, bucket)
         uploaded_files.append(filepath)
     return uploaded_files
 
@@ -260,5 +261,5 @@ __all__ = [
     "move_data_to_LTS",
     "validate_data_in_LTS",
     "cleanup_scratch",
-    "cleanup_staging"
+    "cleanup_staging",
 ]

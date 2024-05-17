@@ -1,4 +1,5 @@
-FROM python:3.11.8
+# We're using the latest version of Prefect with Python 3.10
+FROM prefecthq/prefect:2-python3.11
 
 # Keeps Python from generating .pyc files in the container
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -17,6 +18,8 @@ USER ${USER}
 
 WORKDIR /home/${USER}
 
+RUN mkdir /tmp/archiving
+
 COPY . ./
 
 RUN echo 'export PATH="${HOME}/.local/bin:$PATH"' >> ~/.bashrc
@@ -24,6 +27,6 @@ RUN PATH="${HOME}/.local/bin:$PATH"
 
 RUN PIPENV_VENV_IN_PROJECT=1 pipenv install --deploy
 
-
-CMD ["pipenv", "run", "python", "-m", "api", "-c"]
-ENTRYPOINT ["pipenv", "run", "python", "-m", "api", "-c"]
+# Run our flow script when the container starts
+CMD ["pipenv", "run", "python", "-m", "archiver.config", "-c", "/var/local/config.toml"]
+ENTRYPOINT ["pipenv", "run", "python", "-m", "archiver.config", "-c"]

@@ -8,7 +8,7 @@ from pathlib import Path
 
 from .logging import getLogger
 
-from .config import Variables
+from .config.variables import Variables
 
 
 @dataclass

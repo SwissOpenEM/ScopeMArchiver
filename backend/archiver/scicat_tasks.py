@@ -3,7 +3,7 @@ from prefect import task
 
 from .scicat_interface import SciCat
 from .model import DataBlock, OrigDataBlock
-from .config import Variables
+from .config.variables import Variables
 
 
 scicat = SciCat(endpoint=Variables().SCICAT_ENDPOINT,

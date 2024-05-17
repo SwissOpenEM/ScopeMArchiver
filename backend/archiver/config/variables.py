@@ -1,6 +1,6 @@
 from pathlib import Path
 from prefect.variables import Variable
-import argparse
+
 from pydantic_settings import (
     BaseSettings,
     SettingsConfigDict,
@@ -8,6 +8,12 @@ from pydantic_settings import (
 
 
 class AppConfig(BaseSettings):
+    """Pydantic model of the Prefect Variables config
+
+    Args:
+        BaseSettings (_type_): _description_
+
+    """
     model_config = SettingsConfigDict(
         env_file_encoding="utf-8",
         case_sensitive=True,
@@ -36,17 +42,22 @@ class AppConfig(BaseSettings):
 
 
 class Variables:
+    """Singleton abstracting access to all Variables expected to be defined in Prefect
+
+    """
     _instance = None
 
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super(Variables, cls).__new__(cls)
-            # Put any initialization here.
         return cls._instance
 
     def __get(self, name: str) -> str:
         c = Variable.get(name)
-        return c.value if c is not None else ""
+        if c is None or c.value is None:
+            return ""
+            raise Exception(f"Variable '{name}' not found")
+        return c.value
 
     @property
     def SCICAT_ENDPOINT(self) -> str:
@@ -93,24 +104,8 @@ class Variables:
         return Path(self.__get("lts_storage_root"))
 
 
-def parse_config():
-    parser = argparse.ArgumentParser(
-        prog='ProgramName',
-        description='What the program does',
-        epilog='Text at the bottom of help')
-
-    parser.add_argument('-c', '--config', default=None, type=Path)
-
-    args, _ = parser.parse_known_args()
-
-    global config
-    config = AppConfig(_env_file=args.config)
-    return config
-
-
-def register_variables_from_config() -> AppConfig:
-    config = parse_config()
+def register_variables_from_config(config: AppConfig) -> None:
     model = config.model_dump()
+    print(model)
     for s in [s for s in dir(Variables()) if not s.startswith('__') and not s.startswith('_')]:
         Variable.set(s.lower(), str(model[s]), overwrite=True)
-    return config

@@ -1,9 +1,10 @@
 import uvicorn
-from archiver.config import parse_config, AppConfig
+from archiver.config.variables import AppConfig
 import api.router as archiver_api
 import pathlib
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+import argparse
 
 
 def init_app(config: AppConfig):
@@ -28,11 +29,17 @@ def init_app(config: AppConfig):
 
 
 if __name__ == "__main__":
-    config = parse_config()
 
+    parser = argparse.ArgumentParser(prog='ScopeM Archiver Backend')
+
+    parser.add_argument('-c', '--config', default=None, type=pathlib.Path)
+
+    args, _ = parser.parse_known_args()
+    config = AppConfig(_env_file=args.config)
+    print(config)
     app = init_app(config)
 
     uvi_config = uvicorn.Config(app, port=config.API_PORT, host="0.0.0.0", log_level=config.API_LOG_LEVEL, reload_dirs=[
-        str(pathlib.Path(__file__).parent)], reload=(config.API_RELOAD or config.API_RELOAD == 'true'))
+        str(pathlib.Path(__file__).parent)], reload=config.API_RELOAD)
     server = uvicorn.Server(uvi_config)
     server.run()
