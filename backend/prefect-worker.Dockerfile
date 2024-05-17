@@ -8,6 +8,7 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
 RUN apt-get update -y && apt-get upgrade -y
+RUN apt-get install nfs-common
 
 RUN pip3 install pipenv --upgrade pip
 

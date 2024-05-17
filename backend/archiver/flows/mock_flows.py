@@ -1,13 +1,14 @@
-from prefect import flow
+from prefect import flow, task
 import os
 import requests
 from pathlib import Path
-from archiver.config import Variables
+from archiver.config.variables import Variables
 from archiver.datablocks import upload_objects
 from archiver.working_storage_interface import MinioStorage
 from archiver.model import OrigDataBlock, DataFile
 
 
+@task
 def create_dummy_dataset(dataset_id: int):
     scratch_folder = Variables().ARCHIVER_SCRATCH_FOLDER / str(dataset_id)
     if not scratch_folder.exists():

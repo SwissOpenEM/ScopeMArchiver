@@ -19,6 +19,7 @@ class SciCat():
         ISONCENTRALDISK = "isOnCentralDisk"
         DATASETONARCHIVEDISK = "datasetOnArchiveDisk"
         SCHEDULE_ARCHIVE_JOB_FAILED = "scheduleArchiveJobFailed"
+        MISSINGFILES = "missingFilesError"
 
     class RETRIEVESTATUSMESSAGE(StrEnum):
         DATASETRETRIEVED = "datasetRetrieved"

@@ -4,10 +4,11 @@ from typing import List, Dict, Any
 import pytest
 from prefect.testing.utilities import prefect_test_harness
 
-from archiver.flows.archiving_flow import archiving_flow
+from archiver.flows.archive_datasets_flow import archive_datasets_flow
 from archiver.scicat_interface import SciCat
 from archiver.tests.scicat_unittest_mock import ScicatMock
 from archiver.model import Job, OrigDataBlock, Dataset, DatasetLifecycle, DataBlock
+from archiver.flows.utils import DatasetError, SystemError
 
 
 def expected_job_status(job_id: int, job_type: str, status: SciCat.JOBSTATUS) -> Dict[str, Any]:
@@ -60,8 +61,12 @@ def mock_create_datablocks(dataset_id: int, origDataBlocks: List[OrigDataBlock])
     return datablocks
 
 
-def raise_exception_task(*args, **kwargs):
-    raise Exception("Mock Exception")
+def raise_user_error(*args, **kwargs):
+    raise DatasetError("Mock Dataset Error")
+
+
+def raise_system_error(*args, **kwargs):
+    raise SystemError("Mock System Error")
 
 
 def mock_void_function(*args, **kwargs):
@@ -78,13 +83,12 @@ def mock_void_function(*args, **kwargs):
 @ patch("archiver.datablocks.cleanup_scratch", mock_void_function)
 @ patch("archiver.datablocks.cleanup_staging", mock_void_function)
 def test_scicat_api_archiving(job_id: int, dataset_id: int):
-
     num_orig_datablocks = 10
     num_files_per_block = 10
     num_expected_datablocks = num_orig_datablocks
 
     with ScicatMock(job_id=job_id, dataset_id=dataset_id, num_blocks=num_orig_datablocks, num_files_per_block=num_files_per_block) as m, prefect_test_harness():
-        archiving_flow(job_id=job_id, dataset_id=dataset_id)
+        archive_datasets_flow(job_id=job_id, dataset_ids=[dataset_id])
 
         assert m.jobs_matcher.call_count == 2
         assert m.datasets_matcher.call_count == 2
@@ -122,10 +126,10 @@ def test_scicat_api_archiving(job_id: int, dataset_id: int):
     (123, 456),
 ])
 @ patch("archiver.scicat_tasks.scicat._ENDPOINT", ScicatMock.ENDPOINT)
-@ patch("archiver.datablocks.create_datablocks", raise_exception_task)
+@ patch("archiver.datablocks.create_datablocks", raise_user_error)
 @ patch("archiver.datablocks.cleanup_scratch")
 @ patch("archiver.datablocks.cleanup_staging")
-def test_move_to_staging_failure(mock_cleanup_staging: MagicMock, mock_cleanup_scratch: MagicMock, job_id: int, dataset_id: int):
+def test_create_datablocks_user_error(mock_cleanup_staging: MagicMock, mock_cleanup_scratch: MagicMock, job_id: int, dataset_id: int):
 
     num_orig_datablocks = 10
     num_files_per_block = 10
@@ -135,26 +139,27 @@ def test_move_to_staging_failure(mock_cleanup_staging: MagicMock, mock_cleanup_s
 
     with ScicatMock(job_id=job_id, dataset_id=dataset_id, num_blocks=num_orig_datablocks, num_files_per_block=num_files_per_block)as m, prefect_test_harness():
         with pytest.raises(Exception):
-            archiving_flow(job_id=job_id, dataset_id=dataset_id)
+            archive_datasets_flow(job_id=job_id, dataset_ids=[dataset_id])
 
         assert m.jobs_matcher.call_count == 2
         assert m.datasets_matcher.call_count == 2
         assert m.datablocks_matcher.call_count == num_expected_datablocks
 
-        # 3: Update job status
+        # 5: Update job status
         assert m.jobs_matcher.request_history[0].json() == expected_job_status(
             job_id, "archive", SciCat.JOBSTATUS.IN_PROGRESS)
 
-        # 4: Update dataset lifecycle
+        # 6: Update dataset lifecycle
         assert m.datasets_matcher.request_history[0].json() == expected_dataset_lifecycle(
             dataset_id, SciCat.ARCHIVESTATUSMESSAGE.STARTED)
 
-        # 5: Report Error
+        # 5: Report User Error
         assert m.jobs_matcher.request_history[1].json() == expected_job_status(
             job_id, "archive", SciCat.JOBSTATUS.FINISHED_UNSUCCESSFULLY)
 
+        # 13: Missing files
         assert m.datasets_matcher.request_history[1].json() == expected_dataset_lifecycle(
-            dataset_id, SciCat.ARCHIVESTATUSMESSAGE.SCHEDULE_ARCHIVE_JOB_FAILED)
+            dataset_id, SciCat.ARCHIVESTATUSMESSAGE.MISSINGFILES)
 
         mock_cleanup_staging.assert_called_once_with(dataset_id)
         mock_cleanup_scratch.assert_called_once_with(dataset_id, "archival")
@@ -165,7 +170,7 @@ def test_move_to_staging_failure(mock_cleanup_staging: MagicMock, mock_cleanup_s
 ])
 @ patch("archiver.scicat_tasks.scicat._ENDPOINT", ScicatMock.ENDPOINT)
 @ patch("archiver.datablocks.create_datablocks", mock_create_datablocks)
-@ patch("archiver.datablocks.move_data_to_LTS", raise_exception_task)
+@ patch("archiver.datablocks.move_data_to_LTS", raise_system_error)
 @ patch("archiver.datablocks.cleanup_lts_folder")
 def test_move_to_LTS_failure(mock_cleanup_lts_folder: MagicMock, job_id: int, dataset_id: int):
 
@@ -176,7 +181,7 @@ def test_move_to_LTS_failure(mock_cleanup_lts_folder: MagicMock, job_id: int, da
 
     with ScicatMock(job_id=job_id, dataset_id=dataset_id, num_blocks=num_orig_datablocks, num_files_per_block=num_files_per_block) as m, prefect_test_harness():
         with pytest.raises(Exception):
-            archiving_flow(job_id=job_id, dataset_id=dataset_id)
+            archive_datasets_flow(job_id=job_id, dataset_ids=[dataset_id])
 
         assert m.jobs_matcher.call_count == 2
         assert m.datasets_matcher.call_count == 2
@@ -212,7 +217,7 @@ def test_move_to_LTS_failure(mock_cleanup_lts_folder: MagicMock, job_id: int, da
 @ patch("archiver.scicat_tasks.scicat._ENDPOINT", ScicatMock.ENDPOINT)
 @ patch("archiver.datablocks.create_datablocks", mock_create_datablocks)
 @ patch("archiver.datablocks.move_data_to_LTS", mock_void_function)
-@ patch("archiver.datablocks.validate_data_in_LTS", raise_exception_task)
+@ patch("archiver.datablocks.validate_data_in_LTS", raise_system_error)
 @ patch("archiver.datablocks.cleanup_lts_folder")
 def test_LTS_validation_failure(mock_cleanup_lts_folder: MagicMock, job_id: int, dataset_id: int):
 
@@ -223,7 +228,7 @@ def test_LTS_validation_failure(mock_cleanup_lts_folder: MagicMock, job_id: int,
 
     with ScicatMock(job_id=job_id, dataset_id=dataset_id, num_blocks=num_orig_datablocks, num_files_per_block=num_files_per_block) as m, prefect_test_harness():
         with pytest.raises(Exception):
-            archiving_flow(job_id=job_id, dataset_id=dataset_id)
+            archive_datasets_flow(job_id=job_id, dataset_ids=[dataset_id])
 
         assert m.jobs_matcher.call_count == 2
         assert m.datasets_matcher.call_count == 2
@@ -252,3 +257,6 @@ def test_LTS_validation_failure(mock_cleanup_lts_folder: MagicMock, job_id: int,
 
         # 6: cleanup LTS
         mock_cleanup_lts_folder.assert_called_once_with(dataset_id)
+
+
+# Multiple flows

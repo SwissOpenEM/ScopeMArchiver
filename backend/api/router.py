@@ -3,7 +3,7 @@ from fastapi.responses import JSONResponse
 
 from archiver.working_storage_interface import MinioStorage
 from archiver.model import StorageObject, Job
-from archiver.flows import archiving_flow, retrieval_flow
+from archiver.flows import archive_datasets_flow, retrieve_datasets_flow
 
 router = APIRouter()
 
@@ -27,9 +27,9 @@ async def create_job(job: Job):
 
         match j.type:
             case "archive":
-                archiving_flow.run_archiving_deployment(j)
+                await archive_datasets_flow.run_archiving_deployment(j)
             case "retrieve":
-                retrieval_flow.run_retrieval_deployment(j)
+                retrieve_datasets_flow.run_retrieval_deployment(j)
             case _:
                 return JSONResponse(content={"error": f"unknown job type {j.type}"}, status_code=500)
 

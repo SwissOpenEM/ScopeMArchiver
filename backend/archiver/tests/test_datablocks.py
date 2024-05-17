@@ -6,7 +6,6 @@ from pathlib import Path
 
 from archiver.datablocks import create_tarballs, create_datablock_entries
 from archiver.model import OrigDataBlock, DataBlock, DataFile
-from collections.abc import Callable
 
 test_id = 1234
 num_files = 10
