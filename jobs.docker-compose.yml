@@ -1,6 +1,7 @@
 services:
   prefect-server:
     image: prefecthq/prefect:2-python3.11
+    container_name: prefect-server
     restart: always
     profiles:
       - development
@@ -14,33 +15,24 @@ services:
         "server",
         "start"
       ]
+    healthcheck:
+      test: [ "CMD", "prefect", "version" ]
+      interval: 2s
+      timeout: 3s
+      retries: 5
+      start_period: 2s
     environment:
       - PREFECT_API_DATABASE_ECHO=False
       - PREFECT_API_DATABASE_MIGRATE_ON_START=True
       - PREFECT_UI_SERVE_BASE=/prefect-ui
-
-      # - PREFECT_UI_URL=prefect.${HOST}/prefect-ui
-      # - PREFECT_API_URL=prefect.${HOST}/prefect/api
-
-      # working
+      - PREFECT_TASK_DEFAULT_RETRIES=2
+      - PREFECT_TASK_DEFAULT_RETRY_DELAY_SECONDS=[1,10,100]
+      # working; PREFECT has some issues with api prefixes...
       - PREFECT_UI_URL=http://prefect-server:4200/api
       - PREFECT_API_URL=http://prefect-server:4200/api
 
-      # - PREFECT_UI_URL=127.0.0.1:4200/api
-      # - PREFECT_API_URL=http://prefect-server:4200/api
-      # If you want to access Prefect Server UI from anywhere other than the Docker host machine, you will need to change
-      # PREFECT_UI_URL and PREFECT_API_URL to match the external hostname/IP of the host machine. For example:
-      #- PREFECT_UI_URL=http://external-ip:4200/api
-      #- PREFECT_API_URL=http://external-ip:4200/api
-      # - PREFECT_SERVER_API_HOST=perfect.${HOST}/prefect
-      # - PREFECT_SERVER_API_PORT=4200
-      # - PREFECT_ORION_API_HOST=http://prefect-server
       - PREFECT_SERVER_API_HOST=0.0.0.0
-      # - PREFECT_ORION_API_PORT=4200
-      # - PREFECT_ORION_UI_API_URL=${HOST}/prefect/api
       - PREFECT_API_DATABASE_CONNECTION_URL=postgresql+asyncpg://postgres_user:postgres_pw@postgres:5432/prefect
-      # Uncomment the following line if you want to use the 'S3 Bucket' storage block instead of the older 'S3' storage
-      # - EXTRA_PIP_PACKAGES=prefect-aws
     ports:
       - 4200:4200
     depends_on:
@@ -76,7 +68,7 @@ services:
     command: "/var/local/config.toml"
     depends_on:
       prefect-server:
-        condition: service_started
+        condition: service_healthy
   prefect-worker:
     image: ${PREFECT_WORKER_IMAGE_NAME}:${OPENEM_IMAGE_TAG}
     container_name: prefect-worker
