@@ -1,160 +1,124 @@
-version: "3.9"
 services:
-  rabbitmq:
-    image: rabbitmq:3.12-management
-    container_name: rabbitmq
-    environment:
-      - RABBITMQ_DEFAULT_USER=guest
-      - RABBITMQ_DEFAULT_PASS=guest
-    expose:
-      - 5672:5672
-      - 15672:15672
+  prefect-server:
+    image: prefecthq/prefect:2-python3.11
+    container_name: prefect-server
+    restart: always
+    profiles:
+      - development
+      - production
     volumes:
-      - ~/.docker-conf/rabbitmq/data/:/var/lib/rabbitmq/
-      - ~/.docker-conf/rabbitmq/log/:/var/log/rabbitmq/
-
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.rabbitmq.rule=Host(`${HOST}`) && PathPrefix(`/rabbitmq`)"
-      - "traefik.http.middlewares.rabbitmq-stripprefix.stripprefix.prefixes=/rabbitmq"
-      - "traefik.http.routers.rabbitmq.entrypoints=web"
-      - "traefik.http.middlewares.rabbitmq-headers.headers.customrequestheaders.X-Forwarded-Proto=http"
-      - "traefik.http.middlewares.rabbitmq-headers.headers.customrequestheaders.X-Forwarded-Host=${HOST}/rabbitmq"
-      - "traefik.http.services.rabbitmq.loadbalancer.server.port=15672"
-      - "traefik.http.routers.rabbitmq.middlewares=rabbitmq-stripprefix,rabbitmq-headers"
-
-  celery-insights:
-    image: ghcr.io/danyi1212/celery-insights:latest
-    container_name: celery-insights
-    # celery-insights does not yet allow being run at a non-root path
-    ports:
-      - 8555:8555
+      - ${DATA_DIR}/prefect:/root/.prefect
+    entrypoint:
+      [
+        "/opt/prefect/entrypoint.sh",
+        "prefect",
+        "server",
+        "start"
+      ]
+    healthcheck:
+      test: [ "CMD", "prefect", "version" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
     environment:
-      - BROKER_URL=amqp://guest:guest@rabbitmq
-      - RESULT_BACKEND=redis://redis:6379
+      - PREFECT_API_DATABASE_ECHO=False
+      - PREFECT_API_DATABASE_MIGRATE_ON_START=True
+      - PREFECT_UI_SERVE_BASE=/prefect-ui
+      - PREFECT_TASK_DEFAULT_RETRIES=2
+      - PREFECT_TASK_DEFAULT_RETRY_DELAY_SECONDS=[1,10,100]
+      # working; PREFECT has some issues with api prefixes...
+      - PREFECT_UI_URL=http://prefect-server:4200/api
+      - PREFECT_API_URL=http://prefect-server:4200/api
+
+      - PREFECT_SERVER_API_HOST=0.0.0.0
+      - PREFECT_API_DATABASE_CONNECTION_URL=postgresql+asyncpg://postgres_user:postgres_pw@postgres:5432/prefect
+    ports:
+      - 4200:4200
+    depends_on:
+      - postgres
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.celery-insights.rule=Host(`${HOST}`) && PathPrefix(`/celery-insights`)"
-      - "traefik.http.middlewares.celery-insights-stripprefix.stripprefix.prefixes=/celery-insights"
-      - "traefik.http.routers.celery-insights.entrypoints=web"
-      - "traefik.http.services.celery-insights.loadbalancer.server.port=8555"
-      - "traefik.http.middlewares.insights-headers.headers.customrequestheaders.X-Forwarded-Proto=http"
-      - "traefik.http.middlewares.insights-headers.headers.customrequestheaders.X-Forwarded-Host=${HOST}/celery-insights"
-      - "traefik.http.routers.celery-insights.middlewares=celery-insights-stripprefix,insights-headers"
-    depends_on:
-      - rabbitmq
-      - redis
-  celery-worker:
-    image: ${CELERY_WORKER_IMAGE_NAME}:${OPENEM_IMAGE_TAG}
-    container_name: celery-worker
+      - "traefik.http.services.prefect-server.loadbalancer.server.port=4200"
+      # UI
+      - "traefik.http.routers.prefect-server.rule=Host(`${HOST}`) && PathPrefix(`/prefect-ui`)"
+      - "traefik.http.routers.prefect-server.entrypoints=web"
+      # API: TODO: this is workaround; prefect cannot serve the api behind a prefix so this is on root
+      - "traefik.http.routers.prefect-api-server.rule=Host(`${HOST}`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.prefect-api-server.entrypoints=web"
+
+      - "traefik.http.routers.prefect-api-strip-server.rule=Host(`  ${HOST}`) && PathPrefix(`/perfect`)"
+      - "traefik.http.middlewares.prefect-api-strip-server.stripprefix.prefixes=/perfect`"
+      - "traefik.http.routers.prefect-api-strip-server.entrypoints=web"
+      - "traefik.http.routers.prefect-server.middlewares=prefect-api-strip-server"
+  prefect-config:
+    image: ${PREFECT_CONFIG_IMAGE_NAME}:${OPENEM_IMAGE_TAG}
+    container_name: prefect-config
+    profiles:
+      - production
+      - development
     build:
       context: ./backend/
-      dockerfile: ./worker.Dockerfile
+      dockerfile: ./prefect-config.Dockerfile
     environment:
-      - CELERY_BROKER_URL=amqp://guest:guest@rabbitmq
-      - CELERY_RESULT_BACKEND=redis://redis:6379
-      - CELERY_TASK_TRACK_STARTED=True
-      - CELERY_TASK_SEND_SENT_EVENT=True
-      - CELERY_ENABLE_UTC=True
-      - MINIO_REGION=${MINIO_REGION}
-      - MINIO_USER=${MINIO_USER}
-      - MINIO_PASS=${MINIO_PASS}
-      - MINIO_ARCHIVAL_BUCKET=${MINIO_ARCHIVAL_BUCKET}
-      - MINIO_RETRIEVAL_BUCKET=${MINIO_RETRIEVAL_BUCKET}
-      - MINIO_URL=minio:9000
-      - ARCHIVER_ENABLED=${ARCHIVER_ENABLED}
-      - INGESTER_ENABLED=${INGESTER_ENABLED}
-    depends_on:
-      - rabbitmq
-      - redis
+      - PREFECT_LOGGING_LEVEL=DEBUG
+      - PREFECT_API_URL=http://prefect-server:4200/api
     volumes:
-      - ${CELERY_ARCHIVING_DIR}:/tmp/archiving
-
-  redis:
-    image: redis:latest
-    container_name: redis
-    expose:
-      - 6379
-  leek:
-    image: kodhive/leek
-    container_name: leek
-    environment:
-      # General
-      - LEEK_API_LOG_LEVEL=WARNING
-      - LEEK_AGENT_LOG_LEVEL=INFO
-      # Components
-      - LEEK_ENABLE_API=true
-      - LEEK_ENABLE_AGENT=true
-      - LEEK_ENABLE_WEB=true
-      # URLs
-      - LEEK_API_URL=http://${HOST}:5000
-      - LEEK_WEB_URL=http://${HOST}:8000
-      - LEEK_ES_URL=http://elastic:9200
-      # Authentication
-      - LEEK_API_ENABLE_AUTH=false
-      # Subscriptions
-      - |
-        LEEK_AGENT_SUBSCRIPTIONS=
-        [
-          {
-            "broker": "amqp://guest:guest@rabbitmq//",
-            "broker_management_url": "http://rabbitmq:15672",
-            "backend": null,
-            "exchange": "celeryev",
-            "queue": "leek.fanout",
-            "routing_key": "#",
-            "org_name": "mono",
-            "app_name": "leek",
-            "app_env": "prod",
-            "prefetch_count": 1000,
-            "concurrency_pool_size": 2,
-            "batch_max_size_in_mb": 1,
-            "batch_max_number_of_messages": 1000,
-            "batch_max_window_in_seconds": 5
-          }
-        ]
-      - LEEK_AGENT_API_SECRET=not-secret
-    ports:
-      - 5000:5000
-      - 8000:8000
+      - ./backend/config.toml:/var/local/config.toml
+    command: "/var/local/config.toml"
     depends_on:
-      - rabbitmq
-    labels:
-      - "traefik.enable=false"
-      - "traefik.http.routers.leek-web.rule=Host(`${HOST}`) && PathPrefix(`/leek`)"
-      - "traefik.http.middlewares.leek-web-stripprefix.stripprefix.prefixes=/leek"
-      - "traefik.http.routers.leek-web.entrypoints=web"
-      - "traefik.http.middlewares.leek-headers.headers.customrequestheaders.X-Forwarded-Proto=http"
-      - "traefik.http.middlewares.leek-headers.headers.customrequestheaders.X-Forwarded-Host=${HOST}/leek"
-      - "traefik.http.routers.leek-web.middlewares=leek-web-stripprefix,leek-headers"
-      - "traefik.http.services.leek-web.loadbalancer.server.port=8000"
-
-  # Just for local development!! (Test index db)
-  elastic:
-    image: elasticsearch:7.10.1
-    container_name: elastic
+      prefect-server:
+        condition: service_healthy
+  prefect-worker:
+    image: ${PREFECT_WORKER_IMAGE_NAME}:${OPENEM_IMAGE_TAG}
+    container_name: prefect-worker
+    profiles:
+      - production
+    build:
+      context: ./backend/
+      dockerfile: ./prefect-worker.Dockerfile
     environment:
-      - node.name=es01
-      - cluster.name=es-docker-cluster
-      - cluster.initial_master_nodes=es01
-      - bootstrap.memory_lock=true
-      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-    command: [ "elasticsearch", "-Elogger.level=ERROR" ]
-    healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "curl --silent --fail localhost:9200/_cluster/health || exit 1"
-        ]
-      interval: 30s
-      timeout: 30s
-      retries: 3
-    ulimits:
-      memlock:
-        soft: -1
-        hard: -1
-      nofile:
-        soft: 65535
-        hard: 65535
+      - PREFECT_LOGGING_LEVEL=DEBUG
+      - PREFECT_API_URL=http://prefect-server:4200/api
+    volumes:
+      - ${DATA_DIR}/LTS:/tmp/LTS
+    depends_on:
+      prefect-server:
+        condition: service_started
+      prefect-config:
+        condition: service_completed_successfully
+
+  ## Prefect Database
+  postgres:
+    image: postgres:15.2-alpine
+    restart: always
+    profiles:
+      - development
+      - production
+    environment:
+      - POSTGRES_USER=postgres_user
+      - POSTGRES_PASSWORD=postgres_pw
+      - POSTGRES_DB=prefect
     expose:
-      - 9200:9200
+      - 5432
+    volumes:
+      - ${DATA_DIR}/postgres:/var/lib/postgresql/data
+
+  scicatmock:
+    image: ${SCICAT_MOCK_IMAGE_NAME}:${OPENEM_IMAGE_TAG}
+    container_name: scicatmock
+    profiles:
+      - development
+      - production
+    build:
+      context: ./backend
+      dockerfile: ./scicatmock.Dockerfile
+    ports:
+      - 8005:8000
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.scicatmock.rule=Host(`${HOST}`) && PathPrefix(`/scicatmock`)"
+      - "traefik.http.middlewares.scicatmock-stripprefix.stripprefix.prefixes=/scicatmock`"
+      - "traefik.http.routers.scicatmock.entrypoints=web"
+      - "traefik.http.routers.scicatmock.middlewares=scicatmock-stripprefix"
+      - "traefik.http.services.scicatmock.loadbalancer.server.port=8000"

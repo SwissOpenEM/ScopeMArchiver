@@ -1,4 +1,5 @@
-FROM python:3.10.1
+# We're using the latest version of Prefect with Python 3.10
+FROM prefecthq/prefect:2-python3.11
 
 # Keeps Python from generating .pyc files in the container
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -7,6 +8,7 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
 RUN apt-get update -y && apt-get upgrade -y
+RUN apt-get install -y nfs-common 
 
 RUN pip3 install pipenv --upgrade pip
 
@@ -26,4 +28,5 @@ RUN PATH="${HOME}/.local/bin:$PATH"
 
 RUN PIPENV_VENV_IN_PROJECT=1 pipenv install --deploy
 
-CMD ["pipenv", "run", "celery", "-A", "jobsystem.celery", "worker"]
+# Run our flow script when the container starts
+CMD ["pipenv", "run", "python", "-m", "archiver.flows"]

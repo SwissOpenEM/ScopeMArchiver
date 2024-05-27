@@ -17,6 +17,8 @@ USER ${USER}
 
 WORKDIR /home/${USER}
 
+RUN mkdir /tmp/archiving
+
 COPY . ./
 
 RUN echo 'export PATH="${HOME}/.local/bin:$PATH"' >> ~/.bashrc
@@ -24,6 +26,4 @@ RUN PATH="${HOME}/.local/bin:$PATH"
 
 RUN PIPENV_VENV_IN_PROJECT=1 pipenv install --deploy
 
-
-CMD ["pipenv", "run", "python", "-m", "api", "-c"]
-ENTRYPOINT ["pipenv", "run", "python", "-m", "api", "-c"]
+CMD ["pipenv", "run", "uvicorn", "archiver.tests.scicat_service_mock:app", "--host", "0.0.0.0"]

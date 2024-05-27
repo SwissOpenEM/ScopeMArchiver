@@ -1,0 +1,9 @@
+[flake8]
+ignore = D203
+exclude =
+    .vscode,
+    Pipfile,
+    Pipfile.lock
+    *.Dockerfile
+    __pycache__,
+max-line-length = 140
