@@ -53,11 +53,13 @@ class Variables:
         return cls._instance
 
     def __get(self, name: str) -> str:
-        c = Variable.get(name)
-        if c is None or c.value is None:
-            return ""
-            raise Exception(f"Variable '{name}' not found")
-        return c.value
+        c = None
+        try:
+            c = Variable.get(name)
+        finally:
+            if c is None or c.value is None:
+                return ""
+            return c.value
 
     @property
     def SCICAT_ENDPOINT(self) -> str:
