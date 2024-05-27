@@ -17,10 +17,10 @@ services:
       ]
     healthcheck:
       test: [ "CMD", "prefect", "version" ]
-      interval: 2s
-      timeout: 3s
+      interval: 5s
+      timeout: 5s
       retries: 5
-      start_period: 2s
+      start_period: 5s
     environment:
       - PREFECT_API_DATABASE_ECHO=False
       - PREFECT_API_DATABASE_MIGRATE_ON_START=True

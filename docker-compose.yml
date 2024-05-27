@@ -74,8 +74,6 @@ services:
       - "traefik.http.routers.minio-api.service=minio-api"
       - "traefik.http.routers.minio-api.middlewares=minio-api-stripprefix,minio-headers,minio-cors"
       - "traefik.http.services.minio-api.loadbalancer.server.port=9000"
-    profiles:
-      - archiver
   minio-create-bucket:
     image: minio/mc
     depends_on:

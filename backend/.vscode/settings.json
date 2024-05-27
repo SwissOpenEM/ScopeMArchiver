@@ -4,10 +4,6 @@
     "editor.formatOnType": true,
     "editor.wordBasedSuggestions": "off",
     "editor.defaultFormatter": "ms-python.autopep8",
-    // "formatting.provider": "autopep8",
-    // "python.formatting.autopep8Args": [
-    //   "--max-line-length=180"
-    // ],
   },
   "autopep8.args": [
     "--max-line-length=140",

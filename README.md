@@ -1,62 +1,49 @@
-# OpenEM Service
+# ScopeMArchiver
 
 A ingester and archiver service that allows uploading data and registering it with [SciCat](https://scicatproject.github.io).
 
+## Services
+
+| Name           | Description                                   | Endpoint                              |
+| -------------- | --------------------------------------------- | ------------------------------------- |
+| traefik        | Reverse Proxy                                 | http://localhost/traefik/dashboard/#/ |
+| backend        | Endpoint for client applications and Scicat   | http://localhost/api/v1/docs          |
+| prefect        | Workflow orchestration https://www.prefect.io | http://localhost/prefect-ui/dashboard |
+| prefect-worker | Agent/worker                                  |                                       |
+| postgres       | Database for Prefect                          |                                       |
+| minio          | S3 Storage                                    | http://localhost/minio/               |
+| scicatmock     | Mock implementation of SciCat API             |                                       |
+
+
 ## Development
 
+### Running all services locally
+
+Using docker compose allows starting up all services locally on `localhost`
+
 ```bash
-docker compose --env-file .production.env --env-file .development.env up -d
+docker compose --profile production --env-file .production.env --env-file .development.env up -d
 ```
 
 > **Note:** .env files are picked up by VSCode and variables defined there are added to the shell that is used. This can lead to confusion as the files is not reloaded after changing values and the values in the session of the shell take precedence.
 
-## Archiver
+The `production` profile starts up all services.
 
-The archiver functionality can be enabled by setting the following env variable:
+### Developing locally
 
+Using the `development` profile
 ```bash
-ARCHIVER_ENABLED=True
+docker compose --profile development --env-file .production.env --env-file .development.env up -d
 ```
 
-### Mockarchiver
+`prefect-worker` and `backend` are not started and a locally development instance can be used instead (see [vsconfig settings](./backend/.vscode/launch.json))
+
+## Archiver
+
+[Prefect.io](prefect.io) is used to orchestrate the asynchronous jobs (flows) to archive (and retrieve) datasets. The detail sequence of steps can be found [here](./backend/archiver/readMe.md)
+
+## Mockarchiver
 
 Python based service that mocks behavior of the LTS at ETH.
 See its [Readme](./mockarchiver/README.me) for details.
 
-## Ingester
-
-The ingester functionality can be enabled by setting the following env variable:
-
-```bash
-INGESTER_ENABLED=True
-```
-
-## Deployment
-
-Production:
-
-```bash
-docker compose --env_file .production.env up -d
-```
-
-Development:
-
-```bash
-docker compose --env-file .production.env --env-file .development.env --profile archiver up -d
-```
-
-## Endpoints
-
-Deploying it locally for development provide the following endpoints
-
-| Service           | Endpoint                              |
-| ----------------- | ------------------------------------- |
-| Archiver Frontend | <http://localhost>                    |
-| Traefik           | <http://traefik.localhost/dashboard/> |
-| Jobs API          | <http://localhost/api/v1/docs>        |
-
-## Elastic Search
-
-```bash
-sudo sysctl -w vm.max_map_count=262144
-```
