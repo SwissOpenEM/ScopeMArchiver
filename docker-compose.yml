@@ -125,8 +125,8 @@ services:
       - 8004:8000
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.backend.rule=Host(`${HOST}`) && PathPrefix(`/backend/api/v1`)"
-      - "traefik.http.middlewares.backend-stripprefix.stripprefix.prefixes=/backend/api/v1"
+      - "traefik.http.routers.backend.rule=Host(`${HOST}`) && PathPrefix(`/api/v1`)"
+      - "traefik.http.middlewares.backend-stripprefix.stripprefix.prefixes=/api/v1"
       - "traefik.http.routers.backend.entrypoints=web"
       - "traefik.http.routers.backend.middlewares=backend-stripprefix"
       - "traefik.http.services.backend.loadbalancer.server.port=8000"
