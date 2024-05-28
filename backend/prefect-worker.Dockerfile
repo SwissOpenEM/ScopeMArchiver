@@ -11,7 +11,7 @@ RUN apt-get update -y && apt-get upgrade -y
 
 # Configure for NFS mounts; rpcbind.service required for nfsv3 remote locking
 RUN apt-get install -y nfs-common systemctl
-RUN systemctl start rpcbind.service
+RUN systemctl enable rpcbind.service
 
 RUN pip3 install pipenv --upgrade pip
 
