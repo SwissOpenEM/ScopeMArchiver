@@ -90,12 +90,12 @@ services:
     environment:
       - PREFECT_LOGGING_LEVEL=DEBUG
       - PREFECT_API_URL=http://prefect-server:4200/api
-    # volumes:
-    #   - type: volume
-    #     source: lts-mock-volume
-    #     target: ${PREFECT_WORKER_LTS_MOUNT_PATH}
-    #     volume:
-    #       nocopy: true
+    volumes:
+      - type: volume
+        source: nfs-lts-share
+        target: ${PREFECT_WORKER_LTS_MOUNT_PATH}
+        volume:
+          nocopy: true
     depends_on:
       prefect-server:
         condition: service_started
@@ -144,3 +144,8 @@ volumes:
     driver: local
   prefect-volume:
     driver: local
+  nfs-lts-share:
+    driver_opts:
+      type: "nfs"
+      o: "nfsvers=3,addr=lts22,nolock"
+      device: ":/scopem_lts_nfs_test_lts22"
