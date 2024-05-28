@@ -11,7 +11,8 @@ RUN apt-get update -y && apt-get upgrade -y
 
 # Configure for NFS mounts; rpcbind.service required for nfsv3 remote locking
 RUN apt-get install -y nfs-common systemctl
-RUN systemctl enable rpcbind.service
+RUN systemctl --system enable rpcbind.service
+
 
 RUN pip3 install pipenv --upgrade pip
 
@@ -36,4 +37,7 @@ RUN PATH="${HOME}/.local/bin:$PATH"
 RUN PIPENV_VENV_IN_PROJECT=1 pipenv install --deploy
 
 # Run our flow script when the container starts
-CMD ["pipenv", "run", "python", "-m", "archiver.flows"]
+RUN echo "systemctl start rpcbind.service && pipenv run python -m archiver.flows" > start.sh
+RUN chmod +x start.sh
+CMD ["./start.sh"]
+# CMD ["systemctl", "start", "rpcbind.service", "&&", "pipenv", "run", "python", "-m", "archiver.flows"]
