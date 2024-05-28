@@ -13,7 +13,6 @@ RUN apt-get update -y && apt-get upgrade -y
 RUN apt-get install -y nfs-common systemctl
 RUN systemctl --system enable rpcbind.service
 
-
 RUN pip3 install pipenv --upgrade pip
 
 ARG USER=dev
@@ -37,7 +36,4 @@ RUN PATH="${HOME}/.local/bin:$PATH"
 RUN PIPENV_VENV_IN_PROJECT=1 pipenv install --deploy
 
 # Run our flow script when the container starts
-RUN echo "systemctl start rpcbind.service && pipenv run python -m archiver.flows" > start.sh
-RUN chmod +x start.sh
-CMD ["./start.sh"]
-# CMD ["systemctl", "start", "rpcbind.service", "&&", "pipenv", "run", "python", "-m", "archiver.flows"]
+CMD ["pipenv", "run", "python", "-m", "archiver.flows"]

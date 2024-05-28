@@ -75,13 +75,6 @@ services:
   prefect-worker:
     image: ${PREFECT_WORKER_IMAGE_NAME}:${OPENEM_IMAGE_TAG}
     container_name: prefect-worker
-    pull_policy: always
-    user: root
-    # privileged: true
-    # cap_add:
-    #   - SYS_ADMIN
-    #   - SETPCAP
-    #   - NET_BIND_SERVICE
     profiles:
       - production
     build:
@@ -92,7 +85,7 @@ services:
       - PREFECT_API_URL=http://prefect-server:4200/api
     volumes:
       - type: volume
-        source: nfs-lts-share
+        source: ${PREFECT_WORKER_LTS_VOLUME_NAME}
         target: ${PREFECT_WORKER_LTS_MOUNT_PATH}
         volume:
           nocopy: true
