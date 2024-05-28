@@ -64,7 +64,9 @@ services:
       - PREFECT_LOGGING_LEVEL=DEBUG
       - PREFECT_API_URL=http://prefect-server:4200/api
     volumes:
-      - ./backend/config.toml:/var/local/config.toml
+      - type: bind
+        source: ./backend/config.toml
+        target: /var/local/config.toml
     command: "/var/local/config.toml"
     depends_on:
       prefect-server:
