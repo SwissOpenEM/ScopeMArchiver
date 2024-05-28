@@ -7,7 +7,7 @@ services:
       - development
       - production
     volumes:
-      - ${DATA_DIR}/prefect:/root/.prefect
+      - prefect-volume:/root/.prefect
     entrypoint:
       [
         "/opt/prefect/entrypoint.sh",
@@ -69,6 +69,7 @@ services:
     depends_on:
       prefect-server:
         condition: service_healthy
+
   prefect-worker:
     image: ${PREFECT_WORKER_IMAGE_NAME}:${OPENEM_IMAGE_TAG}
     container_name: prefect-worker
@@ -80,8 +81,12 @@ services:
     environment:
       - PREFECT_LOGGING_LEVEL=DEBUG
       - PREFECT_API_URL=http://prefect-server:4200/api
-    volumes:
-      - ${DATA_DIR}/LTS:/tmp/LTS
+    # volumes:
+    #   - type: volume
+    #     source: lts-mock-volume
+    #     target: ${PREFECT_WORKER_LTS_MOUNT_PATH}
+    #     volume:
+    #       nocopy: true
     depends_on:
       prefect-server:
         condition: service_started
@@ -102,7 +107,7 @@ services:
     expose:
       - 5432
     volumes:
-      - ${DATA_DIR}/postgres:/var/lib/postgresql/data
+      - postgres-volume:/var/lib/postgresql/data
 
   scicatmock:
     image: ${SCICAT_MOCK_IMAGE_NAME}:${OPENEM_IMAGE_TAG}
@@ -122,3 +127,11 @@ services:
       - "traefik.http.routers.scicatmock.entrypoints=web"
       - "traefik.http.routers.scicatmock.middlewares=scicatmock-stripprefix"
       - "traefik.http.services.scicatmock.loadbalancer.server.port=8000"
+
+volumes:
+  lts-mock-volume:
+    driver: local
+  postgres-volume:
+    driver: local
+  prefect-volume:
+    driver: local

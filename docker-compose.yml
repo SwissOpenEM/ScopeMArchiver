@@ -43,7 +43,7 @@ services:
       - 9000:9000
       - 9001:9001
     volumes:
-      - ${DATA_DIR}/minio:/data
+      - minio-volume:/data
     environment:
       MINIO_ROOT_USER: ${MINIO_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_PASS}
@@ -130,3 +130,7 @@ services:
       - "traefik.http.routers.backend.entrypoints=web"
       - "traefik.http.routers.backend.middlewares=backend-stripprefix"
       - "traefik.http.services.backend.loadbalancer.server.port=8000"
+
+volumes:
+  minio-volume:
+    driver: local
