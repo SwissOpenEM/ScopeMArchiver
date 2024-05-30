@@ -1,5 +1,6 @@
 from pathlib import Path
 from prefect.variables import Variable
+import os
 
 from pydantic_settings import (
     BaseSettings,
@@ -54,6 +55,12 @@ class Variables:
 
     def __get(self, name: str) -> str:
         c = None
+
+        # try for local overrides as env variables
+        c = os.environ.get(name.upper())
+        if c is not None:
+            return c
+
         try:
             c = Variable.get(name)
         finally:

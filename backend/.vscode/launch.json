@@ -25,18 +25,15 @@
       "type": "debugpy",
       "request": "launch",
       "env": {
-        "PREFECT_API_URL": "http://test-host/api",
+        "PREFECT_API_URL": "http://localhost:4200/api",
+        // "PREFECT_API_URL": "http://scopem-openem:4200/api",
         "PREFECT_LOGGING_LEVEL": "DEBUG",
-        "SCICAT_ENDPOINT": "http://localhost:3000",
+        "SCICAT_ENDPOINT": "http://localhost:8005",
         "LTS_STORAGE_ROOT": "${workspaceRoot}/../data/LTS/",
-        "ARCHIVER_SCRATCH_FOLDER": "${workspaceRoot}/../data/archiving/",
-        "MINIO_URL": "test-host:9000"
+        "ARCHIVER_SCRATCH_FOLDER": "${workspaceRoot}/../data/scratch/",
+        "MINIO_URL": "localhost:9000"
       },
       "module": "archiver.flows",
-      "args": [
-        "--config",
-        "${workspaceRoot}/config.toml"
-      ],
       "jinja": true
     },
     {
@@ -49,7 +46,7 @@
         "archiver.tests.scicat_service_mock:app",
         "--reload",
         "--port",
-        "3000",
+        "8005",
       ],
       "jinja": true
     },
