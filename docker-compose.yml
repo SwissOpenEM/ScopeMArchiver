@@ -31,6 +31,8 @@ services:
       - "traefik.http.routers.mydashboard.middlewares=mydashboard-strip"
       - "traefik.frontend.headers.passHostHeader=true"
       - "traefik.http.services.dashboard.loadbalancer.server.port=8080"
+    networks:
+      - scopemarchiver_network
 
   minio:
     image: minio/minio
@@ -44,6 +46,8 @@ services:
       - 9001:9001
     volumes:
       - minio-volume:/data
+    networks:
+      - scopemarchiver_network
     environment:
       MINIO_ROOT_USER: ${MINIO_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_PASS}
@@ -83,6 +87,8 @@ services:
       - production
     entrypoint: >
       /bin/sh -c " /usr/bin/mc alias set local-minio http://minio:9000 ${MINIO_USER} ${MINIO_PASS}; /usr/bin/mc mb -p local-minio/${MINIO_RETRIEVAL_BUCKET}; /usr/bin/mc mb -p local-minio/${MINIO_LANDINGZONE_BUCKET}; /usr/bin/mc mb -p local-minio/${MINIO_STAGING_BUCKET}; exit 0; "
+    networks:
+      - scopemarchiver_network
 
   frontend:
     image: ${WEBUPLOADER_IMAGE_NAME}:${OPENEM_IMAGE_TAG}
@@ -130,7 +136,13 @@ services:
       - "traefik.http.routers.backend.entrypoints=web"
       - "traefik.http.routers.backend.middlewares=backend-stripprefix"
       - "traefik.http.services.backend.loadbalancer.server.port=8000"
+    networks:
+      - scopemarchiver_network
 
 volumes:
   minio-volume:
     driver: local
+
+networks:
+  scopemarchiver_network:
+    name: scopemarchiver_network

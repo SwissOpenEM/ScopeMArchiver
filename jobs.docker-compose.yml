@@ -51,6 +51,8 @@ services:
       - "traefik.http.middlewares.prefect-api-strip-server.stripprefix.prefixes=/perfect`"
       - "traefik.http.routers.prefect-api-strip-server.entrypoints=web"
       - "traefik.http.routers.prefect-server.middlewares=prefect-api-strip-server"
+    networks:
+      - scopemarchiver_network
   prefect-config:
     image: ${PREFECT_CONFIG_IMAGE_NAME}:${OPENEM_IMAGE_TAG}
     container_name: prefect-config
@@ -60,6 +62,8 @@ services:
     build:
       context: ./backend/
       dockerfile: ./prefect-config.Dockerfile
+    networks:
+      - scopemarchiver_network
     environment:
       - PREFECT_LOGGING_LEVEL=DEBUG
       - PREFECT_API_URL=http://prefect-server:4200/api
@@ -95,6 +99,8 @@ services:
       ]
     # ports:
     #   - "8081:8081" # if you want healthchecks, otherwise not necessary
+    networks:
+      - scopemarchiver_network
     volumes:
       - ./${PREFECT_JOB_TEMPLATE}:/var/local/prefect-jobtemplate.json
       - /usr/bin/docker:/usr/bin/docker
@@ -104,7 +110,7 @@ services:
       - EXTRA_PIP_PACKAGES=requests==2.31.0
       - PREFECT_LOGGING_LEVEL=DEBUG
       - PREFECT_API_URL=http://prefect-server:4200/api
-prefect-retrieval-worker:
+  prefect-retrieval-worker:
     image: prefecthq/prefect:2-python3.11
     profiles:
       - production
@@ -128,6 +134,8 @@ prefect-retrieval-worker:
       ]
     # ports:
     #   - "8081:8081" # if you want healthchecks, otherwise not necessary
+    networks:
+      - scopemarchiver_network
     volumes:
       - ./${PREFECT_JOB_TEMPLATE}:/var/local/prefect-jobtemplate.json
       - /usr/bin/docker:/usr/bin/docker
@@ -157,7 +165,8 @@ prefect-retrieval-worker:
       - 5432
     volumes:
       - postgres-volume:/var/lib/postgresql/data
-
+    networks:
+      - scopemarchiver_network
   scicatmock:
     image: ${SCICAT_MOCK_IMAGE_NAME}:${OPENEM_IMAGE_TAG}
     container_name: scicatmock
@@ -176,7 +185,8 @@ prefect-retrieval-worker:
       - "traefik.http.routers.scicatmock.entrypoints=web"
       - "traefik.http.routers.scicatmock.middlewares=scicatmock-stripprefix"
       - "traefik.http.services.scicatmock.loadbalancer.server.port=8000"
-
+    networks:
+      - scopemarchiver_network
 volumes:
   lts-mock-volume:
     driver: local
