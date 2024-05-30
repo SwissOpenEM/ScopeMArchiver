@@ -6,7 +6,7 @@ from minio.deleteobjects import DeleteObject
 from dataclasses import dataclass
 from pathlib import Path
 
-from .logging import getLogger
+from .log import getLogger
 
 from .config.variables import Variables
 
