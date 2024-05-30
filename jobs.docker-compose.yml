@@ -137,6 +137,12 @@ prefect-retrieval-worker:
       - EXTRA_PIP_PACKAGES=requests==2.31.0
       - PREFECT_LOGGING_LEVEL=DEBUG
       - PREFECT_API_URL=http://prefect-server:4200/api
+  archiver-runtime:
+    image: ${PREFECT_WORKER_IMAGE_NAME}:${OPENEM_IMAGE_TAG}
+    container_name: archiver-runtime
+    build:
+      context: ./backend/
+      dockerfile: ./prefect-runtime.Dockerfile
   postgres:
     image: postgres:15.2-alpine
     restart: always
