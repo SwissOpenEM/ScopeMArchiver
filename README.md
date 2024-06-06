@@ -2,6 +2,10 @@
 
 A ingester and archiver service that allows uploading data and registering it with [SciCat](https://scicatproject.github.io).
 
+## Archiver
+
+[Prefect.io](prefect.io) is used to orchestrate the asynchronous jobs (flows) to archive (and retrieve) datasets. The detail sequence of steps can be found [here](./backend/archiver/readMe.md)
+
 ## Services
 
 | Name           | Description                                   | Endpoint                              |
@@ -13,7 +17,6 @@ A ingester and archiver service that allows uploading data and registering it wi
 | postgres       | Database for Prefect                          |                                       |
 | minio          | S3 Storage                                    | http://localhost/minio/               |
 | scicatmock     | Mock implementation of SciCat API             |                                       |
-
 
 ## Development
 
@@ -32,15 +35,29 @@ The `production` profile starts up all services.
 ### Developing locally
 
 Using the `development` profile
+
 ```bash
 docker compose --profile development --env-file .production.env --env-file .development.env up -d
 ```
 
 `prefect-worker` and `backend` are not started and a locally development instance can be used instead (see [vsconfig settings](./backend/.vscode/launch.json))
 
-## Archiver
+### Deploying Flows
 
-[Prefect.io](prefect.io) is used to orchestrate the asynchronous jobs (flows) to archive (and retrieve) datasets. The detail sequence of steps can be found [here](./backend/archiver/readMe.md)
+#### To a Local Prefect Server 
+
+For development and debugging, a local process can server flows, for example by running `python -m archiver.flows`. However, some more configuration is required to fully integration with the other services; therefore a VS Code launch command can be used in [launch.json](./backend/.vscode/launch.json))
+
+#### To a Remote Prefect Server 
+
+For deploying to a remote server, the following command can be used
+
+```bash
+PREFECT_API_URL=http://<host>/api python archiver/deploy.py
+```
+
+It will tell Prefect to use the flows defined in the git repository and branch configured in [deploy.py](./backend/archiver/deploy.py)
+
 
 ## Mockarchiver
 
