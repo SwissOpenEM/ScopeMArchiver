@@ -8,25 +8,31 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
 RUN apt-get update -y && apt-get upgrade -y
-RUN apt-get install -y nfs-common 
+
+# Configure for NFS mounts; rpcbind.service required for nfsv3 remote locking
+RUN apt-get install -y nfs-common systemctl
+RUN systemctl --system enable rpcbind.service
 
 RUN pip3 install pipenv --upgrade pip
 
 ARG USER=dev
+ARG GROUP=dev
 
-RUN useradd -rm -d /home/${USER} -s /bin/bash -g root -G sudo -u 1000 ${USER}
+RUN groupadd -r ${GROUP} && useradd --no-log-init -d /home/${USER} -r -g ${USER} ${GROUP}
+
 USER ${USER}
 
 WORKDIR /home/${USER}
 
-RUN mkdir /tmp/archiving
+# LTS mount folder
+RUN mkdir /tmp/LTS
 
 COPY . ./
 
 RUN echo 'export PATH="${HOME}/.local/bin:$PATH"' >> ~/.bashrc
 RUN PATH="${HOME}/.local/bin:$PATH"
 
-RUN PIPENV_VENV_IN_PROJECT=1 pipenv install --deploy
+RUN PIPENV_VENV_IN_PROJECT=1 pipenv install --system --deploy
 
 # Run our flow script when the container starts
-CMD ["pipenv", "run", "python", "-m", "archiver.flows"]
+CMD ["python", "-m", "archiver.flows"]

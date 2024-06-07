@@ -8,7 +8,7 @@ from pathlib import Path
 
 from .working_storage_interface import MinioStorage, Bucket
 from .model import OrigDataBlock, DataBlock, DataFile
-from .logging import getLogger
+from .log import getLogger
 from .config.variables import Variables
 from .flows.utils import DatasetError, SystemError
 

@@ -7,7 +7,7 @@ services:
       - development
       - production
     volumes:
-      - ${DATA_DIR}/prefect:/root/.prefect
+      - prefect-volume:/root/.prefect
     entrypoint:
       [
         "/opt/prefect/entrypoint.sh",
@@ -51,6 +51,8 @@ services:
       - "traefik.http.middlewares.prefect-api-strip-server.stripprefix.prefixes=/perfect`"
       - "traefik.http.routers.prefect-api-strip-server.entrypoints=web"
       - "traefik.http.routers.prefect-server.middlewares=prefect-api-strip-server"
+    networks:
+      - scopemarchiver_network
   prefect-config:
     image: ${PREFECT_CONFIG_IMAGE_NAME}:${OPENEM_IMAGE_TAG}
     container_name: prefect-config
@@ -60,35 +62,99 @@ services:
     build:
       context: ./backend/
       dockerfile: ./prefect-config.Dockerfile
+    networks:
+      - scopemarchiver_network
     environment:
       - PREFECT_LOGGING_LEVEL=DEBUG
       - PREFECT_API_URL=http://prefect-server:4200/api
     volumes:
-      - ./backend/config.toml:/var/local/config.toml
+      - type: bind
+        source: ./backend/config.toml
+        target: /var/local/config.toml
     command: "/var/local/config.toml"
     depends_on:
       prefect-server:
         condition: service_healthy
-  prefect-worker:
-    image: ${PREFECT_WORKER_IMAGE_NAME}:${OPENEM_IMAGE_TAG}
-    container_name: prefect-worker
+  prefect-archival-worker:
+    image: prefecthq/prefect:2-python3.11
     profiles:
       - production
-    build:
-      context: ./backend/
-      dockerfile: ./prefect-worker.Dockerfile
+    restart: always
+    deploy:
+      mode: replicated
+      replicas: 2
+    command:
+      [
+        "prefect",
+        "worker",
+        "start",
+        "--pool",
+        "${PREFECT_ARCHIVAL_WORKPOOL_NAME}",
+        "--type",
+        "docker",
+        "--install-policy",
+        "if-not-present",
+        "--base-job-template",
+        "/var/local/prefect-jobtemplate.json"
+      ]
+    # ports:
+    #   - "8081:8081" # if you want healthchecks, otherwise not necessary
+    networks:
+      - scopemarchiver_network
+    volumes:
+      - ./${PREFECT_JOB_TEMPLATE}:/var/local/prefect-jobtemplate.json
+      - /usr/bin/docker:/usr/bin/docker
+      - /var/run/docker.sock:/var/run/docker.sock
     environment:
+      # Fixes bug in docker/requests package
+      - EXTRA_PIP_PACKAGES=requests==2.31.0
       - PREFECT_LOGGING_LEVEL=DEBUG
       - PREFECT_API_URL=http://prefect-server:4200/api
+  prefect-retrieval-worker:
+    image: prefecthq/prefect:2-python3.11
+    profiles:
+      - production
+    restart: always
+    deploy:
+      mode: replicated
+      replicas: 2
+    command:
+      [
+        "prefect",
+        "worker",
+        "start",
+        "--pool",
+        "${PREFECT_RETRIEVAL_WORKPOOL_NAME}",
+        "--type",
+        "docker",
+        "--install-policy",
+        "if-not-present",
+        "--base-job-template",
+        "/var/local/prefect-jobtemplate.json"
+      ]
+    # ports:
+    #   - "8081:8081" # if you want healthchecks, otherwise not necessary
+    networks:
+      - scopemarchiver_network
     volumes:
-      - ${DATA_DIR}/LTS:/tmp/LTS
-    depends_on:
-      prefect-server:
-        condition: service_started
-      prefect-config:
-        condition: service_completed_successfully
-
-  ## Prefect Database
+      - ./${PREFECT_JOB_TEMPLATE}:/var/local/prefect-jobtemplate.json
+      - /usr/bin/docker:/usr/bin/docker
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      # Fixes bug in docker/requests package
+      - EXTRA_PIP_PACKAGES=requests==2.31.0
+      - PREFECT_LOGGING_LEVEL=DEBUG
+      - PREFECT_API_URL=http://prefect-server:4200/api
+  # start this container to create the volumes that can be used by the jobs
+  scopem-archiver-runtime:
+    image: ${PREFECT_RUNTIME_IMAGE_NAME}:${OPENEM_IMAGE_TAG}
+    container_name: scopem-archiver-runtime
+    build:
+      context: ./backend/
+      dockerfile: ./prefect-runtime.Dockerfile
+    command: ls -l /tmp/LTS
+    volumes:
+      - ${PREFECT_WORKER_LTS_VOLUME_NAME}:/tmp/LTS
   postgres:
     image: postgres:15.2-alpine
     restart: always
@@ -102,8 +168,9 @@ services:
     expose:
       - 5432
     volumes:
-      - ${DATA_DIR}/postgres:/var/lib/postgresql/data
-
+      - postgres-volume:/var/lib/postgresql/data
+    networks:
+      - scopemarchiver_network
   scicatmock:
     image: ${SCICAT_MOCK_IMAGE_NAME}:${OPENEM_IMAGE_TAG}
     container_name: scicatmock
@@ -122,3 +189,17 @@ services:
       - "traefik.http.routers.scicatmock.entrypoints=web"
       - "traefik.http.routers.scicatmock.middlewares=scicatmock-stripprefix"
       - "traefik.http.services.scicatmock.loadbalancer.server.port=8000"
+    networks:
+      - scopemarchiver_network
+volumes:
+  lts-mock-volume:
+    driver: local
+  postgres-volume:
+    driver: local
+  prefect-volume:
+    driver: local
+  nfs-lts-share:
+    driver_opts:
+      type: "nfs"
+      o: "nfsvers=3,addr=lts22,nolock"
+      device: ":/scopem_lts_nfs_test_lts22"
