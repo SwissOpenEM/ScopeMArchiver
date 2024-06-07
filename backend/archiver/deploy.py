@@ -4,8 +4,8 @@ from prefect.runner.storage import GitRepository
 
 if __name__ == "__main__":
 
-    branch = "57-feature-add-lts-test-share-as-nfs-mount"
-    image = "ghcr.io/swissopenem/scopemarchiver-openem-runtime:57-feature-add-lts-test-share-as-nfs-mount"
+    branch = "main"
+    image = f"ghcr.io/swissopenem/scopemarchiver-openem-runtime:{branch}"
     flows = [
         ("dataset_creation", "backend/archiver/flows/mock_flows.py:create_test_dataset_flow", "archival-docker-workpool"),
         ("datasets_archival", "backend/archiver/flows/archive_datasets_flow.py:archive_datasets_flow", "archival-docker-workpool"),
