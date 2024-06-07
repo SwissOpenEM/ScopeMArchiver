@@ -21,7 +21,7 @@
       "image": {
         "type": "string",
         "title": "Image",
-        "default": "ghcr.io/swissopenem/scopemarchiver-openem-worker:main-local",
+        "default": "ghcr.io/swissopenem/scopemarchiver-openem-runtime:main",
         "example": "docker.io/prefecthq/prefect:2-latest",
         "description": "The image reference of a container image to use for created jobs. If not set, the latest Prefect image will be used."
       },
