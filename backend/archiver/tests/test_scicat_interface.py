@@ -1,5 +1,5 @@
 from unittest.mock import patch
-import archiver.scicat_tasks as tasks
+import archiver.scicat.scicat_tasks as tasks
 import pytest
 from archiver.tests.scicat_unittest_mock import ScicatMock
 

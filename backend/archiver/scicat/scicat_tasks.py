@@ -1,10 +1,10 @@
 from typing import List
 from prefect import task
 
-from .scicat_interface import SciCat
-from .model import DataBlock, OrigDataBlock
-from .config.variables import Variables
-from .flows.utils import generate_task_run_name_job_id, generate_task_run_name_dataset_id
+from archiver.scicat.scicat_interface import SciCat
+from archiver.utils.model import DataBlock, OrigDataBlock
+from archiver.config.variables import Variables
+from archiver.flows.utils import generate_task_run_name_job_id, generate_task_run_name_dataset_id
 
 
 scicat = SciCat(endpoint=Variables().SCICAT_ENDPOINT,

@@ -1,8 +1,8 @@
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
-from archiver.working_storage_interface import MinioStorage
-from archiver.model import StorageObject, Job
+from archiver.utils.working_storage_interface import MinioStorage
+from archiver.utils.model import StorageObject, Job
 from archiver.flows import archive_datasets_flow, retrieve_datasets_flow
 
 router = APIRouter()

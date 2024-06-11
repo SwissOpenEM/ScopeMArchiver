@@ -24,7 +24,7 @@
       "name": "Prefect Worker",
       "type": "debugpy",
       "request": "launch",
-      "cwd": "${workspaceFolder}",
+      "cwd": "${workspaceFolder}/archiver",
       "env": {
         "PREFECT_API_URL": "http://localhost:4200/api",
         // "PREFECT_API_URL": "http://scopem-openem:4200/api",
@@ -32,9 +32,9 @@
         "SCICAT_ENDPOINT": "http://localhost:8005",
         "LTS_STORAGE_ROOT": "${workspaceRoot}/../data/LTS/",
         "ARCHIVER_SCRATCH_FOLDER": "${workspaceRoot}/../data/scratch/",
-        "MINIO_URL": "localhost:9000"
+        // "MINIO_URL": "localhost:9000"
       },
-      "module": "archiver.flows",
+      "module": "flows",
       "jinja": true
     },
     {

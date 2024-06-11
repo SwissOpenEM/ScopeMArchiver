@@ -19,6 +19,8 @@ prefect = "==2.19.2"
 pytest-env = "*"
 pydantic = "==2.7"
 pydantic-settings = "==2.2.1"
+prefect-docker = "*"
+prefect-github = "*"
 
 [dev-packages]
 pep8 = "*"

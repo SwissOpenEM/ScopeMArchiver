@@ -1,7 +1,8 @@
 from typing import List
 import requests_mock
-import archiver.scicat_tasks as tasks
-from archiver.model import DataFile, OrigDataBlock
+
+import archiver.scicat.scicat_tasks as tasks
+from archiver.utils.model import DataFile, OrigDataBlock
 
 
 class ScicatMock(requests_mock.Mocker):

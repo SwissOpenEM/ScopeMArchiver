@@ -3,9 +3,6 @@ from prefect import serve
 from .archive_datasets_flow import archive_datasets_flow, move_datablock_to_lts_flow
 from .retrieve_datasets_flow import retrieve_datasets_flow
 from .mock_flows import create_test_dataset_flow
-from prefect.deployments.runner import DeploymentImage
-from prefect import flow, task, State, Task, Flow
-from prefect.runner.storage import GitRepository
 
 
 if __name__ == "__main__":

@@ -6,11 +6,11 @@ from typing import List
 
 from pathlib import Path
 
-from .working_storage_interface import MinioStorage, Bucket
-from .model import OrigDataBlock, DataBlock, DataFile
-from .log import getLogger
-from .config.variables import Variables
-from .flows.utils import DatasetError, SystemError, StoragePaths
+from archiver.utils.working_storage_interface import MinioStorage, Bucket
+from archiver.utils.model import OrigDataBlock, DataBlock, DataFile
+from archiver.utils.log import getLogger
+from archiver.config.variables import Variables
+from archiver.flows.utils import DatasetError, SystemError, StoragePaths
 
 
 def create_tarballs(dataset_id: int, folder: Path,

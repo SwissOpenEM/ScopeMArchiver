@@ -3,15 +3,14 @@ from prefect.client.schemas import FlowRun
 from typing import List
 from prefect.deployments.deployments import run_deployment
 
-from ..scicat_interface import SciCat
-from ..model import OrigDataBlock, Job
-
-from ..scicat_tasks import update_scicat_dataset_lifecycle, update_scicat_job_status
+from archiver.scicat.scicat_interface import SciCat
+from archiver.utils.model import OrigDataBlock, Job
+from archiver.scicat.scicat_tasks import update_scicat_dataset_lifecycle, update_scicat_job_status
 
 
 def on_flow_failure(flow: Flow, flow_run: FlowRun, state: State):
-    pass
     # report_error(job_id=flow_run.parameters['job_id'], dataset_id=flow_run.parameters['dataset_id'])
+    pass
 
 
 @flow(name="retrieve_datasetlist", on_failure=[on_flow_failure])

@@ -4,8 +4,8 @@ import tarfile
 from typing import List
 from pathlib import Path
 
-from archiver.datablocks import create_tarballs, create_datablock_entries
-from archiver.model import OrigDataBlock, DataBlock, DataFile
+from archiver.utils.datablocks import create_tarballs, create_datablock_entries
+from archiver.utils.model import OrigDataBlock, DataBlock, DataFile
 
 test_id = 1234
 num_files = 10

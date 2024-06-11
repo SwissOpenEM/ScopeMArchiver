@@ -4,10 +4,10 @@ import shutil
 import requests
 from pathlib import Path
 from archiver.config.variables import Variables
-from archiver.datablocks import upload_objects
-from archiver.working_storage_interface import MinioStorage
-from archiver.model import OrigDataBlock, DataFile
-from .utils import StoragePaths
+from archiver.utils.datablocks import upload_objects
+from archiver.utils.working_storage_interface import MinioStorage
+from archiver.utils.model import OrigDataBlock, DataFile
+from archiver.flows.utils import StoragePaths
 
 
 @task

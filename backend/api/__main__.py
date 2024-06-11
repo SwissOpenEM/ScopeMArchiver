@@ -1,5 +1,5 @@
 import uvicorn
-from archiver.config.variables import AppConfig
+from config.variables import AppConfig
 import api.router as archiver_api
 import pathlib
 from fastapi import FastAPI

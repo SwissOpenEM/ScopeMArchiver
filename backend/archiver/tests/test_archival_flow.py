@@ -5,9 +5,9 @@ import pytest
 from prefect.testing.utilities import prefect_test_harness
 
 from archiver.flows.archive_datasets_flow import archive_datasets_flow
-from archiver.scicat_interface import SciCat
+from archiver.scicat.scicat_interface import SciCat
 from archiver.tests.scicat_unittest_mock import ScicatMock
-from archiver.model import Job, OrigDataBlock, Dataset, DatasetLifecycle, DataBlock
+from archiver.utils.model import Job, OrigDataBlock, Dataset, DatasetLifecycle, DataBlock
 from archiver.flows.utils import DatasetError, SystemError
 
 
@@ -77,12 +77,12 @@ def mock_void_function(*args, **kwargs):
 @ pytest.mark.parametrize("job_id,dataset_id", [
     (123, 456),
 ])
-@ patch("archiver.scicat_tasks.scicat._ENDPOINT", ScicatMock.ENDPOINT)
-@ patch("archiver.datablocks.create_datablocks", mock_create_datablocks)
-@ patch("archiver.datablocks.move_data_to_LTS", mock_void_function)
-@ patch("archiver.datablocks.validate_data_in_LTS", mock_void_function)
-@ patch("archiver.datablocks.cleanup_scratch", mock_void_function)
-@ patch("archiver.datablocks.cleanup_staging", mock_void_function)
+@ patch("archiver.scicat.scicat_tasks.scicat._ENDPOINT", ScicatMock.ENDPOINT)
+@ patch("archiver.utils.datablocks.create_datablocks", mock_create_datablocks)
+@ patch("archiver.utils.datablocks.move_data_to_LTS", mock_void_function)
+@ patch("archiver.utils.datablocks.verify_data_in_LTS", mock_void_function)
+@ patch("archiver.utils.datablocks.cleanup_scratch", mock_void_function)
+@ patch("archiver.utils.datablocks.cleanup_staging", mock_void_function)
 async def test_scicat_api_archiving(job_id: int, dataset_id: int):
     num_orig_datablocks = 10
     num_files_per_block = 10
@@ -130,10 +130,10 @@ async def test_scicat_api_archiving(job_id: int, dataset_id: int):
 @ pytest.mark.parametrize("job_id,dataset_id", [
     (123, 456),
 ])
-@ patch("archiver.scicat_tasks.scicat._ENDPOINT", ScicatMock.ENDPOINT)
-@ patch("archiver.datablocks.create_datablocks", raise_user_error)
-@ patch("archiver.datablocks.cleanup_scratch")
-@ patch("archiver.datablocks.cleanup_staging")
+@ patch("archiver.scicat.scicat_tasks.scicat._ENDPOINT", ScicatMock.ENDPOINT)
+@ patch("archiver.utils.datablocks.create_datablocks", raise_user_error)
+@ patch("archiver.utils.datablocks.cleanup_scratch")
+@ patch("archiver.utils.datablocks.cleanup_staging")
 async def test_create_datablocks_user_error(mock_cleanup_staging: MagicMock, mock_cleanup_scratch: MagicMock, job_id: int, dataset_id: int):
 
     num_orig_datablocks = 10
@@ -174,10 +174,10 @@ async def test_create_datablocks_user_error(mock_cleanup_staging: MagicMock, moc
 @ pytest.mark.parametrize("job_id,dataset_id", [
     (123, 456),
 ])
-@ patch("archiver.scicat_tasks.scicat._ENDPOINT", ScicatMock.ENDPOINT)
-@ patch("archiver.datablocks.create_datablocks", mock_create_datablocks)
-@ patch("archiver.datablocks.move_data_to_LTS", raise_system_error)
-@ patch("archiver.datablocks.cleanup_lts_folder")
+@ patch("archiver.scicat.scicat_tasks.scicat._ENDPOINT", ScicatMock.ENDPOINT)
+@ patch("archiver.utils.datablocks.create_datablocks", mock_create_datablocks)
+@ patch("archiver.utils.datablocks.move_data_to_LTS", raise_system_error)
+@ patch("archiver.utils.datablocks.cleanup_lts_folder")
 async def test_move_to_LTS_failure(mock_cleanup_lts_folder: MagicMock, job_id: int, dataset_id: int):
 
     num_orig_datablocks = 10
@@ -221,11 +221,11 @@ async def test_move_to_LTS_failure(mock_cleanup_lts_folder: MagicMock, job_id: i
 @ pytest.mark.parametrize("job_id,dataset_id", [
     (123, 456),
 ])
-@ patch("archiver.scicat_tasks.scicat._ENDPOINT", ScicatMock.ENDPOINT)
-@ patch("archiver.datablocks.create_datablocks", mock_create_datablocks)
-@ patch("archiver.datablocks.move_data_to_LTS", mock_void_function)
-@ patch("archiver.datablocks.validate_data_in_LTS", raise_system_error)
-@ patch("archiver.datablocks.cleanup_lts_folder")
+@ patch("archiver.scicat.scicat_tasks.scicat._ENDPOINT", ScicatMock.ENDPOINT)
+@ patch("archiver.utils.datablocks.create_datablocks", mock_create_datablocks)
+@ patch("archiver.utils.datablocks.move_data_to_LTS", mock_void_function)
+@ patch("archiver.utils.datablocks.verify_data_in_LTS", raise_system_error)
+@ patch("archiver.utils.datablocks.cleanup_lts_folder")
 async def test_LTS_validation_failure(mock_cleanup_lts_folder: MagicMock, job_id: int, dataset_id: int):
 
     num_orig_datablocks = 10

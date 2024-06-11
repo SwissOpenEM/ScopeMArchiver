@@ -1,4 +1,4 @@
-from archiver.model import Job, Dataset, DataBlock, OrigDataBlock
+from archiver.utils.model import Job, Dataset, DataBlock, OrigDataBlock
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, Body
 import logging

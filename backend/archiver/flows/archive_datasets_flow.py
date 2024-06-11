@@ -1,3 +1,10 @@
+from .utils import generate_flow_run_name_job_id, generate_task_run_name_dataset_id, generate_flow_run_name_dataset_id
+from archiver.scicat.scicat_interface import SciCat
+from archiver.scicat.scicat_tasks import update_scicat_job_status, update_scicat_dataset_lifecycle, get_origdatablocks, register_datablocks
+from archiver.scicat.scicat_tasks import report_job_failure_system_error, report_dataset_system_error, report_dataset_user_error
+from archiver.utils.datablocks import DatasetError
+import archiver.utils.datablocks as datablocks_operations
+from archiver.utils.model import OrigDataBlock, DataBlock, Job
 from prefect import flow, task, State, Task, Flow
 from prefect.client.schemas.objects import TaskRun, FlowRun
 from prefect.concurrency.sync import concurrency
@@ -7,13 +14,12 @@ from typing import List
 from functools import partial
 import asyncio
 
-from archiver.model import OrigDataBlock, DataBlock, Job
-import archiver.datablocks as datablocks_operations
-from archiver.datablocks import DatasetError
-from archiver.scicat_tasks import report_job_failure_system_error, report_dataset_system_error, report_dataset_user_error
-from archiver.scicat_tasks import update_scicat_job_status, update_scicat_dataset_lifecycle, get_origdatablocks, register_datablocks
-from archiver.scicat_interface import SciCat
-from .utils import generate_flow_run_name_job_id, generate_task_run_name_dataset_id, generate_flow_run_name_dataset_id
+import sys
+import os
+
+pythonpath = os.environ.get('PYTHONPATH', '')
+if pythonpath not in sys.path:
+    sys.path.insert(0, pythonpath)
 
 
 @task(task_run_name=generate_task_run_name_dataset_id)
