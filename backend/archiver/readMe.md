@@ -241,3 +241,53 @@ sequenceDiagram
   end 
 
 ```
+
+
+```mermaid
+graph LR
+
+    Job[Job ID] --> ScheduleJob{ScheduleFlows}
+  subgraph parallel flows
+    ScheduleJob --> Subflow1(Subflow Dataset ID 1)
+    ScheduleJob --> Subflow2(Subflow Dataset ID 2)
+  end
+  subgraph Parallel move to LTS 2
+  Subflow1 --> Move1{Schedule move}
+  Move1 --> Task1(Task Datablock 1)
+  Move1 --> Task2(Task Datablock 2)
+  Move1 --> Task3(Task Datablock 3)
+  Move1 --> Task4(Task Datablock 4)
+  Task1 --> WaitMove{Wait move}
+  Task2 --> WaitMove{Wait move}
+  Task3 --> WaitMove{Wait move}
+  Task4 --> WaitMove{Wait move}
+  end
+  subgraph Parallel move to LTS 1
+  Subflow2--> Move2{Schedule move}
+  Move2 --> Task21(Task Datablock 1)
+  Move2 --> Task22(Task Datablock 2)
+  Move2 --> Task23(Task Datablock 3)
+  Move2 --> Task24(Task Datablock 4)
+  Task21 --> WaitMove2{Wait move}
+  Task22 --> WaitMove2{Wait move}
+  Task23 --> WaitMove2{Wait move}
+  Task24 --> WaitMove2{Wait move}
+  end
+
+  subgraph Sequential data verification
+
+  WaitMove --> Verification{Schedule Verification}
+  WaitMove2 --> Verification{Schedule Verification}
+
+  Verification --> Verify11(Datablock 1)
+  Verify11 --> Verify12(Datablock 2)
+  Verify12 --> Verify13(Datablock 2)
+  Verify13 --> Verify14(Datablock 2)
+  Verify14 --> Verify21(Datablock 2)
+  Verify21 --> Verify22(Datablock 2)
+  Verify22 --> Verify23(Datablock 2)
+  Verify23 --> Verify24(Datablock 2)
+  end
+```
+
+:::archiver.datablocks

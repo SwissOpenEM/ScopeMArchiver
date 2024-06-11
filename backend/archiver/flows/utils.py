@@ -1,4 +1,6 @@
+from pathlib import Path
 from prefect.runtime import flow_run, task_run
+from archiver.config.variables import Variables
 
 
 def generate_task_run_name_job_id():
@@ -43,3 +45,25 @@ class DatasetError(Exception):
 
 class SystemError(Exception):
     pass
+
+
+class StoragePaths:
+    @staticmethod
+    def scratch_folder(dataset_id: int) -> Path:
+        return StoragePaths.scratch_root() / str(dataset_id)
+
+    @staticmethod
+    def scratch_root() -> Path:
+        return Variables().ARCHIVER_SCRATCH_FOLDER / "archival"
+
+    @staticmethod
+    def relative_datablocks_folder(dataset_id: int) -> Path:
+        return Path("openem-network") / "datasets" / str(dataset_id)
+
+    @staticmethod
+    def scratch_datablocks_folder(dataset_id: int) -> Path:
+        return StoragePaths.scratch_root() / StoragePaths.relative_datablocks_folder(dataset_id)
+
+    @staticmethod
+    def lts_datablocks_folder(dataset_id: int) -> Path:
+        return Variables().LTS_STORAGE_ROOT / StoragePaths.relative_datablocks_folder(dataset_id)

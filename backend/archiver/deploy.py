@@ -4,7 +4,7 @@ from prefect.runner.storage import GitRepository
 
 if __name__ == "__main__":
 
-    branch = "main"
+    branch = "58-feature-implement-archival-in-lts"
     image = f"ghcr.io/swissopenem/scopemarchiver-openem-runtime:{branch}"
     flows = [
         ("dataset_creation", "backend/archiver/flows/mock_flows.py:create_test_dataset_flow", "archival-docker-workpool"),

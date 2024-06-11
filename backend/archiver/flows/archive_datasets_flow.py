@@ -5,7 +5,7 @@ from prefect.concurrency.sync import concurrency
 from prefect.deployments.deployments import run_deployment
 from typing import List
 from functools import partial
-
+import asyncio
 
 from archiver.model import OrigDataBlock, DataBlock, Job
 import archiver.datablocks as datablocks_operations
@@ -22,14 +22,22 @@ def create_datablocks(dataset_id: int, origDataBlocks: List[OrigDataBlock]) -> L
 
 
 @task(task_run_name=generate_task_run_name_dataset_id)
-def move_data_to_LTS(dataset_id: int, datablocks: List[DataBlock]) -> None:
-    with concurrency("archiving-lts", occupy=1):
-        datablocks_operations.move_data_to_LTS(dataset_id, datablocks)
+def move_data_to_LTS(dataset_id: int, datablock: DataBlock) -> str:
+    with concurrency("move-datablocks-to-lts", occupy=2):
+        return datablocks_operations.move_data_to_LTS(dataset_id, datablock)
+
+
+async def wait_for_free_space():
+    while True:
+        yield True
+        await asyncio.sleep(1)
+        print("Waiting for LTS...")
 
 
 @task
-def validate_data_in_LTS(datablocks: List[DataBlock]) -> None:
-    datablocks_operations.validate_data_in_LTS(datablocks)
+def verify_data_in_LTS(dataset_id: int, datablock: DataBlock, checksum: str) -> None:
+    with concurrency("verify-datablocks-in-lts", occupy=1):
+        datablocks_operations.verify_data_in_LTS(dataset_id, datablock, checksum)
 
 
 def report_dataset_error(dataset_id: int, state: State, task_run: TaskRun):
@@ -44,11 +52,12 @@ def report_dataset_error(dataset_id: int, state: State, task_run: TaskRun):
 def on_create_datablocks_error(dataset_id: int, task: Task, task_run: TaskRun, state: State):
 
     # TODO: make async and add retries
-    report_dataset_error(dataset_id, state, task_run)
+    # report_dataset_error(dataset_id, state, task_run)
 
     # cleanup files
     try:
-        datablocks_operations.cleanup_scratch(dataset_id, "archival")
+        pass
+        # datablocks_operations.cleanup_scratch(dataset_id, "archival")
     except Exception:
         report_dataset_system_error(dataset_id)
     finally:
@@ -57,14 +66,16 @@ def on_create_datablocks_error(dataset_id: int, task: Task, task_run: TaskRun, s
 
 def on_validation_in_LTS_error(dataset_id: int, task: Task, task_run: TaskRun, state: State):
     # TODO: make async and add retries
-    report_dataset_error(dataset_id, state, task_run)
-    datablocks_operations.cleanup_lts_folder(dataset_id)
+    # report_dataset_error(dataset_id, state, task_run)
+    pass
+    # datablocks_operations.cleanup_lts_folder(dataset_id)
 
 
 def on_move_data_to_LTS_error(dataset_id: int, task: Task, task_run: TaskRun, state: State):
+    pass
     # TODO: make async and add retries
-    report_dataset_error(dataset_id, state, task_run)
-    datablocks_operations.cleanup_lts_folder(dataset_id)
+    # report_dataset_error(dataset_id, state, task_run)
+    # datablocks_operations.cleanup_lts_folder(dataset_id)
 
 
 def on_get_origdatablocks_error(dataset_id: int, task: Task, task_run: TaskRun, state: State):
@@ -74,40 +85,46 @@ def on_get_origdatablocks_error(dataset_id: int, task: Task, task_run: TaskRun, 
 def on_register_datablocks_error(dataset_id: int, task: Task, task_run: TaskRun, state: State):
     # TODO: make async and add retries
     # report_error(dataset_id, job_id)
-    report_dataset_error(dataset_id, state, task_run)
+    pass
+    # report_dataset_error(dataset_id, state, task_run)
     # TODO: cleanup files
 
 
-def on_flow_failure(flow: Flow, flow_run: FlowRun, state: State):
+def on_job_flow_failure(flow: Flow, flow_run: FlowRun, state: State):
     # TODO: differrente user error
     report_job_failure_system_error(job_id=flow_run.parameters['job_id'])
 
 
-@ flow(name="move_datablocks_to_lts", log_prints=True, flow_run_name=generate_flow_run_name_dataset_id)
-def move_datablocks_to_lts_flow(dataset_id: int, datablocks: List[DataBlock]):
-    move_to_lts_result = move_data_to_LTS.with_options(
+def on_dataset_flow_failure(flow: Flow, flow_run: FlowRun, state: State):
+    report_dataset_error(dataset_id=flow_run.parameters['dataset_id'], state=state, task_run=None)
+    datablocks_operations.cleanup_lts_folder(flow_run.parameters['dataset_id'])
+
+
+@flow(
+    name="move_datablocks_to_lts", log_prints=True, flow_run_name=generate_flow_run_name_dataset_id)
+async def move_datablock_to_lts_flow(dataset_id: int, datablock: DataBlock):
+
+    # async for has_space in wait_for_free_space():
+    #     if has_space:
+    datablock_checksum = move_data_to_LTS.with_options(
         on_failure=[partial(on_move_data_to_LTS_error, dataset_id)]
     ).submit(
         dataset_id,
-        datablocks=datablocks
+        datablock
     )
+    # break
 
-    validate_result = validate_data_in_LTS.with_options(
+    verify_data_in_LTS.with_options(
         on_failure=[partial(on_validation_in_LTS_error, dataset_id)]
     ).submit(
-        datablocks,
-        wait_for=[move_to_lts_result]
+        dataset_id,
+        datablock,
+        datablock_checksum
     )
 
-    update_scicat_dataset_lifecycle(dataset_id=dataset_id,
-                                    status=SciCat.ARCHIVESTATUSMESSAGE.DATASETONARCHIVEDISK,
-                                    retrievable=True,
-                                    wait_for=[validate_result]
-                                    )
 
-
-@ flow(name="archive_dataset", log_prints=True, flow_run_name=generate_flow_run_name_dataset_id)
-def archive_single_dataset_flow(dataset_id: int):
+@flow(name="create_datablocks", on_failure=[on_dataset_flow_failure])
+async def create_datablocks_flow(dataset_id: int):
     dataset_update = update_scicat_dataset_lifecycle.submit(
         dataset_id,
         SciCat.ARCHIVESTATUSMESSAGE.STARTED
@@ -127,27 +144,54 @@ def archive_single_dataset_flow(dataset_id: int):
         origDataBlocks=orig_datablocks,
     )
 
-    register_result = register_datablocks.submit(
+    register_datablocks.submit(
         datablocks=datablocks,
         dataset_id=dataset_id
     )
 
+    return datablocks
+
+
+@ flow(name="archive_dataset", log_prints=True, flow_run_name=generate_flow_run_name_dataset_id, on_failure=[on_dataset_flow_failure])
+async def archive_single_dataset_flow(dataset_id: int):
+
+    datablocks = await create_datablocks_flow(dataset_id)
+
+    # for datablock in datablocks.result():
+    #     await move_datablock_to_lts_flow(dataset_id=dataset_id, datablock=datablock)
+
+    try:
+        await asyncio.gather(*[move_datablock_to_lts_flow(dataset_id=dataset_id, datablock=datablock)
+                               for datablock in await datablocks.result(fetch=True)])
+    except Exception as e:
+        raise e
+
+    update_scicat_dataset_lifecycle.submit(dataset_id=dataset_id,
+                                           status=SciCat.ARCHIVESTATUSMESSAGE.DATASETONARCHIVEDISK,
+                                           retrievable=True)
+    # await asyncio.gather(*[move_datablocks_to_lts_flow(
+    #     dataset_id=dataset_id,
+    #     datablocks=[datablock],
+    #     wait_for=[register_result])
+    #     for datablock in datablocks])
+
     # run as subflow so this flow can be run separately as well
-    move_datablocks_to_lts_flow(dataset_id=dataset_id,
-                                datablocks=datablocks,
-                                wait_for=[register_result]
-                                )
 
 
-@flow(name="archive_datasetlist", log_prints=True, flow_run_name=generate_flow_run_name_job_id, on_failure=[on_flow_failure])
-def archive_datasets_flow(dataset_ids: List[int], job_id: int):
+@flow(name="archive_datasetlist", log_prints=True, flow_run_name=generate_flow_run_name_job_id, on_failure=[on_job_flow_failure])
+async def archive_datasets_flow(dataset_ids: List[int], job_id: int):
     job_update = update_scicat_job_status.submit(
         job_id, SciCat.JOBSTATUS.IN_PROGRESS)
     job_update.wait()
 
     # TODO: Schedule subflows in parallel https://github.com/SwissOpenEM/ScopeMArchiver/issues/54
-    for id in dataset_ids:
-        archive_single_dataset_flow(id)
+    # for id in dataset_ids:
+    #     archive_single_dataset_flow(id)
+
+    try:
+        await asyncio.gather(*[archive_single_dataset_flow(id) for id in dataset_ids])
+    except Exception as e:
+        raise e
 
     update_scicat_job_status.submit(
         job_id, SciCat.JOBSTATUS.FINISHED_SUCCESSFULLY)

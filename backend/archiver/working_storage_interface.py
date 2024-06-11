@@ -62,7 +62,10 @@ class MinioStorage():
             object_name=filename
         )
 
-    def get_objects(self, bucket: Bucket, folder: str | None = None):
+    def get_object(self, bucket: Bucket, folder: str, object_name: str, target_path: Path):
+        self._minio.fget_object(bucket_name=bucket.name, object_name=object_name, file_path=str(target_path.absolute()))
+
+    def list_objects(self, bucket: Bucket, folder: str | None = None):
         f = folder or ""
         return self._minio.list_objects(bucket_name=bucket.name, prefix=f + "/", start_after=f"{f}/")
 

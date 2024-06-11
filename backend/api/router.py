@@ -10,13 +10,13 @@ router = APIRouter()
 
 @router.get("/archivable_objects")
 def get_archivable_objects() -> list[StorageObject]:
-    objects = MinioStorage().get_objects(bucket=MinioStorage().STAGING_BUCKET)
+    objects = MinioStorage().list_objects(bucket=MinioStorage().STAGING_BUCKET)
     return [StorageObject(object_name=o.object_name or "") for o in objects]
 
 
 @router.get("/retrievable_objects")
 def get_retrievable_objects() -> list[StorageObject]:
-    objects = MinioStorage().get_objects(bucket=MinioStorage().RETRIEVAL_BUCKET)
+    objects = MinioStorage().list_objects(bucket=MinioStorage().RETRIEVAL_BUCKET)
     return [StorageObject(object_name=o.object_name or "") for o in objects]
 
 

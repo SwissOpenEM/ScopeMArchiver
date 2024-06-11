@@ -146,9 +146,9 @@ services:
       - PREFECT_LOGGING_LEVEL=DEBUG
       - PREFECT_API_URL=http://prefect-server:4200/api
   # start this container to create the volumes that can be used by the jobs
-  scopem-archiver-runtime:
+  scopemarchiver-runtime:
     image: ${PREFECT_RUNTIME_IMAGE_NAME}:${OPENEM_IMAGE_TAG}
-    container_name: scopem-archiver-runtime
+    container_name: scopemarchiver-runtime
     build:
       context: ./backend/
       dockerfile: ./prefect-runtime.Dockerfile
