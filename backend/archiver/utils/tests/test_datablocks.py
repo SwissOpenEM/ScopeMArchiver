@@ -91,3 +91,15 @@ def test_create_datablock_entries(temp_folder: Path, tarfiles: List[Path], origD
     datablocks: List[DataBlock] = create_datablock_entries(test_id, temp_folder, origDataBlocks, tarfiles)
 
     assert len(datablocks) == 2
+
+
+def test_verify_data_in_LTS():
+    pass
+
+
+def test_copy_file():
+    pass
+
+
+def create_datablocks():
+    pass

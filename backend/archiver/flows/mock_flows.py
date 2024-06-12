@@ -4,8 +4,8 @@ import shutil
 import requests
 from pathlib import Path
 from archiver.config.variables import Variables
-from archiver.utils.datablocks import upload_objects
-from archiver.utils.working_storage_interface import MinioStorage
+from archiver.utils.datablocks import upload_objects_to_s3
+from archiver.utils.working_storage_interface import S3Storage
 from archiver.utils.model import OrigDataBlock, DataFile
 from archiver.flows.utils import StoragePaths
 
@@ -21,8 +21,8 @@ def create_dummy_dataset(dataset_id: int):
     for i in range(10):
         os.system(f"dd if=/dev/urandom of={scratch_folder}/file_{i}.bin bs={size_MB}M count=2 iflag=fullblock")
 
-    files = upload_objects(minio_prefix=Path(StoragePaths.relative_datablocks_folder(dataset_id)), bucket=MinioStorage().LANDINGZONE_BUCKET,
-                           source_folder=scratch_folder)
+    files = upload_objects_to_s3(prefix=Path(StoragePaths.relative_datablocks_folder(dataset_id)), bucket=S3Storage().LANDINGZONE_BUCKET,
+                                 source_folder=scratch_folder)
 
     shutil.rmtree(scratch_folder)
     checksums = []
