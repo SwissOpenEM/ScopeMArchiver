@@ -17,7 +17,7 @@ deployments:
     name: archival-docker-workpool
     work_queue_name: default
     job_variables:
-      image: ghcr.io/swissopenem/scopemarchiver-openem-flows:main
+      image: ghcr.io/swissopenem/scopemarchiver-openem-flows:58-feature-implement-archival-in-lts
   schedules: []
   build: null
   pull:
@@ -35,7 +35,7 @@ deployments:
     name: archival-docker-workpool
     work_queue_name: default
     job_variables:
-      image: ghcr.io/swissopenem/scopemarchiver-openem-flows:main
+      image: ghcr.io/swissopenem/scopemarchiver-openem-flows:58-feature-implement-archival-in-lts
   schedules: []
   build: null
   pull:
