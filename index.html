@@ -10,17 +10,19 @@
       
       
       
+        <link rel="next" href="flows/">
       
-      <link rel="icon" href="../../../assets/images/favicon.png">
+      
+      <link rel="icon" href="assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.26">
     
     
       
-        <title>Config - ScopeMArchiver</title>
+        <title>ScopeMArchiver</title>
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.6543a935.min.css">
+      <link rel="stylesheet" href="assets/stylesheets/main.6543a935.min.css">
       
       
 
@@ -39,9 +41,9 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
+      <link rel="stylesheet" href="assets/_mkdocstrings.css">
     
-    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL(".",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -59,6 +61,11 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
+        
+        <a href="#scopemarchiver" class="md-skip">
+          Skip to content
+        </a>
+      
     </div>
     <div data-md-component="announce">
       
@@ -71,7 +78,7 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../../.." title="ScopeMArchiver" class="md-header__button md-logo" aria-label="ScopeMArchiver" data-md-component="logo">
+    <a href="." title="ScopeMArchiver" class="md-header__button md-logo" aria-label="ScopeMArchiver" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
@@ -91,7 +98,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Config
+              Introduction
             
           </span>
         </div>
@@ -166,7 +173,7 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../../.." title="ScopeMArchiver" class="md-nav__button md-logo" aria-label="ScopeMArchiver" data-md-component="logo">
+    <a href="." title="ScopeMArchiver" class="md-nav__button md-logo" aria-label="ScopeMArchiver" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
@@ -181,10 +188,30 @@
       
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../../index.md" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Introduction
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="." class="md-nav__link md-nav__link--active">
         
   
   <span class="md-ellipsis">
@@ -193,6 +220,185 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#archiver" class="md-nav__link">
+    <span class="md-ellipsis">
+      Archiver
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#services" class="md-nav__link">
+    <span class="md-ellipsis">
+      Services
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Services">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#runtime-services" class="md-nav__link">
+    <span class="md-ellipsis">
+      Runtime Services
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configuration-containers" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configuration Containers
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deployment" class="md-nav__link">
+    <span class="md-ellipsis">
+      Deployment
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Deployment">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#workpools" class="md-nav__link">
+    <span class="md-ellipsis">
+      Workpools
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Workpools">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      Variables
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#flows" class="md-nav__link">
+    <span class="md-ellipsis">
+      Flows
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#deploying-flows" class="md-nav__link">
+    <span class="md-ellipsis">
+      Deploying Flows
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Deploying Flows">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#to-a-local-prefect-server" class="md-nav__link">
+    <span class="md-ellipsis">
+      To a Local Prefect Server
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#to-a-remote-prefect-server" class="md-nav__link">
+    <span class="md-ellipsis">
+      To a Remote Prefect Server
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#deploy-prefect-server" class="md-nav__link">
+    <span class="md-ellipsis">
+      Deploy Prefect server
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#secrets" class="md-nav__link">
+    <span class="md-ellipsis">
+      Secrets
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#config" class="md-nav__link">
+    <span class="md-ellipsis">
+      Config
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mockarchiver" class="md-nav__link">
+    <span class="md-ellipsis">
+      Mockarchiver
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -239,7 +445,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../flows.md" class="md-nav__link">
+      <a href="flows/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -302,7 +508,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/Summary/" class="md-nav__link">
+      <a href="reference/Summary/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -358,7 +564,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/config/variables/" class="md-nav__link">
+      <a href="reference/config/variables/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -422,7 +628,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/flows/archive_datasets_flow/" class="md-nav__link">
+      <a href="reference/flows/archive_datasets_flow/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -443,7 +649,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/flows/mock_flows/" class="md-nav__link">
+      <a href="reference/flows/mock_flows/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -464,7 +670,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/flows/retrieve_datasets_flow/" class="md-nav__link">
+      <a href="reference/flows/retrieve_datasets_flow/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -485,7 +691,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/flows/utils/" class="md-nav__link">
+      <a href="reference/flows/utils/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -549,7 +755,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/scicat/scicat_interface/" class="md-nav__link">
+      <a href="reference/scicat/scicat_interface/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -570,7 +776,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/scicat/scicat_tasks/" class="md-nav__link">
+      <a href="reference/scicat/scicat_tasks/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -634,7 +840,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/tests/scicat_service_mock/" class="md-nav__link">
+      <a href="reference/tests/scicat_service_mock/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -655,7 +861,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/tests/scicat_unittest_mock/" class="md-nav__link">
+      <a href="reference/tests/scicat_unittest_mock/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -676,7 +882,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/tests/test_archival_flow/" class="md-nav__link">
+      <a href="reference/tests/test_archival_flow/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -697,7 +903,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/tests/test_retrieval_flow/" class="md-nav__link">
+      <a href="reference/tests/test_retrieval_flow/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -718,7 +924,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/tests/test_scicat_interface/" class="md-nav__link">
+      <a href="reference/tests/test_scicat_interface/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -782,7 +988,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/utils/datablocks/" class="md-nav__link">
+      <a href="reference/utils/datablocks/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -803,7 +1009,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/utils/log/" class="md-nav__link">
+      <a href="reference/utils/log/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -824,7 +1030,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/utils/model/" class="md-nav__link">
+      <a href="reference/utils/model/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -845,7 +1051,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/utils/working_storage_interface/" class="md-nav__link">
+      <a href="reference/utils/working_storage_interface/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -901,7 +1107,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/utils/tests/test_datablocks/" class="md-nav__link">
+      <a href="reference/utils/tests/test_datablocks/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -955,6 +1161,175 @@
   
   
   
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#archiver" class="md-nav__link">
+    <span class="md-ellipsis">
+      Archiver
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#services" class="md-nav__link">
+    <span class="md-ellipsis">
+      Services
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Services">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#runtime-services" class="md-nav__link">
+    <span class="md-ellipsis">
+      Runtime Services
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configuration-containers" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configuration Containers
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deployment" class="md-nav__link">
+    <span class="md-ellipsis">
+      Deployment
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Deployment">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#workpools" class="md-nav__link">
+    <span class="md-ellipsis">
+      Workpools
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Workpools">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      Variables
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#flows" class="md-nav__link">
+    <span class="md-ellipsis">
+      Flows
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#deploying-flows" class="md-nav__link">
+    <span class="md-ellipsis">
+      Deploying Flows
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Deploying Flows">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#to-a-local-prefect-server" class="md-nav__link">
+    <span class="md-ellipsis">
+      To a Local Prefect Server
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#to-a-remote-prefect-server" class="md-nav__link">
+    <span class="md-ellipsis">
+      To a Remote Prefect Server
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#deploy-prefect-server" class="md-nav__link">
+    <span class="md-ellipsis">
+      Deploy Prefect server
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#secrets" class="md-nav__link">
+    <span class="md-ellipsis">
+      Secrets
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#config" class="md-nav__link">
+    <span class="md-ellipsis">
+      Config
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mockarchiver" class="md-nav__link">
+    <span class="md-ellipsis">
+      Mockarchiver
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
   
 </nav>
                   </div>
@@ -969,9 +1344,154 @@
                   
 
 
-  <h1>Config</h1>
-
-
+<h1 id="scopemarchiver">ScopeMArchiver</h1>
+<p>A ingester and archiver service that allows uploading data and registering it with <a href="https://scicatproject.github.io">SciCat</a>.</p>
+<h2 id="archiver">Archiver</h2>
+<p><a href="prefect.io">Prefect.io</a> is used to orchestrate the asynchronous jobs (flows) to archive (and retrieve) datasets. The detail sequence of steps can be found <a href="./backend/archiver/readMe.md">here</a></p>
+<h2 id="services">Services</h2>
+<p>There are services that are running and serving the archiver and other services that are just run to configure the archiver:</p>
+<h3 id="runtime-services">Runtime Services</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Description</th>
+<th>Endpoint</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>traefik</td>
+<td>Reverse Proxy</td>
+<td>http://localhost/traefik/dashboard/#/</td>
+</tr>
+<tr>
+<td>backend</td>
+<td>Endpoint for client applications and Scicat</td>
+<td>http://localhost/api/v1/docs</td>
+</tr>
+<tr>
+<td>prefect-server</td>
+<td>Workflow orchestration https://www.prefect.io</td>
+<td>http://localhost/prefect-ui/dashboard</td>
+</tr>
+<tr>
+<td>prefect-worker</td>
+<td>Agent/worker</td>
+<td></td>
+</tr>
+<tr>
+<td>postgres</td>
+<td>Database for Prefect</td>
+<td></td>
+</tr>
+<tr>
+<td>minio</td>
+<td>S3 Storage</td>
+<td>http://localhost/minio/</td>
+</tr>
+<tr>
+<td>scicatmock</td>
+<td>Mock implementation of SciCat API</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h3 id="configuration-containers">Configuration Containers</h3>
+<p>In addition to the services, several docker containers are started that configure the Prefect server with workpools, variables and flows defined in the repository. The workpools use a docker executor, i.e. the prefect-workers start every flow in its own container.</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Description</th>
+<th>Input</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>prefect-config</td>
+<td></td>
+<td>backend/config.toml</td>
+</tr>
+<tr>
+<td>prefect-deploy</td>
+<td></td>
+<td>backend/prefect.yaml</td>
+</tr>
+<tr>
+<td>prefect-archival-worker</td>
+<td></td>
+<td>backend/prefect-jobtemplate-prod.json</td>
+</tr>
+<tr>
+<td>prefect-retrieval-worker</td>
+<td></td>
+<td>backend/prefect-jobtemplate-prod.json</td>
+</tr>
+</tbody>
+</table>
+<h2 id="deployment">Deployment</h2>
+<ol>
+<li>Startup services
+Using docker compose allows starting up all services.</li>
+</ol>
+<div class="highlight"><pre><span></span><code>docker<span class="w"> </span>compose<span class="w"> </span>--env-file<span class="w"> </span>.production.env<span class="w"> </span>up<span class="w"> </span>-d
+</code></pre></div>
+<ol>
+<li>Configure Secrets</li>
+</ol>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>github-openem-username</td>
+<td>Username for Github container registry</td>
+</tr>
+<tr>
+<td>github-openem-access-token</td>
+<td>Personal access token to Github container registry</td>
+</tr>
+</tbody>
+</table>
+<ol>
+<li>Deploy Flows</li>
+</ol>
+<div class="highlight"><pre><span></span><code>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>config<span class="w"> </span>--env-file<span class="w"> </span>.prodduction.env<span class="w"> </span>run<span class="w"> </span>--rm
+</code></pre></div>
+<h3 id="workpools">Workpools</h3>
+<p>There are two workpools being provisioned using the </p>
+<h4 id="variables">Variables</h4>
+<h4 id="flows">Flows</h4>
+<h3 id="deploying-flows">Deploying Flows</h3>
+<div class="highlight"><pre><span></span><code>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>development<span class="w"> </span>--env-file<span class="w"> </span>.production.env<span class="w"> </span>--env-file<span class="w"> </span>.development.env<span class="w"> </span>up<span class="w"> </span>-d
+</code></pre></div>
+<blockquote>
+<p><strong>Note:</strong> .env files are picked up by VSCode and variables defined there are added to the shell that is used. This can lead to confusion as the files is not reloaded after changing values and the values in the session of the shell take precedence.</p>
+</blockquote>
+<p>The <code>production</code> profile starts up all services.</p>
+<h4 id="to-a-local-prefect-server">To a Local Prefect Server</h4>
+<p>For development and debugging, a local process can server flows, for example by running <code>python -m archiver.flows</code>. However, some more configuration is required to fully integration with the other services; therefore a VS Code launch command can be used in <a href="./backend/.vscode/launch.json">launch.json</a>)</p>
+<h4 id="to-a-remote-prefect-server">To a Remote Prefect Server</h4>
+<p>For deploying to a remote server, the following command can be used</p>
+<div class="highlight"><pre><span></span><code><span class="nv">PREFECT_API_URL</span><span class="o">=</span>http://&lt;host&gt;/api<span class="w"> </span>python<span class="w"> </span>archiver/deploy.py
+</code></pre></div>
+<p>It will tell Prefect to use the flows defined in the git repository and branch configured in <a href="./backend/archiver/deploy.py">deploy.py</a></p>
+<h3 id="deploy-prefect-server">Deploy Prefect server</h3>
+<h2 id="secrets">Secrets</h2>
+<ul>
+<li>minio</li>
+<li>github</li>
+<li></li>
+</ul>
+<h2 id="config">Config</h2>
+<h2 id="mockarchiver">Mockarchiver</h2>
+<p>Python based service that mocks behavior of the LTS at ETH.
+See its <a href="./mockarchiver/README.me">Readme</a> for details.</p>
 
 
 
@@ -1018,10 +1538,10 @@
     </div>
     
     
-    <script id="__config" type="application/json">{"base": "../../..", "features": [], "search": "../../../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": ".", "features": [], "search": "assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.ad660dcc.min.js"></script>
+      <script src="assets/javascripts/bundle.ad660dcc.min.js"></script>
       
     
   </body>
