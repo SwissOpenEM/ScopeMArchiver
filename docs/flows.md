@@ -30,7 +30,7 @@ sequenceDiagram
 - Datafile list vs origdatablocks?
 
 
-## [Archival Task Flow](./flows/archiving_flow.py)
+## [Archival Task Flow](../backend/archiver/flows/archive_datasets_flow.py)
 
 Archival is split into two subflows, `Create Datablocks` and  `Move Datablocks to LTS`, which can be triggered separately. An archival task can contain multiple datasets; for simplicity the case with only one is depicted here.
 
@@ -180,7 +180,7 @@ sequenceDiagram
   end 
 ```
 
-## [Retrieval Task Flow](./flows/retrieval_flow.py)
+## [Retrieval Task Flow](../backend/archiver/flows/retrieve_datasets_flow.py)
 
 ```mermaid
 sequenceDiagram
@@ -289,5 +289,3 @@ graph LR
   Verify23 --> Verify24(Datablock 2)
   end
 ```
-
-:::archiver.datablocks

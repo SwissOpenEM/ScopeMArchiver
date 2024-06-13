@@ -1,0 +1,29 @@
+site_name: ScopeMArchiver
+theme:
+  name: "material"
+plugins:
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          paths: [backend/archiver]
+  - search  
+  - gen-files:
+      scripts:
+      - ./docs/scripts/gen_ref_pages.py  
+  - literate-nav:
+      nav_file: referece/Summary.md
+nav:
+  - Introduction: index.md
+  - Flows: 
+      - Archiving: flows.md
+  - Code Reference: reference/
+docs_dir: ./docs
+site_dir: ./.site
+
+markdown_extensions:
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
