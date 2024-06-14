@@ -57,8 +57,7 @@ services:
     image: ${PREFECT_CONFIG_IMAGE_NAME}:${OPENEM_IMAGE_TAG}
     container_name: prefect-config
     profiles:
-      - production
-      - development
+      - config
     build:
       context: ./backend/
       dockerfile: ./prefect-config.Dockerfile
@@ -72,6 +71,33 @@ services:
         source: ./backend/config.toml
         target: /var/local/config.toml
     command: "/var/local/config.toml"
+    depends_on:
+      prefect-server:
+        condition: service_healthy
+  prefect-deploy:
+    image: ${PREFECT_FLOWS_IMAGE_NAME}:${OPENEM_IMAGE_TAG}
+    container_name: prefect-deploy
+    profiles:
+      - config
+      - deploy
+    build:
+      context: ./backend/
+      dockerfile: ./prefect-config.Dockerfile
+    networks:
+      - scopemarchiver_network
+    environment:
+      - PREFECT_LOGGING_LEVEL=DEBUG
+      - PREFECT_API_URL=http://prefect-server:4200/api
+      ### values in prefect.yaml
+      - PREFECT_WORKER_LTS_VOLUME_NAME=${PREFECT_WORKER_LTS_VOLUME_NAME}
+      - PREFECT_NETWORK=scopemarchiver_network
+      - FLOWS_DOCKER_IMAGE=${PREFECT_FLOWS_IMAGE_NAME}:${OPENEM_IMAGE_TAG}
+    command: prefect --no-prompt deploy --all --prefect-file prefect.yaml
+    working_dir: /home/dev
+    volumes:
+      - type: bind
+        source: ./backend/prefect.yaml
+        target: /home/dev/prefect.yaml
     depends_on:
       prefect-server:
         condition: service_healthy

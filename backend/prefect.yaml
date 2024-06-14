@@ -17,7 +17,14 @@ deployments:
     name: archival-docker-workpool
     work_queue_name: default
     job_variables:
-      image: ghcr.io/swissopenem/scopemarchiver-openem-flows:58-feature-implement-archival-in-lts
+      image: "{{ $FLOWS_DOCKER_IMAGE }}"
+      registry_credentials:
+        registry_url: ghcr.io
+        username: "{{ prefect.blocks.secret.github-openem-username }}"
+        password: "{{ prefect.blocks.secret.github-openem-access-token }}"
+      image_pull_policy: Always
+      networks:
+        - "{{ $PREFECT_NETWORK }}"
   schedules: []
   build: null
   pull:
@@ -35,7 +42,16 @@ deployments:
     name: archival-docker-workpool
     work_queue_name: default
     job_variables:
-      image: ghcr.io/swissopenem/scopemarchiver-openem-flows:58-feature-implement-archival-in-lts
+      image: "{{ $FLOWS_DOCKER_IMAGE }}"
+      registry_credentials:
+        registry_url: ghcr.io
+        username: "{{ prefect.blocks.secret.github-openem-username }}"
+        password: "{{ prefect.blocks.secret.github-openem-access-token }}"
+      image_pull_policy: Always
+      volumes:
+        - "{{ $PREFECT_WORKER_LTS_VOLUME_NAME }}:/tmp/LTS"
+      networks:
+        - "{{ $PREFECT_NETWORK }}"
   schedules: []
   build: null
   pull:
