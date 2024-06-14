@@ -123,11 +123,14 @@ def cleanup_dataset(flow: Flow, flow_run: FlowRun, state: State):
     on_completion=[cleanup_dataset])
 async def archive_single_dataset_flow(dataset_id: int):
 
-    datablocks = await create_datablocks_flow(dataset_id)
+    try:
+        datablocks = await create_datablocks_flow(dataset_id)
+    except Exception as e:
+        raise e
 
     try:
-        await asyncio.gather(*[move_datablock_to_lts_flow(dataset_id=dataset_id, datablock=datablock)
-                               for datablock in await datablocks.result(fetch=True)])
+        for datablock in await datablocks.result(fetch=True):
+            await move_datablock_to_lts_flow(dataset_id=dataset_id, datablock=datablock)
     except Exception as e:
         raise e
 
@@ -148,7 +151,8 @@ async def archive_datasets_flow(dataset_ids: List[int], job_id: int):
     job_update.wait()
 
     try:
-        await asyncio.gather(*[archive_single_dataset_flow(id) for id in dataset_ids])
+        for id in dataset_ids:
+            await archive_single_dataset_flow(id)
     except Exception as e:
         raise e
 

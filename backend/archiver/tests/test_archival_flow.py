@@ -74,6 +74,7 @@ def mock_void_function(*args, **kwargs):
 
 
 @pytest.mark.asyncio
+@pytest.mark.serial
 @pytest.mark.parametrize("job_id,dataset_id", [
     (123, 456),
 ])
@@ -139,6 +140,7 @@ async def test_scicat_api_archiving(
 
 
 @pytest.mark.asyncio
+@pytest.mark.serial
 @pytest.mark.parametrize("job_id,dataset_id", [
     (123, 456),
 ])
@@ -192,6 +194,7 @@ async def test_create_datablocks_user_error(
 
 
 @pytest.mark.asyncio
+@pytest.mark.serial
 @ pytest.mark.parametrize("job_id,dataset_id", [
     (123, 456),
 ])
@@ -250,6 +253,7 @@ async def test_move_to_LTS_failure(
 
 
 @pytest.mark.asyncio
+@pytest.mark.serial
 @pytest.mark.parametrize("job_id,dataset_id", [
     (123, 456),
 ])
