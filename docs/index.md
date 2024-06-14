@@ -17,7 +17,7 @@ There are services that are running and serving the archiver and other services 
 | traefik        | Reverse Proxy                                 | http://localhost/traefik/dashboard/#/ |
 | backend        | Endpoint for client applications and Scicat   | http://localhost/api/v1/docs          |
 | prefect-server | Workflow orchestration https://www.prefect.io | http://localhost/prefect-ui/dashboard |
-| prefect-worker | Agent/worker                                  |                                       |
+| prefect-worker | Worker that spawns new flows                  |                                       |
 | postgres       | Database for Prefect                          |                                       |
 | minio          | S3 Storage                                    | http://localhost/minio/               |
 | scicatmock     | Mock implementation of SciCat API             |                                       |
@@ -36,68 +36,58 @@ In addition to the services, several docker containers are started that configur
 ## Deployment
 
 1. Startup services
-Using docker compose allows starting up all services.
+    Using docker compose allows starting up all services.
 
-```bash
-docker compose --env-file .production.env up -d
-```
+    ```bash
+    docker compose --env-file .production.env up -d
+    ```
+  
+    This sets up all the necessary services, including the Prefect server instance.
+
+> Note:  The environment variable `HOST` in `.production.env` determines where the services are hosted and are accessible from
 
 1. Configure Secrets
 
-| Name                       | Description                                        |
-| -------------------------- | -------------------------------------------------- |
-| github-openem-username     | Username for Github container registry             |
-| github-openem-access-token | Personal access token to Github container registry |
+    Before being able to deploy flows secrets to the Github container registry need to be configured manually in [the Prefect UI](https://docs.prefect.io/latest/concepts/blocks/) as a `Secret`.
+
+    | Name                       | Description                                        |
+    | -------------------------- | -------------------------------------------------- |
+    | github-openem-username     | Username for Github container registry             |
+    | github-openem-access-token | Personal access token to Github container registry |
 
 1. Deploy Flows
 
-```bash
-docker compose --profile config --env-file .prodduction.env run --rm
-```
+    The [flows](../backend/archiver/flows/__init__.py) can be deployed using a container:
 
-### Workpools
+    ```bash
+    docker compose --profile config --env-file .prodduction.env run --rm
+    ```
 
-There are two workpools being provisioned using the 
+    This deploys the flows as defined in the [prefect.yaml](https://github.com/SwissOpenEM/ScopeMArchiver/backend/prefect.yaml) and requires the secrets set up in the previous step.
 
-#### Variables
-#### Flows
+## Development
 
-### Deploying Flows
+### Setup Development Services
 
-```bash
-docker compose --profile development --env-file .production.env --env-file .development.env up -d
-```
+1. Start up all the services
 
-> **Note:** .env files are picked up by VSCode and variables defined there are added to the shell that is used. This can lead to confusion as the files is not reloaded after changing values and the values in the session of the shell take precedence.
+    ```bash
+    docker compose --env-file .production.env --env-file .development.env up -d
+    ```
 
-The `production` profile starts up all services.
+> **Note**: Secrets and flows don't need to be deployed as in the production deployment 
 
-#### To a Local Prefect Server 
+### Debugging Flows Locally
 
-For development and debugging, a local process can server flows, for example by running `python -m archiver.flows`. However, some more configuration is required to fully integration with the other services; therefore a VS Code launch command can be used in [launch.json](./backend/.vscode/launch.json))
+For development and debugging, a local process can serve flows, for example by running `python -m archiver.flows`. However, some more configuration is required to fully integration with the other services; therefore a VS Code launch command `Prefect Flows` can be used in [launch.json](./backend/.vscode/launch.json))
 
-#### To a Remote Prefect Server 
+#### To a Remote Prefect Server
 
 For deploying to a remote server, the following command can be used
 
 ```bash
-PREFECT_API_URL=http://<host>/api python archiver/deploy.py
+cd backend
+PREFECT_API_URL=http://<host>/api python deploy --all
 ```
 
 It will tell Prefect to use the flows defined in the git repository and branch configured in [deploy.py](./backend/archiver/deploy.py)
-
-
-### Deploy Prefect server
-
-## Secrets
-- minio
-- github
-- 
-
-## Config
-
-## Mockarchiver
-
-Python based service that mocks behavior of the LTS at ETH.
-See its [Readme](./mockarchiver/README.me) for details.
-

@@ -21,7 +21,7 @@
       "jinja": true
     },
     {
-      "name": "Prefect Worker",
+      "name": "Prefect Flows",
       "type": "debugpy",
       "request": "launch",
       "cwd": "${workspaceFolder}/archiver",
@@ -30,9 +30,8 @@
         // "PREFECT_API_URL": "http://scopem-openem:4200/api",
         "PREFECT_LOGGING_LEVEL": "DEBUG",
         "SCICAT_ENDPOINT": "http://localhost:8005",
-        "LTS_STORAGE_ROOT": "${workspaceRoot}/../data/LTS/",
-        "ARCHIVER_SCRATCH_FOLDER": "${workspaceRoot}/../data/scratch/",
-        // "MINIO_URL": "localhost:9000"
+        "LTS_STORAGE_ROOT": "/tmp/data/LTS/",
+        "ARCHIVER_SCRATCH_FOLDER": "/tmp/data/scratch/",
       },
       "module": "flows",
       "jinja": true
@@ -57,7 +56,7 @@
       "name": "Archiver Service",
       "configurations": [
         "Backend API",
-        "Prefect Worker",
+        "Prefect Flows",
         "SciCat API Mock",
       ],
       "stopAll": true

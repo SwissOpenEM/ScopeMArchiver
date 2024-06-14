@@ -1,6 +1,8 @@
 site_name: ScopeMArchiver
 theme:
   name: "material"
+  palette:
+    primary: teal
 plugins:
   - mkdocstrings:
       default_handler: python
@@ -20,6 +22,8 @@ nav:
   - Code Reference: reference/
 docs_dir: ./docs
 site_dir: ./.site
+repo_url: https://github.com/SwissOpenEM/ScopeMArchiver
+repo_name: SwissOpenEM/ScopeMArchiver
 
 markdown_extensions:
   - pymdownx.superfences:
