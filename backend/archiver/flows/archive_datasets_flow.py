@@ -162,7 +162,8 @@ async def archive_datasets_flow(dataset_ids: List[int], job_id: int):
 
 # Deployment function
 async def run_archiving_deployment(job: Job):
-    await run_deployment("archival/archive_datasetlist", parameters={
+    a = await asyncio.create_task(run_deployment("archive_datasetlist/datasets_archival", parameters={
         "dataset_ids": [d.pid for d in job.datasetList or []],
         "job_id": job.id
-    }, timeout=0)
+    }, timeout=0))
+    return a

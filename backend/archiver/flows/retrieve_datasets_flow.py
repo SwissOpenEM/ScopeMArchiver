@@ -1,6 +1,7 @@
 from prefect import flow, Flow, State
 from prefect.client.schemas import FlowRun
 from typing import List
+import asyncio
 from prefect.deployments.deployments import run_deployment
 
 from archiver.scicat.scicat_interface import SciCat
@@ -20,5 +21,5 @@ def retrieve_datasets_flow(dataset_id: int, job_id: int, orig_data_blocks: List[
         dataset_id, SciCat.ARCHIVESTATUSMESSAGE.STARTED)
 
 
-def run_retrieval_deployment(job: Job):
-    run_deployment(name="retrieval/retrieve_datasetlist", timeout=0)
+async def run_retrieval_deployment(job: Job):
+    return await asyncio.create_task(run_deployment(name="retrieval/retrieve_datasetlist", timeout=0))
