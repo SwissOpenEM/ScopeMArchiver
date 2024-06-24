@@ -12,17 +12,9 @@ from .utils import generate_flow_run_name_job_id, generate_task_run_name_dataset
 from archiver.scicat.scicat_interface import SciCat
 from archiver.scicat.scicat_tasks import update_scicat_job_status, update_scicat_dataset_lifecycle, get_origdatablocks, register_datablocks
 from archiver.scicat.scicat_tasks import report_job_failure_system_error, report_dataset_system_error, report_dataset_user_error
-from archiver.utils.datablocks import DatasetError
+from archiver.utils.datablocks import DatasetError, wait_for_free_space
 from archiver.utils.model import OrigDataBlock, DataBlock, Job
 import archiver.utils.datablocks as datablocks_operations
-
-
-# utilities
-async def wait_for_free_space():
-    while True:
-        yield True
-        await asyncio.sleep(1)
-        print("Waiting for LTS...")
 
 
 def report_dataset_error(dataset_id: int, state: State, task_run: TaskRun):
@@ -47,6 +39,12 @@ def create_datablocks(dataset_id: int, origDataBlocks: List[OrigDataBlock]) -> L
     return datablocks_operations.create_datablocks(dataset_id, origDataBlocks)
 
 
+@task(task_run_name=generate_flow_run_name_dataset_id)
+def check_free_space_in_LTS():
+    with concurrency("wait-for-free-space-in-lts", occupy=1):
+        asyncio.run(wait_for_free_space())
+
+
 @task(task_run_name=generate_task_run_name_dataset_id)
 def move_data_to_LTS(dataset_id: int, datablock: DataBlock) -> str:
     with concurrency("move-datablocks-to-lts", occupy=2):
@@ -63,11 +61,12 @@ def verify_data_in_LTS(dataset_id: int, datablock: DataBlock, checksum: str) -> 
 @flow(name="move_datablocks_to_lts", log_prints=True, flow_run_name=generate_flow_run_name_dataset_id)
 async def move_datablock_to_lts_flow(dataset_id: int, datablock: DataBlock):
 
-    # async for has_space in wait_for_free_space():
-    #     if has_space:
+    wait = check_free_space_in_LTS.submit()
+
     datablock_checksum = move_data_to_LTS.submit(
         dataset_id,
-        datablock
+        datablock,
+        wait_for=[wait]
     )
     # break
 

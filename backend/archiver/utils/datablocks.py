@@ -2,6 +2,8 @@ import subprocess
 import tarfile
 import os
 import shutil
+import asyncio
+
 from uuid import uuid4
 from typing import Iterator, List
 from pathlib import Path
@@ -367,3 +369,33 @@ def cleanup_scratch(dataset_id: int):
 
     getLogger().debug(
         f"Cleaning up objects in scratch folder: {StoragePaths.scratch_folder(dataset_id)}")
+
+
+def sufficient_free_space_on_lts():
+    """ Checks for free space on configured LTS storage with respect to configured free space percentage.
+
+    Returns:
+        boolean: condition of eneough free space satisfied
+    """
+
+    path = Variables().LTS_STORAGE_ROOT
+    stat = shutil.disk_usage(path)
+    percentage = 100.0 * stat.free / stat.total
+    getLogger().info(f"LTS space: {percentage}")
+    return percentage >= Variables().LTS_FREE_SPACE_PERCENTAGE
+
+
+async def wait_for_free_space():
+    """ Asynchronous wait until there is enough free space. Waits in linear intervals to check for free space
+
+        TODO: add exponential backoff for waiting time
+
+    Returns:
+        boolean: Returns True once there is enough free space
+    """
+    while not sufficient_free_space_on_lts():
+        seconds_to_wait = 30
+        print(f"Not enough free space. Waiting for {seconds_to_wait}s")
+        await asyncio.sleep(seconds_to_wait)
+
+    return True
