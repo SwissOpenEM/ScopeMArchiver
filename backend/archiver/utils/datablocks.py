@@ -17,10 +17,11 @@ from archiver.flows.utils import DatasetError, SystemError, StoragePaths
 
 def create_tarballs(dataset_id: int, folder: Path,
                     target_size: int = 300 * (1024**2)) -> List[Path]:
-    """_summary_
+    """ Create datablocks, i.e. .tar.gz files, from files in a folder. The files will be named according to
+    the dataset they belong to. The target size of the created files is 300 MB by default
 
     Args:
-        dataset_id (int): _description_
+        dataset_id (int):
         folder (Path): _description_
         target_size (int, optional): _description_. Defaults to 300*(1024**2).
 
@@ -82,7 +83,8 @@ def download_object_from_s3(bucket: Bucket, folder: Path, object_name: str, targ
         object_name (str): object name, no prefix
         target_path (Path): absolute or relative path for the file to be created
     """
-    S3Storage().fget_object(bucket=bucket, folder=str(folder), object_name=object_name, target_path=target_path)
+    S3Storage().fget_object(bucket=bucket, folder=str(folder),
+                            object_name=object_name, target_path=target_path)
 
 
 def list_s3_objects(prefix: Path, bucket: Bucket) -> Iterator[object]:
@@ -117,7 +119,8 @@ def download_objects_from_s3(prefix: Path, bucket: Bucket, destination_folder: P
     for item in S3Storage().list_objects(bucket, str(prefix)):
         local_filepath = destination_folder / Path(item.object_name or "")
         local_filepath.parent.mkdir(parents=True, exist_ok=True)
-        S3Storage().fget_object(bucket=bucket, folder=str(prefix), object_name=item.object_name or "", target_path=local_filepath)
+        S3Storage().fget_object(bucket=bucket, folder=str(prefix),
+                                object_name=item.object_name or "", target_path=local_filepath)
         files.append(local_filepath)
 
     return files
@@ -180,7 +183,8 @@ def create_datablock_entries(
 
         datablocks.append(DataBlock(
             id=str(uuid4()),
-            archiveId=str(StoragePaths.relative_datablocks_folder(dataset_id) / tar_path.name),
+            archiveId=str(StoragePaths.relative_datablocks_folder(
+                dataset_id) / tar_path.name),
             size=1,
             packedSize=1,
             chkAlg="md5",
@@ -203,7 +207,8 @@ def create_datablock_entries(
 def find_object_in_s3(dataset_id, datablock_name):
     object_found = next((x
                          for x in list_s3_objects(
-                             prefix=StoragePaths.relative_datablocks_folder(dataset_id),
+                             prefix=StoragePaths.relative_datablocks_folder(
+                                 dataset_id),
                              bucket=S3Storage().STAGING_BUCKET) if x.object_name == datablock_name),
                         False)
 
@@ -224,11 +229,13 @@ def move_data_to_LTS(dataset_id: int, datablock: DataBlock) -> str:
     object_found = find_object_in_s3(dataset_id, datablock_name)
 
     if not object_found:
-        raise DatasetError(f"Datablock {datablock_name} not found in storage at {StoragePaths.relative_datablocks_folder(dataset_id)}")
+        raise DatasetError(
+            f"Datablock {datablock_name} not found in storage at {StoragePaths.relative_datablocks_folder(dataset_id)}")
 
     getLogger().info(f"Downloading datablock {datablock_name}")
 
-    datablocks_scratch_folder = StoragePaths.scratch_datablocks_folder(dataset_id)
+    datablocks_scratch_folder = StoragePaths.scratch_datablocks_folder(
+        dataset_id)
     datablocks_scratch_folder.mkdir(parents=True, exist_ok=True)
 
     datablock_name = Path(datablock.archiveId).name
@@ -248,7 +255,8 @@ def move_data_to_LTS(dataset_id: int, datablock: DataBlock) -> str:
     getLogger().info("Copy datablock to LTS")
 
     # Copy to LTS
-    copy_file(src=datablock_full_path.absolute(), dst=lts_target_dir.absolute())
+    copy_file(src=datablock_full_path.absolute(),
+              dst=lts_target_dir.absolute())
 
     destination = lts_target_dir / datablock_name
 
@@ -262,23 +270,27 @@ def move_data_to_LTS(dataset_id: int, datablock: DataBlock) -> str:
 
 
 def copy_file(src: Path, dst: Path):
-    subprocess.run(["rsync", "-rcvz", "--stats", "--mkpath", str(src), str(dst)], capture_output=True, check=True)
+    subprocess.run(["rsync", "-rcvz", "--stats", "--mkpath",
+                   str(src), str(dst)], capture_output=True, check=True)
 
 
 def verify_data_in_LTS(dataset_id: int, datablock: DataBlock, expected_checksum: str) -> None:
 
-    dst_folder = StoragePaths.scratch_datablocks_folder(dataset_id) / "verification"
+    dst_folder = StoragePaths.scratch_datablocks_folder(
+        dataset_id) / "verification"
     dst_folder.mkdir(parents=True, exist_ok=True)
     local_datablock_path = dst_folder / Path(datablock.archiveId).name
 
-    lts_datablock_path = StoragePaths.lts_datablocks_folder(dataset_id) / Path(datablock.archiveId).name
+    lts_datablock_path = StoragePaths.lts_datablocks_folder(
+        dataset_id) / Path(datablock.archiveId).name
 
     copy_file(src=lts_datablock_path.absolute(), dst=dst_folder.absolute())
 
     checksum = calculate_checksum(local_datablock_path)
 
     if checksum != expected_checksum:
-        raise SystemError(f"Datablock verification failed: expected checksum {expected_checksum} but got actual {checksum}")
+        raise SystemError(
+            f"Datablock verification failed: expected checksum {expected_checksum} but got actual {checksum}")
 
     os.remove(local_datablock_path)
 
@@ -307,9 +319,11 @@ def create_datablocks(dataset_id: int, origDataBlocks: List[OrigDataBlock]) -> L
     getLogger().info(
         f"Downloaded {len(file_paths)} objects from {S3Storage().LANDINGZONE_BUCKET}")
 
-    datablocks_scratch_folder = StoragePaths.scratch_datablocks_folder(dataset_id)
+    datablocks_scratch_folder = StoragePaths.scratch_datablocks_folder(
+        dataset_id)
 
-    tarballs = create_tarballs(dataset_id=dataset_id, folder=datablocks_scratch_folder)
+    tarballs = create_tarballs(
+        dataset_id=dataset_id, folder=datablocks_scratch_folder)
 
     getLogger().info(
         f"Created {len(tarballs)} datablocks from {len(file_paths)} objects")
@@ -342,12 +356,12 @@ def cleanup_lts_folder(dataset_id: int) -> None:
     shutil.move(src=lts_folder, dst=lts_folder_new)
 
 
-def cleanup_staging(dataset_id: int) -> None:
+def cleanup_s3_staging(dataset_id: int) -> None:
     delete_objects_from_s3(prefix=StoragePaths.relative_datablocks_folder(dataset_id),
                            bucket=S3Storage().STAGING_BUCKET)
 
 
-def cleanup_landingzone(dataset_id: int) -> None:
+def cleanup_s3_landingzone(dataset_id: int) -> None:
     delete_objects_from_s3(prefix=StoragePaths.relative_datablocks_folder(dataset_id),
                            bucket=S3Storage().LANDINGZONE_BUCKET)
 

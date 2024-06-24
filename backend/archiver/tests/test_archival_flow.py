@@ -84,11 +84,11 @@ def mock_void_function(*args, **kwargs):
 @patch("archiver.utils.datablocks.verify_data_in_LTS", mock_void_function)
 @patch("archiver.utils.datablocks.cleanup_lts_folder")
 @patch("archiver.utils.datablocks.cleanup_scratch")
-@patch("archiver.utils.datablocks.cleanup_staging")
-@patch("archiver.utils.datablocks.cleanup_landingzone")
+@patch("archiver.utils.datablocks.cleanup_s3_staging")
+@patch("archiver.utils.datablocks.cleanup_s3_landingzone")
 async def test_scicat_api_archiving(
-        mock_cleanup_landingzone: MagicMock,
-        mock_cleanup_staging: MagicMock,
+        mock_cleanup_s3_landingzone: MagicMock,
+        mock_cleanup_s3_staging: MagicMock,
         mock_cleanup_scratch: MagicMock,
         mock_cleanup_lts: MagicMock,
         job_id: int, dataset_id: int):
@@ -133,8 +133,8 @@ async def test_scicat_api_archiving(
             assert m.jobs_matcher.request_history[1].json() == expected_job_status(
                 job_id, "archive", SciCat.JOBSTATUS.FINISHED_SUCCESSFULLY)
 
-        mock_cleanup_landingzone.assert_called_once_with(dataset_id)
-        mock_cleanup_staging.assert_called_once_with(dataset_id)
+        mock_cleanup_s3_landingzone.assert_called_once_with(dataset_id)
+        mock_cleanup_s3_staging.assert_called_once_with(dataset_id)
         mock_cleanup_scratch.assert_called_once_with(dataset_id)
         mock_cleanup_lts.assert_not_called()
 
@@ -148,11 +148,11 @@ async def test_scicat_api_archiving(
 @patch("archiver.utils.datablocks.create_datablocks", raise_user_error)
 @patch("archiver.utils.datablocks.cleanup_lts_folder")
 @patch("archiver.utils.datablocks.cleanup_scratch")
-@patch("archiver.utils.datablocks.cleanup_staging")
-@patch("archiver.utils.datablocks.cleanup_landingzone")
+@patch("archiver.utils.datablocks.cleanup_s3_staging")
+@patch("archiver.utils.datablocks.cleanup_s3_landingzone")
 async def test_create_datablocks_user_error(
-        mock_cleanup_landingzone: MagicMock,
-        mock_cleanup_staging: MagicMock,
+        mock_cleanup_s3_landingzone: MagicMock,
+        mock_cleanup_s3_staging: MagicMock,
         mock_cleanup_scratch: MagicMock,
         mock_cleanup_lts: MagicMock,
         job_id: int, dataset_id: int):
@@ -187,8 +187,8 @@ async def test_create_datablocks_user_error(
         assert m.datasets_matcher.request_history[1].json() == expected_dataset_lifecycle(
             dataset_id, SciCat.ARCHIVESTATUSMESSAGE.MISSINGFILES)
 
-        mock_cleanup_landingzone.assert_not_called()
-        mock_cleanup_staging.assert_called_once_with(dataset_id)
+        mock_cleanup_s3_landingzone.assert_not_called()
+        mock_cleanup_s3_staging.assert_called_once_with(dataset_id)
         mock_cleanup_scratch.assert_called_once_with(dataset_id)
         mock_cleanup_lts.assert_called_once_with(dataset_id)
 
@@ -203,11 +203,11 @@ async def test_create_datablocks_user_error(
 @ patch("archiver.utils.datablocks.move_data_to_LTS", raise_system_error)
 @patch("archiver.utils.datablocks.cleanup_lts_folder")
 @patch("archiver.utils.datablocks.cleanup_scratch")
-@patch("archiver.utils.datablocks.cleanup_staging")
-@patch("archiver.utils.datablocks.cleanup_landingzone")
+@patch("archiver.utils.datablocks.cleanup_s3_staging")
+@patch("archiver.utils.datablocks.cleanup_s3_landingzone")
 async def test_move_to_LTS_failure(
-        mock_cleanup_landingzone: MagicMock,
-        mock_cleanup_staging: MagicMock,
+        mock_cleanup_s3_landingzone: MagicMock,
+        mock_cleanup_s3_staging: MagicMock,
         mock_cleanup_scratch: MagicMock,
         mock_cleanup_lts: MagicMock,
         job_id: int, dataset_id: int):
@@ -246,8 +246,8 @@ async def test_move_to_LTS_failure(
             dataset_id, SciCat.ARCHIVESTATUSMESSAGE.SCHEDULE_ARCHIVE_JOB_FAILED)
 
         # 6: cleanup LTS
-        mock_cleanup_landingzone.assert_not_called()
-        mock_cleanup_staging.assert_called_once_with(dataset_id)
+        mock_cleanup_s3_landingzone.assert_not_called()
+        mock_cleanup_s3_staging.assert_called_once_with(dataset_id)
         mock_cleanup_scratch.assert_called_once_with(dataset_id)
         mock_cleanup_lts.assert_called_once_with(dataset_id)
 
@@ -263,11 +263,11 @@ async def test_move_to_LTS_failure(
 @patch("archiver.utils.datablocks.verify_data_in_LTS", raise_system_error)
 @patch("archiver.utils.datablocks.cleanup_lts_folder")
 @patch("archiver.utils.datablocks.cleanup_scratch")
-@patch("archiver.utils.datablocks.cleanup_staging")
-@patch("archiver.utils.datablocks.cleanup_landingzone")
+@patch("archiver.utils.datablocks.cleanup_s3_staging")
+@patch("archiver.utils.datablocks.cleanup_s3_landingzone")
 async def test_LTS_validation_failure(
-        mock_cleanup_landingzone: MagicMock,
-        mock_cleanup_staging: MagicMock,
+        mock_cleanup_s3_landingzone: MagicMock,
+        mock_cleanup_s3_staging: MagicMock,
         mock_cleanup_scratch: MagicMock,
         mock_cleanup_lts: MagicMock,
         job_id: int, dataset_id: int):
@@ -307,8 +307,8 @@ async def test_LTS_validation_failure(
             dataset_id, SciCat.ARCHIVESTATUSMESSAGE.SCHEDULE_ARCHIVE_JOB_FAILED)
 
         # 6: cleanup LTS
-        mock_cleanup_landingzone.assert_not_called()
-        mock_cleanup_staging.assert_called_once_with(dataset_id)
+        mock_cleanup_s3_landingzone.assert_not_called()
+        mock_cleanup_s3_staging.assert_called_once_with(dataset_id)
         mock_cleanup_scratch.assert_called_once_with(dataset_id)
         mock_cleanup_lts.assert_called_once_with(dataset_id)
 

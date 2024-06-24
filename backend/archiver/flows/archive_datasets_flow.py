@@ -54,7 +54,8 @@ def move_data_to_LTS(dataset_id: int, datablock: DataBlock) -> str:
 @task
 def verify_data_in_LTS(dataset_id: int, datablock: DataBlock, checksum: str) -> None:
     with concurrency("verify-datablocks-in-lts", occupy=1):
-        datablocks_operations.verify_data_in_LTS(dataset_id, datablock, checksum)
+        datablocks_operations.verify_data_in_LTS(
+            dataset_id, datablock, checksum)
 
 
 # Flows
@@ -105,15 +106,17 @@ async def create_datablocks_flow(dataset_id: int):
 
 
 def on_dataset_flow_failure(flow: Flow, flow_run: FlowRun, state: State):
-    report_dataset_error(dataset_id=flow_run.parameters['dataset_id'], state=state, task_run=None)
+    report_dataset_error(
+        dataset_id=flow_run.parameters['dataset_id'], state=state, task_run=None)
     datablocks_operations.cleanup_lts_folder(flow_run.parameters['dataset_id'])
     datablocks_operations.cleanup_scratch(flow_run.parameters['dataset_id'])
-    datablocks_operations.cleanup_staging(flow_run.parameters['dataset_id'])
+    datablocks_operations.cleanup_s3_staging(flow_run.parameters['dataset_id'])
 
 
 def cleanup_dataset(flow: Flow, flow_run: FlowRun, state: State):
-    datablocks_operations.cleanup_landingzone(flow_run.parameters['dataset_id'])
-    datablocks_operations.cleanup_staging(flow_run.parameters['dataset_id'])
+    datablocks_operations.cleanup_s3_landingzone(
+        flow_run.parameters['dataset_id'])
+    datablocks_operations.cleanup_s3_staging(flow_run.parameters['dataset_id'])
     datablocks_operations.cleanup_scratch(flow_run.parameters['dataset_id'])
 
 
