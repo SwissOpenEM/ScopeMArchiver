@@ -17,7 +17,6 @@
     "-v",
     "--cov=./archiver",
     "--cov-report=html",
-    "--pdb",
     ".",
   ],
   "python.testing.pytestEnabled": true,

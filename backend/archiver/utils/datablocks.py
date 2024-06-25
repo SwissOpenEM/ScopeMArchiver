@@ -261,7 +261,12 @@ def move_data_to_LTS(dataset_id: int, datablock: DataBlock) -> str:
     destination = lts_target_dir / datablock_name
 
     getLogger().info("Verifying checksum")
-    checksum_destination = calculate_checksum(destination)
+    # Copy back from LTS to scratch
+    # TODO: can this run in parallel like this? Or is this also limited by the LTS?
+    verification_path = StoragePaths.scratch_datablocks_folder(dataset_id) / "verification"
+    verification_path.mkdir(exist_ok=True)
+    copy_file_to_folder(src_file=destination, dst_folder=verification_path)
+    checksum_destination = calculate_checksum(verification_path / datablock_name)
 
     if checksum_destination != checksum_hash_source:
         raise SystemError("Datablock verification failed")
