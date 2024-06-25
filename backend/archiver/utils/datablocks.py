@@ -255,8 +255,8 @@ def move_data_to_LTS(dataset_id: int, datablock: DataBlock) -> str:
     getLogger().info("Copy datablock to LTS")
 
     # Copy to LTS
-    copy_file(src=datablock_full_path.absolute(),
-              dst=lts_target_dir.absolute())
+    copy_file_to_folder(src_file=datablock_full_path.absolute(),
+                        dst_folder=lts_target_dir.absolute())
 
     destination = lts_target_dir / datablock_name
 
@@ -269,9 +269,28 @@ def move_data_to_LTS(dataset_id: int, datablock: DataBlock) -> str:
     return checksum_hash_source
 
 
-def copy_file(src: Path, dst: Path):
+def copy_file_to_folder(src_file: Path, dst_folder: Path):
+    """Copies a file to a destination folder (does not need to exist)
+
+    Args:
+        src_file (Path): Source file
+        dst_folder (Path): destination folder - needs to exist
+
+    Raises:
+        SystemError: raises if operation fails
+    """
+    if not src_file.exists() or not src_file.is_file():
+        raise SystemError(f"Source file {src_file} is not a file or does not exist")
+    if dst_folder.is_file():
+        raise SystemError(f"Destination folder {dst_folder} is not a folder")
+
     subprocess.run(["rsync", "-rcvz", "--stats", "--mkpath",
-                   str(src), str(dst)], capture_output=True, check=True)
+                   str(src_file), str(dst_folder)], capture_output=True, check=True)
+
+    expected_dst_file = dst_folder / src_file.name
+
+    if not expected_dst_file.exists():
+        raise SystemError(f"Copying did not produce file {expected_dst_file}")
 
 
 def verify_data_in_LTS(dataset_id: int, datablock: DataBlock, expected_checksum: str) -> None:
@@ -284,7 +303,7 @@ def verify_data_in_LTS(dataset_id: int, datablock: DataBlock, expected_checksum:
     lts_datablock_path = StoragePaths.lts_datablocks_folder(
         dataset_id) / Path(datablock.archiveId).name
 
-    copy_file(src=lts_datablock_path.absolute(), dst=dst_folder.absolute())
+    copy_file_to_folder(src_file=lts_datablock_path.absolute(), dst_folder=dst_folder.absolute())
 
     checksum = calculate_checksum(local_datablock_path)
 
@@ -306,10 +325,6 @@ def create_datablocks(dataset_id: int, origDataBlocks: List[OrigDataBlock]) -> L
             f"No objects found in landing zone at {StoragePaths.relative_datablocks_folder(dataset_id)} for dataset {dataset_id}. Storage endpoint: {S3Storage().url}")
 
     dataset_scratch_folder = StoragePaths.scratch_folder(dataset_id)
-
-    # import shutil
-    # shutil.rmtree(dataset_scratch_folder)
-
     dataset_scratch_folder.mkdir(parents=True, exist_ok=True)
 
     # files with full path are downloaded to scratch root
@@ -321,6 +336,8 @@ def create_datablocks(dataset_id: int, origDataBlocks: List[OrigDataBlock]) -> L
 
     datablocks_scratch_folder = StoragePaths.scratch_datablocks_folder(
         dataset_id)
+
+    datablocks_scratch_folder.mkdir(parents=True, exist_ok=True)
 
     tarballs = create_tarballs(
         dataset_id=dataset_id, folder=datablocks_scratch_folder)
@@ -353,7 +370,6 @@ def cleanup_lts_folder(dataset_id: int) -> None:
 
     lts_folder_new = lts_folder.rename(str(lts_folder) + "_failed_" + suffix)
     getLogger().info(f"Move LTS folder from {lts_folder} to {lts_folder_new}")
-    shutil.move(src=lts_folder, dst=lts_folder_new)
 
 
 def cleanup_s3_staging(dataset_id: int) -> None:
@@ -409,7 +425,7 @@ async def wait_for_free_space():
     """
     while not sufficient_free_space_on_lts():
         seconds_to_wait = 30
-        print(f"Not enough free space. Waiting for {seconds_to_wait}s")
+        getLogger().info(f"Not enough free space. Waiting for {seconds_to_wait}s")
         await asyncio.sleep(seconds_to_wait)
 
     return True

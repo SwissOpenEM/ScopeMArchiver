@@ -2,6 +2,7 @@
 from unittest.mock import patch, MagicMock
 from typing import List, Dict, Any
 import pytest
+import os
 from prefect.testing.utilities import prefect_test_harness
 
 from archiver.flows.archive_datasets_flow import archive_datasets_flow
@@ -73,8 +74,24 @@ def mock_void_function(*args, **kwargs):
     pass
 
 
+@pytest.fixture(autouse=True)
+def config_fixture():
+
+    envs = {
+        'LTS_FREE_SPACE_PERCENTAGE': "1",
+        'SCICAT_API_PREFIX': ""
+    }
+
+    for k, v in envs.items():
+        os.environ[k] = v
+
+    yield
+
+    for k, v in envs.items():
+        os.environ.pop(k)
+
+
 @pytest.mark.asyncio
-@pytest.mark.serial
 @pytest.mark.parametrize("job_id,dataset_id", [
     (123, 456),
 ])
@@ -140,7 +157,6 @@ async def test_scicat_api_archiving(
 
 
 @pytest.mark.asyncio
-@pytest.mark.serial
 @pytest.mark.parametrize("job_id,dataset_id", [
     (123, 456),
 ])
@@ -194,7 +210,6 @@ async def test_create_datablocks_user_error(
 
 
 @pytest.mark.asyncio
-@pytest.mark.serial
 @ pytest.mark.parametrize("job_id,dataset_id", [
     (123, 456),
 ])
@@ -253,7 +268,6 @@ async def test_move_to_LTS_failure(
 
 
 @pytest.mark.asyncio
-@pytest.mark.serial
 @pytest.mark.parametrize("job_id,dataset_id", [
     (123, 456),
 ])

@@ -2,6 +2,8 @@ from pathlib import Path
 from prefect.variables import Variable
 import os
 
+from archiver.utils.log import getLogger
+
 from pydantic_settings import (
     BaseSettings,
     SettingsConfigDict,
@@ -66,6 +68,7 @@ class Variables:
             c = Variable.get(name)
         finally:
             if c is None or c.value is None:
+                getLogger().warning(f"Value {name} not found in config, returning empty string")
                 return ""
             return c.value
 

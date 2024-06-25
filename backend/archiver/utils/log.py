@@ -1,8 +1,15 @@
 import prefect
+import logging
+
+import prefect.logging
 
 
 def getLogger():
-    return prefect.get_run_logger()
+    try:
+        prefect_logger = prefect.get_run_logger()
+        return prefect_logger
+    except Exception:
+        return logging.getLogger()
 
 
 __attributes__ = [
