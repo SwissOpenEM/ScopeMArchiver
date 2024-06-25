@@ -9,7 +9,8 @@
       "type": "debugpy",
       "request": "launch",
       "env": {
-        "PREFECT_API_URL": "http://test-host/api",
+        "PREFECT_API_URL": "http://localhost:4200/api",
+        "PREFECT_LOGGING_LEVEL": "DEBUG",
         "API_ROOT_PATH": "/",
         "API_RELOAD": "true"
       },
@@ -24,7 +25,7 @@
       "name": "Prefect Flows",
       "type": "debugpy",
       "request": "launch",
-      "cwd": "${workspaceFolder}/archiver",
+      "cwd": "${workspaceFolder}",
       "env": {
         "PREFECT_API_URL": "http://localhost:4200/api",
         // "PREFECT_API_URL": "http://scopem-openem:4200/api",
@@ -33,7 +34,7 @@
         "LTS_STORAGE_ROOT": "/tmp/data/LTS/",
         "ARCHIVER_SCRATCH_FOLDER": "/tmp/data/scratch/",
       },
-      "module": "flows",
+      "module": "archiver.flows",
       "jinja": true
     },
     {
