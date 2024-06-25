@@ -1,0 +1,24 @@
+# README
+
+## About
+
+This is a go app with a [wails.io](wails.io) frontend to upload folder contents to a Minio instance.
+
+It supports
+
+* Folder selection
+* (parallel) Upload(s)
+* Cancellation
+
+## Development
+
+Start in dev mode:
+
+`wails dev` 
+
+Build the app:
+
+`wails build`
+
+
+
