@@ -84,7 +84,7 @@ services:
       - deploy
     build:
       context: ./backend/
-      dockerfile: ./prefect-config.Dockerfile
+      dockerfile: ./prefect-flows.Dockerfile
     networks:
       - scopemarchiver_network
     environment:
