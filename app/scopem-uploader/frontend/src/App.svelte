@@ -13,7 +13,7 @@
   import { EventsOn } from "../wailsjs/runtime/runtime";
   import { v4 as uuidv4 } from "uuid";
 
-  let minio_host: string = "openem-dev.ethz.ch:9000";
+  let minio_host: string = "scopem-openem.ethz.ch:9000";
   let minio_bucket: string = "go-minio-testbucket";
   let md5checksum = false;
 
