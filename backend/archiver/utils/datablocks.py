@@ -3,6 +3,7 @@ import tarfile
 import os
 import shutil
 import asyncio
+import time
 
 from uuid import uuid4
 from typing import Iterator, List
@@ -257,6 +258,9 @@ def move_data_to_LTS(dataset_id: int, datablock: DataBlock) -> str:
     # Copy to LTS
     copy_file_to_folder(src_file=datablock_full_path.absolute(),
                         dst_folder=lts_target_dir.absolute())
+
+    # Wait before recalling the file for checksum verification
+    time.sleep(10)
 
     destination = lts_target_dir / datablock_name
 
