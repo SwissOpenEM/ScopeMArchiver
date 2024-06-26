@@ -289,10 +289,22 @@ def copy_file_to_folder(src_file: Path, dst_folder: Path):
     if dst_folder.is_file():
         raise SystemError(f"Destination folder {dst_folder} is not a folder")
 
-    subprocess.run(["rsync", "-rcvz", "--stats", "--mkpath",
-                   str(src_file), str(dst_folder)], capture_output=True, check=True)
+    getLogger().info(f"Start Copy operation. src:{src_file}, dst{dst_folder}")
 
-    expected_dst_file = dst_folder / src_file.name
+    with subprocess.Popen(["rsync", "-rcvz", "--stats", "--mkpath",
+                          str(src_file), str(dst_folder)],
+                          stdout=subprocess.PIPE,
+                          stderr=subprocess.STDOUT,
+                          universal_newlines=True) as popen:
+
+        for line in popen.stdout:
+            getLogger().info(line)
+
+        popen.stdout.close()
+        return_code = popen.wait()
+        getLogger().info(f"Finished with return code : {return_code}")
+
+        expected_dst_file = dst_folder / src_file.name
 
     if not expected_dst_file.exists():
         raise SystemError(f"Copying did not produce file {expected_dst_file}")
@@ -415,9 +427,9 @@ def sufficient_free_space_on_lts():
 
     path = Variables().LTS_STORAGE_ROOT
     stat = shutil.disk_usage(path)
-    percentage = 100.0 * stat.free / stat.total
-    getLogger().info(f"LTS space: {percentage}")
-    return percentage >= Variables().LTS_FREE_SPACE_PERCENTAGE
+    free_percentage = 100.0 * stat.free / stat.total
+    getLogger().info(f"LTS free space:{free_percentage:.2%}%, expected: {Variables().LTS_FREE_SPACE_PERCENTAGE:.2%}%")
+    return free_percentage >= Variables().LTS_FREE_SPACE_PERCENTAGE
 
 
 async def wait_for_free_space():

@@ -9,7 +9,7 @@ def getLogger():
         prefect_logger = prefect.get_run_logger()
         return prefect_logger
     except Exception:
-        return logging.getLogger()
+        return logging.getLogger(name="TestLogger")
 
 
 __attributes__ = [
