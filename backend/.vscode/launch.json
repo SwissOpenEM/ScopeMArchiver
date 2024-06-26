@@ -31,6 +31,7 @@
         // "PREFECT_API_URL": "http://scopem-openem:4200/api",
         "PREFECT_LOGGING_LEVEL": "DEBUG",
         "SCICAT_ENDPOINT": "http://localhost:8005",
+        "MINIO_URL": "localhost:9000",
         "LTS_STORAGE_ROOT": "/tmp/data/LTS/",
         "ARCHIVER_SCRATCH_FOLDER": "/tmp/data/scratch/",
       },
