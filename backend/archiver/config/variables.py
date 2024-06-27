@@ -2,6 +2,8 @@ from pathlib import Path
 from prefect.variables import Variable
 import os
 
+from archiver.utils.log import getLogger
+
 from pydantic_settings import (
     BaseSettings,
     SettingsConfigDict,
@@ -36,6 +38,7 @@ class AppConfig(BaseSettings):
     API_RELOAD: bool = False
 
     LTS_STORAGE_ROOT: Path = Path("")
+    LTS_FREE_SPACE_PERCENTAGE: float = 20
     ARCHIVER_SCRATCH_FOLDER: Path = Path("")
 
     SCICAT_ENDPOINT: str = ""
@@ -65,6 +68,7 @@ class Variables:
             c = Variable.get(name)
         finally:
             if c is None or c.value is None:
+                getLogger().warning(f"Value {name} not found in config, returning empty string")
                 return ""
             return c.value
 
@@ -111,6 +115,10 @@ class Variables:
     @property
     def LTS_STORAGE_ROOT(self) -> Path:
         return Path(self.__get("lts_storage_root"))
+
+    @property
+    def LTS_FREE_SPACE_PERCENTAGE(self) -> float:
+        return float(self.__get("lts_free_space_percentage") or 1.0)
 
 
 def register_variables_from_config(config: AppConfig) -> None:
