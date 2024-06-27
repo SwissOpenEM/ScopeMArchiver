@@ -2,12 +2,11 @@
 from unittest.mock import patch, MagicMock
 from typing import List, Dict, Any
 import pytest
-import os
 from prefect.testing.utilities import prefect_test_harness
 
 from archiver.flows.archive_datasets_flow import archive_datasets_flow
 from archiver.scicat.scicat_interface import SciCat
-from archiver.tests.scicat_unittest_mock import ScicatMock
+from archiver.flows.tests.scicat_unittest_mock import ScicatMock
 from archiver.utils.model import Job, OrigDataBlock, Dataset, DatasetLifecycle, DataBlock
 from archiver.flows.utils import DatasetError, SystemError
 
@@ -72,23 +71,6 @@ def raise_system_error(*args, **kwargs):
 
 def mock_void_function(*args, **kwargs):
     pass
-
-
-@pytest.fixture(autouse=True)
-def config_fixture():
-
-    envs = {
-        'LTS_FREE_SPACE_PERCENTAGE': "1",
-        'SCICAT_API_PREFIX': ""
-    }
-
-    for k, v in envs.items():
-        os.environ[k] = v
-
-    yield
-
-    for k, v in envs.items():
-        os.environ.pop(k)
 
 
 @pytest.mark.asyncio
