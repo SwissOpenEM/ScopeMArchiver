@@ -15,8 +15,8 @@
   ],
   "python.testing.pytestArgs": [
     "-v",
-    "--cov=./archiver",
-    "--cov-report=html",
+    // "--cov=./archiver",
+    // "--cov-report=html",
     ".",
   ],
   "python.testing.pytestEnabled": true,

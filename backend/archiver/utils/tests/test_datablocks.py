@@ -13,16 +13,16 @@ from archiver.flows.utils import StoragePaths, SystemError
 
 
 test_id = 1234
-num_files = 10
+num_raw_files = 10
 file_size_in_bytes = 1024 * 1024
 target_size = 2 * file_size_in_bytes - 1
-expected_num_files = 5
+expected_num_compressed_files = 5
 
 
 @pytest.fixture(scope="session")
-def temp_folder(tmp_path_factory: pytest.TempPathFactory):
+def create_raw_files(tmp_path_factory: pytest.TempPathFactory):
     folder: Path = tmp_path_factory.mktemp(str(test_id))
-    for n in range(num_files):
+    for n in range(num_raw_files):
         filename = folder / f"img_{n}.png"
         with open(filename, 'wb') as fout:
             print(f"Creating file {filename}")
@@ -30,54 +30,66 @@ def temp_folder(tmp_path_factory: pytest.TempPathFactory):
     return folder
 
 
-def test_create_tarballs(temp_folder: Path):
-    tarballs = create_tarballs(
-        test_id, temp_folder, target_size=target_size)
+@pytest.fixture(scope="session")
+def dst_folder(tmp_path_factory: pytest.TempPathFactory):
+    folder: Path = tmp_path_factory.mktemp(str(test_id))
+    return folder
 
-    tars = [t for t in temp_folder.iterdir() if t.suffix == ".gz"]
-    assert len(tars) == expected_num_files
+
+def test_create_tarballs(create_raw_files: Path, dst_folder: Path):
+    tarballs = create_tarballs(
+        test_id, create_raw_files, dst_folder, target_size=target_size)
+
+    tars = [t for t in dst_folder.iterdir()]
+    assert len(tars) == expected_num_compressed_files
 
     assert tarballs.sort() == tars.sort()
 
-    expected_files = set([temp_folder / t for t in temp_folder.iterdir() if not t.suffix == ".gz"])
+    verify_tar_content(create_raw_files, dst_folder, tars)
+
+
+def verify_tar_content(raw_file_folder, tars_folder, tars):
+    expected_files = set([t.name for t in raw_file_folder.iterdir() if not tarfile.is_tarfile(t)])
 
     for t in tars:
-        tar: tarfile.TarFile = tarfile.open(os.path.join(temp_folder, t))
+        tar: tarfile.TarFile = tarfile.open(Path(tars_folder) / t)
         for f in tar.getnames():
-            expected_files.discard("/" / Path(f))
+            expected_files.discard(f)
 
     assert len(expected_files) == 0
 
 
 @ pytest.fixture()
-def tarfiles(temp_folder: Path):
+def tarfiles(create_raw_files: Path):
 
-    files = list(temp_folder.iterdir())
+    files = list(create_raw_files.iterdir())
 
     assert len(files) > 2
 
-    tar1_path = os.path.join(temp_folder, "tar1.tar.gz")
+    tar1_path = create_raw_files / "tar1.tar.gz"
 
-    tar1 = tarfile.open(tar1_path, 'x:gz', compresslevel=6)
-    for f in files[:2]:
-        tar1.add(temp_folder / f)
-    tar1.close()
+    if not tar1_path.exists():
+        tar1 = tarfile.open(tar1_path, 'x:gz', compresslevel=6)
+        for f in files[:2]:
+            tar1.add(name=create_raw_files / f, arcname=f.name, recursive=False)
+        tar1.close()
 
-    tar2_path = os.path.join(temp_folder, "tar2.tar.gz")
-    tar2 = tarfile.open(tar2_path, 'x:gz', compresslevel=6)
-    for f in files[2:]:
-        tar2.add(temp_folder / f)
-    tar2.close()
+    tar2_path = create_raw_files / "tar2.tar.gz"
+    if not tar2_path.exists():
+        tar2 = tarfile.open(tar2_path, 'x:gz', compresslevel=6)
+        for f in files[2:]:
+            tar2.add(name=create_raw_files / f, arcname=f.name, recursive=False)
+        tar2.close()
 
     return [tar1_path, tar2_path]
 
 
 @ pytest.fixture()
-def origDataBlocks(temp_folder: Path) -> List[OrigDataBlock]:
+def origDataBlocks(create_raw_files: Path) -> List[OrigDataBlock]:
     import uuid
     blocks: List[OrigDataBlock] = []
-    for f in temp_folder.iterdir():
-        p = temp_folder / f
+    for f in create_raw_files.iterdir():
+        p = create_raw_files / f
         blocks.append(
             OrigDataBlock(id=str(uuid.uuid4()),
                           size=p.stat().st_size,
@@ -91,7 +103,7 @@ def origDataBlocks(temp_folder: Path) -> List[OrigDataBlock]:
     return blocks
 
 
-@pytest.fixture()
+@ pytest.fixture()
 def datablock() -> DataBlock:
     import uuid
     return DataBlock(
@@ -152,18 +164,46 @@ def create_file_in_lts(dataset: int):
     return file_in_lts
 
 
-def create_file_in_scratch(dataset: int):
-    StoragePaths.scratch_datablocks_folder(dataset).mkdir(parents=True, exist_ok=True)
+def create_origdatablock_in_scratch(dataset: int):
+    StoragePaths.scratch_archival_origdatablocks_folder(dataset).mkdir(parents=True, exist_ok=True)
+    file = tempfile.NamedTemporaryFile(dir=StoragePaths.scratch_archival_origdatablocks_folder(dataset), delete=False)
     file_size_in_bytes = 1024 * 10
-    file_in_scratch = tempfile.NamedTemporaryFile(dir=StoragePaths.scratch_datablocks_folder(dataset), delete=False)
-    with open(file_in_scratch.name, "wb") as f:
+    with open(file.name, "wb") as f:
         f.write(os.urandom(file_size_in_bytes))
-    return file_in_scratch
+    return file
 
 
-def test_create_datablock_entries(temp_folder: Path, tarfiles: List[Path], origDataBlocks: List[OrigDataBlock]):
+def create_datablock_in_scratch(dataset: int):
+    StoragePaths.scratch_archival_datablocks_folder(dataset).mkdir(parents=True, exist_ok=True)
+    file = tempfile.NamedTemporaryFile(dir=StoragePaths.scratch_archival_datablocks_folder(dataset), delete=False)
+    file_size_in_bytes = 1024 * 10
+    with open(file.name, "wb") as f:
+        f.write(os.urandom(file_size_in_bytes))
+    return file
 
-    datablocks: List[DataBlock] = create_datablock_entries(test_id, temp_folder, origDataBlocks, tarfiles)
+
+def create_files_in_scratch(dataset: int):
+    files = []
+    StoragePaths.scratch_archival_datablocks_folder(dataset).mkdir(parents=True, exist_ok=True)
+    files.append(tempfile.NamedTemporaryFile(dir=StoragePaths.scratch_archival_datablocks_folder(dataset), delete=False))
+
+    StoragePaths.scratch_archival_origdatablocks_folder(dataset).mkdir(parents=True, exist_ok=True)
+    files.append(tempfile.NamedTemporaryFile(dir=StoragePaths.scratch_archival_origdatablocks_folder(dataset), delete=False))
+
+    StoragePaths.scratch_archival_files_folder(dataset).mkdir(parents=True, exist_ok=True)
+    files.append(tempfile.NamedTemporaryFile(dir=StoragePaths.scratch_archival_files_folder(dataset), delete=False))
+
+    for f in files:
+        file_size_in_bytes = 1024 * 10
+        with open(f.name, "wb") as f:
+            f.write(os.urandom(file_size_in_bytes))
+
+    return files
+
+
+def test_create_datablock_entries(create_raw_files: Path, tarfiles: List[Path], origDataBlocks: List[OrigDataBlock]):
+
+    datablocks: List[DataBlock] = create_datablock_entries(test_id, create_raw_files, origDataBlocks, tarfiles)
 
     assert len(datablocks) == 2
 
@@ -218,13 +258,13 @@ def test_cleanup_lts(storage_paths_fixture):
 
 def test_cleanup_scratch(storage_paths_fixture):
     dataset = 1
-    file_in_lts = create_file_in_scratch(dataset)
+    files_in_scratch = create_files_in_scratch(dataset)
 
-    assert Path(file_in_lts.name).exists()
+    assert all([Path(f.name).exists() for f in files_in_scratch])
 
     datablock_operations.cleanup_scratch(dataset_id=dataset)
 
-    assert not Path(file_in_lts.name).exists()
+    assert all([not Path(f.name).exists() for f in files_in_scratch])
 
 
 def mock_find_object_in_s3(*args, **kwargs):
@@ -240,7 +280,12 @@ def mock_download_objects_from_s3(*args, **kwargs):
 def test_move_data_to_LTS(storage_paths_fixture, datablock):
 
     dataset_id = 1
-    file = create_file_in_scratch(dataset_id)
+    file = create_origdatablock_in_scratch(dataset_id)
+
+    import shutil
+    StoragePaths.scratch_archival_datablocks_folder(dataset_id).mkdir(parents=True)
+    shutil.copyfile(file.name, StoragePaths.scratch_archival_datablocks_folder(dataset_id) / Path(file.name).name)
+
     expected_checksum = datablock_operations.calculate_checksum(Path(file.name))
 
     datablock.archiveId = file.name
@@ -271,17 +316,21 @@ def mock_verify_objects(*args, **kwargs):
 @ patch("archiver.utils.datablocks.download_objects_from_s3", mock_download_objects_from_s3)
 @ patch("archiver.utils.datablocks.upload_objects_to_s3", mock_upload_objects_to_s3)
 @ patch("archiver.utils.datablocks.verify_objects", mock_verify_objects)
-def test_create_datablocks(temp_folder, storage_paths_fixture, origDataBlocks: List[OrigDataBlock]):
+def test_create_datablocks(tarfiles, storage_paths_fixture, origDataBlocks: List[OrigDataBlock]):
     dataset_id = 1
 
     import shutil
-    scratch = StoragePaths.scratch_folder(dataset_id)
-    shutil.copytree(temp_folder.absolute(), scratch)
+    for t in tarfiles:
+        StoragePaths.scratch_archival_origdatablocks_folder(dataset_id).mkdir(parents=True, exist_ok=True)
+        shutil.copy(t, StoragePaths.scratch_archival_origdatablocks_folder(dataset_id) / Path(t).name)
 
     # Act
     datablocks = datablock_operations.create_datablocks(dataset_id=dataset_id, origDataBlocks=origDataBlocks)
 
     assert len(datablocks) == 1
 
-    for d in datablocks:
-        assert (StoragePaths.scratch_root() / d.archiveId).exists()
+    assert all([(StoragePaths.scratch_archival_root() / d.archiveId).exists() for d in datablocks])
+
+    created_tars = [(StoragePaths.scratch_archival_root() / d.archiveId) for d in datablocks]
+
+    verify_tar_content(tarfiles[0].parent, StoragePaths.scratch_archival_datablocks_folder(dataset_id), created_tars)

@@ -16,7 +16,20 @@ from archiver.config.variables import Variables
 from archiver.flows.utils import DatasetError, SystemError, StoragePaths
 
 
-def create_tarballs(dataset_id: int, folder: Path,
+def unpack_tarballs(src_folder: Path, dst_folder: Path):
+    for file in src_folder.iterdir():
+        if not tarfile.is_tarfile(file):
+            continue
+
+        getLogger().info(f"Start extracting {file} to {dst_folder}")
+
+        tar = tarfile.open(file)
+        tar.extractall(path=dst_folder)
+
+        getLogger().info(f"Done extracting {file} to {dst_folder}")
+
+
+def create_tarballs(dataset_id: int, src_folder: Path, dst_folder: Path,
                     target_size: int = 300 * (1024**2)) -> List[Path]:
     """ Create datablocks, i.e. .tar.gz files, from files in a folder. The files will be named according to
     the dataset they belong to. The target size of the created files is 300 MB by default
@@ -33,26 +46,23 @@ def create_tarballs(dataset_id: int, folder: Path,
     # TODO: corner case: target size < file size
     tarballs: List[Path] = []
 
-    filename: Path = Path(f"{dataset_id}_{len(tarballs)}.tar.gz")
-    filepath = folder / filename
+    current_tar_file: Path = Path(f"{dataset_id}_{len(tarballs)}.tar.gz")
+    filepath = dst_folder / current_tar_file
 
     tar = tarfile.open(filepath, 'x:gz', compresslevel=4)
 
-    for f in folder.iterdir():
-        file = f
-        if file.suffix == ".gz":
-            continue
-        tar.add(file, recursive=False)
+    for file in src_folder.iterdir():
+        tar.add(name=file, arcname=file.name, recursive=False)
 
         if filepath.stat().st_size >= target_size:
             tar.close()
-            tarballs.append(filename)
-            filename = Path(f"{dataset_id}_{len(tarballs)}.tar.gz")
-            filepath = folder / filename
+            tarballs.append(current_tar_file)
+            current_tar_file = Path(f"{dataset_id}_{len(tarballs)}.tar.gz")
+            filepath = dst_folder / current_tar_file
             tar = tarfile.open(filepath, 'w')
 
     tar.close()
-    tarballs.append(filename)
+    tarballs.append(current_tar_file)
 
     return tarballs
 
@@ -235,7 +245,7 @@ def move_data_to_LTS(dataset_id: int, datablock: DataBlock) -> str:
 
     getLogger().info(f"Downloading datablock {datablock_name}")
 
-    datablocks_scratch_folder = StoragePaths.scratch_datablocks_folder(
+    datablocks_scratch_folder = StoragePaths.scratch_archival_datablocks_folder(
         dataset_id)
     datablocks_scratch_folder.mkdir(parents=True, exist_ok=True)
 
@@ -267,7 +277,7 @@ def move_data_to_LTS(dataset_id: int, datablock: DataBlock) -> str:
     getLogger().info("Verifying checksum")
     # Copy back from LTS to scratch
     # TODO: can this run in parallel like this? Or is this also limited by the LTS?
-    verification_path = StoragePaths.scratch_datablocks_folder(dataset_id) / "verification"
+    verification_path = StoragePaths.scratch_archival_datablocks_folder(dataset_id) / "verification"
     verification_path.mkdir(exist_ok=True)
     copy_file_to_folder(src_file=destination, dst_folder=verification_path)
     checksum_destination = calculate_checksum(verification_path / datablock_name)
@@ -316,7 +326,7 @@ def copy_file_to_folder(src_file: Path, dst_folder: Path):
 
 def verify_data_in_LTS(dataset_id: int, datablock: DataBlock, expected_checksum: str) -> None:
 
-    dst_folder = StoragePaths.scratch_datablocks_folder(
+    dst_folder = StoragePaths.scratch_archival_datablocks_folder(
         dataset_id) / "verification"
     dst_folder.mkdir(parents=True, exist_ok=True)
     local_datablock_path = dst_folder / Path(datablock.archiveId).name
@@ -345,29 +355,34 @@ def create_datablocks(dataset_id: int, origDataBlocks: List[OrigDataBlock]) -> L
         raise Exception(
             f"No objects found in landing zone at {StoragePaths.relative_datablocks_folder(dataset_id)} for dataset {dataset_id}. Storage endpoint: {S3Storage().url}")
 
-    dataset_scratch_folder = StoragePaths.scratch_folder(dataset_id)
-    dataset_scratch_folder.mkdir(parents=True, exist_ok=True)
-
     # files with full path are downloaded to scratch root
-    file_paths = download_objects_from_s3(prefix=StoragePaths.relative_datablocks_folder(
-        dataset_id), bucket=S3Storage().LANDINGZONE_BUCKET, destination_folder=StoragePaths.scratch_root())
+    file_paths = download_objects_from_s3(prefix=StoragePaths.relative_origdatablocks_folder(
+        dataset_id), bucket=S3Storage().LANDINGZONE_BUCKET, destination_folder=StoragePaths.scratch_archival_root())
 
     getLogger().info(
         f"Downloaded {len(file_paths)} objects from {S3Storage().LANDINGZONE_BUCKET}")
 
-    datablocks_scratch_folder = StoragePaths.scratch_datablocks_folder(
-        dataset_id)
+    origdatablocks_scratch_folder = StoragePaths.scratch_archival_origdatablocks_folder(dataset_id)
+    origdatablocks_scratch_folder.mkdir(parents=True, exist_ok=True)
 
+    raw_files_scratch_folder = StoragePaths.scratch_archival_files_folder(dataset_id)
+    raw_files_scratch_folder.mkdir(parents=True, exist_ok=True)
+
+    unpack_tarballs(origdatablocks_scratch_folder, raw_files_scratch_folder)
+
+    datablocks_scratch_folder = StoragePaths.scratch_archival_datablocks_folder(dataset_id)
     datablocks_scratch_folder.mkdir(parents=True, exist_ok=True)
 
     tarballs = create_tarballs(
-        dataset_id=dataset_id, folder=datablocks_scratch_folder)
+        dataset_id=dataset_id,
+        src_folder=raw_files_scratch_folder,
+        dst_folder=datablocks_scratch_folder)
 
     getLogger().info(
         f"Created {len(tarballs)} datablocks from {len(file_paths)} objects")
 
     datablocks = create_datablock_entries(
-        dataset_id, StoragePaths.scratch_datablocks_folder(dataset_id), origDataBlocks, tarballs)
+        dataset_id, StoragePaths.scratch_archival_datablocks_folder(dataset_id), origDataBlocks, tarballs)
 
     uploaded_objects = upload_objects_to_s3(prefix=StoragePaths.relative_datablocks_folder(
         dataset_id), bucket=S3Storage().STAGING_BUCKET, source_folder=datablocks_scratch_folder, ext=".gz")
@@ -415,8 +430,8 @@ def verify_objects(uploaded_objects: List[Path],
 
 def cleanup_scratch(dataset_id: int):
     getLogger().debug(
-        f"Cleaning up objects in scratch folder: {StoragePaths.scratch_datablocks_folder(dataset_id)}")
-    shutil.rmtree(StoragePaths.scratch_datablocks_folder(dataset_id))
+        f"Cleaning up objects in scratch folder: {StoragePaths.scratch_folder(dataset_id)}")
+    shutil.rmtree(StoragePaths.scratch_folder(dataset_id))
 
     getLogger().debug(
         f"Cleaning up objects in scratch folder: {StoragePaths.scratch_folder(dataset_id)}")
