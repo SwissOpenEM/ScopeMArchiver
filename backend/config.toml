@@ -19,7 +19,7 @@ MINIO_USER = "minioadmin"                # secret
 MINIO_RETRIEVAL_BUCKET = "retrieval"     # string
 MINIO_LANDINGZONE_BUCKET = "landingzone" # string
 MINIO_STAGING_BUCKET = "staging"         #string
-MINIO_URL = "minio:9000"                 #string
+MINIO_ENDPOINT = "minio:9000"                 #string
 
 [scicat]
 SCICAT_ENDPOINT = "http://scicatmock:8000" # string

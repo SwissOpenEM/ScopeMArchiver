@@ -30,7 +30,7 @@ class S3Storage():
         self._USER = Variables().MINIO_USER
         self._PASSWORD = Variables().MINIO_PASSWORD
         self._REGION = Variables().MINIO_REGION
-        self._URL = Variables().MINIO_URL
+        self._URL = Variables().MINIO_ENDPOINT
 
         self.STAGING_BUCKET: Bucket = Bucket(Variables().MINIO_STAGING_BUCKET)
         self.RETRIEVAL_BUCKET: Bucket = Bucket(Variables().MINIO_RETRIEVAL_BUCKET)
@@ -48,7 +48,14 @@ class S3Storage():
         return self._URL
 
     def get_presigned_url(self, bucket: Bucket, filename: str) -> str:
-        url = self._minio.presigned_get_object(
+        external_minio = minio.Minio(
+            endpoint=Variables().MINIO_EXTERNAL_ENDPOINT,
+            access_key=self._USER,
+            secret_key=self._PASSWORD,
+            region=self._REGION,
+            secure=False
+        )
+        url = external_minio.presigned_get_object(
             bucket_name=bucket.name,
             object_name=filename,
             expires=timedelta(hours=2)
@@ -87,8 +94,3 @@ class S3Storage():
         errors = self._minio.remove_objects(bucket.name, delete_object_list)
         for e in errors:
             getLogger().error(f"Failed to remove objects from Minio {e}")
-
-
-__attributes__ = [
-    "MinioStorage"
-]

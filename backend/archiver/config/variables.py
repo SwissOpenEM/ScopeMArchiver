@@ -30,7 +30,8 @@ class AppConfig(BaseSettings):
     MINIO_RETRIEVAL_BUCKET: str = ""
     MINIO_STAGING_BUCKET: str = ""
     MINIO_LANDINGZONE_BUCKET: str = ""
-    MINIO_URL: str = ""
+    MINIO_ENDPOINT: str = ""
+    MINIO_EXTERNAL_ENDPOINT: str = ""
 
     API_ROOT_PATH: str = ""
     API_PORT: int = 0
@@ -105,8 +106,12 @@ class Variables:
         return self.__get("minio_password")
 
     @property
-    def MINIO_URL(self) -> str:
-        return self.__get("minio_url")
+    def MINIO_ENDPOINT(self) -> str:
+        return self.__get("minio_endpoint")
+
+    @property
+    def MINIO_EXTERNAL_ENDPOINT(self) -> str:
+        return self.__get("minio_external_endpoint")
 
     @property
     def ARCHIVER_SCRATCH_FOLDER(self) -> Path:
@@ -125,4 +130,5 @@ def register_variables_from_config(config: AppConfig) -> None:
     model = config.model_dump()
     print(model)
     for s in [s for s in dir(Variables()) if not s.startswith('__') and not s.startswith('_')]:
-        Variable.set(s.lower(), str(model[s]), overwrite=True)
+        if s in model.keys():
+            Variable.set(s.lower(), str(model[s]), overwrite=True)
