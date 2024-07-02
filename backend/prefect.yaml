@@ -22,7 +22,7 @@ deployments:
         registry_url: ghcr.io
         username: "{{ prefect.blocks.secret.github-openem-username }}"
         password: "{{ prefect.blocks.secret.github-openem-access-token }}"
-      image_pull_policy: Always
+      image_pull_policy: Never
       networks:
         - "{{ $PREFECT_NETWORK }}"
   schedules: []
@@ -47,7 +47,7 @@ deployments:
         registry_url: ghcr.io
         username: "{{ prefect.blocks.secret.github-openem-username }}"
         password: "{{ prefect.blocks.secret.github-openem-access-token }}"
-      image_pull_policy: Always
+      image_pull_policy: Never 
       volumes:
         - "{{ $PREFECT_WORKER_LTS_VOLUME_NAME }}:/tmp/LTS"
       networks:
