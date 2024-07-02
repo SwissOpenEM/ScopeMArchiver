@@ -385,7 +385,9 @@ def create_datablocks(dataset_id: int, origDataBlocks: List[OrigDataBlock]) -> L
     tarballs = create_tarballs(
         dataset_id=dataset_id,
         src_folder=raw_files_scratch_folder,
-        dst_folder=datablocks_scratch_folder)
+        dst_folder=datablocks_scratch_folder,
+        target_size=Variables().ARCHIVER_TARGET_SIZE_MB * 1024 * 1024
+    )
 
     getLogger().info(
         f"Created {len(tarballs)} datablocks from {len(file_paths)} objects")
