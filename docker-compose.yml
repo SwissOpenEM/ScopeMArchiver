@@ -53,11 +53,12 @@ services:
       MINIO_ROOT_PASSWORD: ${MINIO_PASS}
       MINIO_PROMETHEUS_AUTH_TYPE: "public"
       MINIO_PROMETHEUS_URL: "http://prometheus:9090"
-      MINIO_BROWSER_REDIRECT_URL: "http://minio.${HOST}"
+      MINIO_BROWSER_REDIRECT_URL: "http://${HOST}/minio/"
     command: server --console-address ":9001" /data
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.minio.rule=Host(`minio.${HOST}`)"
+      - "traefik.http.routers.minio.rule=Host(`${HOST}`) && PathPrefix(`/minio`)"
+      - "traefik.http.middlewares.minio-stripprefix.stripprefix.prefixes=/minio"
       - "traefik.http.routers.minio.entrypoints=web"
       - "traefik.http.routers.minio.service=minio-web"
       - "traefik.http.services.minio-web.loadbalancer.server.port=9001"
@@ -68,13 +69,14 @@ services:
       - "traefik.http.middlewares.minio-cors.headers.accesscontrolmaxage=100"
       - "traefik.http.middlewares.minio-cors.headers.addvaryheader=true"
       - "traefik.http.middlewares.minio-headers.headers.customrequestheaders.X-Forwarded-Proto=http"
-      - "traefik.http.middlewares.minio-headers.headers.customrequestheaders.X-Forwarded-Host=minio.${HOST}"
-      - "traefik.http.routers.minio.middlewares=minio-headers,minio-cors"
+      - "traefik.http.middlewares.minio-headers.headers.customrequestheaders.X-Forwarded-Host=${HOST}/minio"
+      - "traefik.http.routers.minio.middlewares=minio-stripprefix,minio-headers,minio-cors"
 
-      - "traefik.http.routers.minio-api.rule=Host(`minio-api.${HOST}`)"
+      - "traefik.http.routers.minio-api.rule=Host(`${HOST}/minio-api`) && PathPrefix(`/minio-api`)"
+      - "traefik.http.middlewares.minio-api-stripprefix.stripprefix.prefixes=/minio-api"
       - "traefik.http.routers.minio-api.entrypoints=web"
       - "traefik.http.routers.minio-api.service=minio-api"
-      - "traefik.http.routers.minio-api.middlewares=minio-headers,minio-cors"
+      - "traefik.http.routers.minio-api.middlewares=minio-api-stripprefix,minio-headers,minio-cors"
       - "traefik.http.services.minio-api.loadbalancer.server.port=9000"
   minio-create-bucket:
     image: minio/mc
