@@ -118,6 +118,10 @@ class Variables:
         return Path(self.__get("archiver_scratch_folder"))
 
     @property
+    def ARCHIVER_TARGET_SIZE_MB(self) -> int:
+        return int(self.__get("archiver_target_size_mb") or 200)
+
+    @property
     def LTS_STORAGE_ROOT(self) -> Path:
         return Path(self.__get("lts_storage_root"))
 
