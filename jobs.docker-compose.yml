@@ -94,7 +94,7 @@ services:
       - PREFECT_WORKER_LTS_VOLUME_NAME=${PREFECT_WORKER_LTS_VOLUME_NAME}
       - PREFECT_NETWORK=scopemarchiver_network
       - FLOWS_DOCKER_IMAGE=${PREFECT_FLOWS_IMAGE_NAME}:${OPENEM_IMAGE_TAG}
-      - MINIO_EXTERNAL_ENDPOINT="minio.${HOST}"
+      - MINIO_EXTERNAL_ENDPOINT="${HOST}:9000"
     command: prefect --no-prompt deploy --all --prefect-file prefect.yaml
     working_dir: /home/dev
     volumes:
