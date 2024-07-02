@@ -275,8 +275,8 @@ def mock_download_objects_from_s3(*args, **kwargs):
     return [True]
 
 
-@ patch("archiver.utils.datablocks.find_object_in_s3", mock_find_object_in_s3)
-@ patch("archiver.utils.datablocks.download_object_from_s3", mock_download_objects_from_s3)
+@patch("archiver.utils.datablocks.find_object_in_s3", mock_find_object_in_s3)
+@patch("archiver.utils.datablocks.download_object_from_s3", mock_download_objects_from_s3)
 def test_move_data_to_LTS(storage_paths_fixture, datablock):
 
     dataset_id = 1
@@ -312,10 +312,10 @@ def mock_verify_objects(*args, **kwargs):
     return []
 
 
-@ patch("archiver.utils.datablocks.list_s3_objects", mock_list_s3_objects)
-@ patch("archiver.utils.datablocks.download_objects_from_s3", mock_download_objects_from_s3)
-@ patch("archiver.utils.datablocks.upload_objects_to_s3", mock_upload_objects_to_s3)
-@ patch("archiver.utils.datablocks.verify_objects", mock_verify_objects)
+@patch("archiver.utils.datablocks.list_s3_objects", mock_list_s3_objects)
+@patch("archiver.utils.datablocks.download_objects_from_s3", mock_download_objects_from_s3)
+@patch("archiver.utils.datablocks.upload_objects_to_s3", mock_upload_objects_to_s3)
+@patch("archiver.utils.datablocks.verify_objects", mock_verify_objects)
 def test_create_datablocks(tarfiles, storage_paths_fixture, origDataBlocks: List[OrigDataBlock]):
     dataset_id = 1
 

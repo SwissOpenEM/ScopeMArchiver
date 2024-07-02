@@ -17,6 +17,9 @@ from archiver.flows.utils import DatasetError, SystemError, StoragePaths
 
 
 def unpack_tarballs(src_folder: Path, dst_folder: Path):
+    if not any(Path(src_folder).iterdir()):
+        raise SystemError(f"Empty folder {src_folder} found. No files to unpack.")
+
     for file in src_folder.iterdir():
         if not tarfile.is_tarfile(file):
             continue
@@ -50,6 +53,9 @@ def create_tarballs(dataset_id: int, src_folder: Path, dst_folder: Path,
     filepath = dst_folder / current_tar_file
 
     tar = tarfile.open(filepath, 'x:gz', compresslevel=4)
+
+    if not any(Path(src_folder).iterdir()):
+        raise SystemError(f"Empty folder {src_folder} found.")
 
     for file in src_folder.iterdir():
         tar.add(name=file, arcname=file.name, recursive=False)
@@ -133,6 +139,9 @@ def download_objects_from_s3(prefix: Path, bucket: Bucket, destination_folder: P
         S3Storage().fget_object(bucket=bucket, folder=str(prefix),
                                 object_name=item.object_name or "", target_path=local_filepath)
         files.append(local_filepath)
+
+    if len(files) == 0:
+        raise SystemError(f"No files found in bucket {bucket} at {prefix}")
 
     return files
 
@@ -351,7 +360,7 @@ def create_datablocks(dataset_id: int, origDataBlocks: List[OrigDataBlock]) -> L
     if len(origDataBlocks) == 0:
         return []
 
-    if all(False for _ in list_s3_objects(StoragePaths.relative_datablocks_folder(dataset_id), S3Storage().LANDINGZONE_BUCKET)):
+    if all(False for _ in list_s3_objects(StoragePaths.relative_origdatablocks_folder(dataset_id), S3Storage().LANDINGZONE_BUCKET)):
         raise Exception(
             f"No objects found in landing zone at {StoragePaths.relative_datablocks_folder(dataset_id)} for dataset {dataset_id}. Storage endpoint: {S3Storage().url}")
 
@@ -413,6 +422,11 @@ def cleanup_s3_staging(dataset_id: int) -> None:
                            bucket=S3Storage().STAGING_BUCKET)
 
 
+def cleanup_s3_retrieval(dataset_id: int) -> None:
+    delete_objects_from_s3(prefix=StoragePaths.relative_datablocks_folder(dataset_id),
+                           bucket=S3Storage().RETRIEVAL_BUCKET)
+
+
 def cleanup_s3_landingzone(dataset_id: int) -> None:
     delete_objects_from_s3(prefix=StoragePaths.relative_datablocks_folder(dataset_id),
                            bucket=S3Storage().LANDINGZONE_BUCKET)
@@ -465,3 +479,42 @@ async def wait_for_free_space():
         await asyncio.sleep(seconds_to_wait)
 
     return True
+
+
+def get_datablock_path_in_LTS(datablock: DataBlock) -> Path:
+    datablock_in_lts = Variables().LTS_STORAGE_ROOT / datablock.archiveId
+
+    if not datablock_in_lts.exists():
+        raise SystemError(f"Datablock {datablock.id} does not exist at {datablock.archiveId} in LTS")
+
+    return datablock_in_lts
+
+
+def upload_datablock(file: Path, datablock: DataBlock):
+    # upload to s3 retrieval bucket
+    S3Storage().fput_object(source_file=file,
+                            destination_file=Path(datablock.archiveId),
+                            bucket=S3Storage().RETRIEVAL_BUCKET)
+
+
+def copy_from_LTS_to_retrieval(dataset_id: int, datablock: DataBlock):
+
+    datablock_in_lts = get_datablock_path_in_LTS(datablock)
+
+    # copy to local folder
+    scratch_destination_folder = StoragePaths.scratch_archival_datablocks_folder(dataset_id)
+    scratch_destination_folder.mkdir(exist_ok=True, parents=True)
+    copy_file_to_folder(src_file=datablock_in_lts, dst_folder=scratch_destination_folder)
+
+    # TODO: verify checksum
+    # for each single file?
+    getLogger().warning("Checksum verification missing!")
+    file_on_scratch = scratch_destination_folder / Path(datablock.archiveId).name
+    upload_datablock(file=file_on_scratch, datablock=datablock)
+
+
+def create_presigned_urls(datablocks: List[DataBlock]) -> List[str]:
+    urls = []
+    for d in datablocks:
+        urls.append(S3Storage().get_presigned_url(S3Storage().RETRIEVAL_BUCKET, d.archiveId))
+    return urls
