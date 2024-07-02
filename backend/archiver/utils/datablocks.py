@@ -461,7 +461,7 @@ def sufficient_free_space_on_lts():
     path = Variables().LTS_STORAGE_ROOT
     stat = shutil.disk_usage(path)
     free_percentage = 100.0 * stat.free / stat.total
-    getLogger().info(f"LTS free space:{free_percentage:.2%}%, expected: {Variables().LTS_FREE_SPACE_PERCENTAGE:.2%}%")
+    getLogger().info(f"LTS free space:{free_percentage:.2}%, expected: {Variables().LTS_FREE_SPACE_PERCENTAGE:.2}%")
     return free_percentage >= Variables().LTS_FREE_SPACE_PERCENTAGE
 
 

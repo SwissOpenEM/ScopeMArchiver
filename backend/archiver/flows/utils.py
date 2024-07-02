@@ -1,46 +1,10 @@
 from pathlib import Path
-from prefect.runtime import flow_run, task_run
+
+from prefect import State
+from prefect.client.schemas.objects import TaskRun
+
 from archiver.config.variables import Variables
-
-
-def generate_task_name_dataset():
-    task_name = task_run.task_name
-    parameters = task_run.get_parameters()
-    dataset_id = parameters["dataset_id"]
-
-    return f"{task_name}-dataset_id-{dataset_id}"
-
-
-def generate_task_name_job():
-    task_name = task_run.task_name
-    parameters = task_run.get_parameters()
-    job_id = parameters["job_id"]
-
-    return f"{task_name}-job_id-{job_id}"
-
-
-def generate_flow_name_dataset():
-    flow_name = flow_run.task_name
-    parameters = flow_run.get_parameters()
-    dataset_id = parameters["dataset_id"]
-
-    return f"{flow_name}-dataset_id-{dataset_id}"
-
-
-def generate_flow_name_job_id():
-    flow_name = flow_run.get_flow_name()
-    parameters = flow_run.get_parameters()
-    job_id = parameters["job_id"]
-
-    return f"{flow_name}-job_id-{job_id}"
-
-
-def generate_subflow_run_name_job_id_dataset_id():
-    flow_name = flow_run.get_flow_name()
-    parameters = flow_run.get_parameters()
-    dataset_id = parameters["dataset_id"]
-
-    return f"{flow_name}-dataset_id-{dataset_id}"
+from archiver.scicat.scicat_tasks import report_dataset_system_error, report_dataset_user_error, report_dataset_retrieval_error
 
 
 class DatasetError(Exception):
@@ -53,6 +17,50 @@ class SystemError(Exception):
     """Custom exception to report different error types to Scicat
     """
     pass
+
+
+def report_archival_error(dataset_id: int, state: State, task_run: TaskRun):
+    """Report an error of an archival job of a dataset. Differntiates betwen "DatasetError" (User error, e.g. missing files)
+    and SystemError (transient error).
+
+    Args:
+        dataset_id (int): dataset id
+        state (State): task run state
+        task_run (TaskRun): task run
+    """
+
+    try:
+        state.result()
+    except DatasetError:
+        report_dataset_user_error(dataset_id)
+    except SystemError:
+        report_dataset_system_error(dataset_id)
+    except Exception:
+        # TODO: add some info about unknown errors
+        report_dataset_system_error(dataset_id)
+
+
+def report_retrieval_error(dataset_id: int, state: State, task_run: TaskRun):
+    """Report a retrieval error of a job of a dataset. Differntiates betwen "DatasetError" (User error, e.g. missing files)
+    and SystemError (transient error).
+
+    Args:
+        dataset_id (int): dataset id
+        state (State): task run state
+        task_run (TaskRun): task run
+    """
+
+    report_dataset_retrieval_error(dataset_id=dataset_id)
+
+    # try:
+    #     state.result()
+    # except DatasetError:
+    #     report_dataset_user_error(dataset_id)
+    # except SystemError:
+    #     report_dataset_system_error(dataset_id)
+    # except Exception:
+    #     # TODO: add some info about unknown errors
+    #     report_dataset_system_error(dataset_id)
 
 
 class StoragePaths:
