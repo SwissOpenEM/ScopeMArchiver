@@ -28,10 +28,9 @@ def report_retrieved_datablocks(datablocks: List[DataBlock]):
         print(u)
 
 
-@task(task_run_name=generate_task_name_dataset)
-def move_datablock_from_LTS_to_S3(dataset_id: int, datablock: DataBlock) -> str:
-    with concurrency("copy-from-LTS-to-retrieval", occupy=1):
-        datablocks_operations.copy_from_LTS_to_retrieval(dataset_id, datablock)
+@task(task_run_name=generate_task_name_dataset, tags=["copy-from-LTS-to-retrieval"])
+def copy_datablock_from_LTS_to_S3(dataset_id: int, datablock: DataBlock) -> str:
+    datablocks_operations.copy_from_LTS_to_retrieval(dataset_id, datablock)
 
 
 def on_dataset_flow_failure(flow: Flow, flow_run: FlowRun, state: State):
