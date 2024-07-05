@@ -18,7 +18,7 @@ def generate_task_name_job():
 
 
 def generate_flow_name_dataset():
-    flow_name = flow_run.task_name
+    flow_name = flow_run.get_flow_name()
     parameters = flow_run.get_parameters()
     dataset_id = parameters["dataset_id"]
 

@@ -1,3 +1,4 @@
+import random
 from prefect import flow, task
 from prefect.deployments.deployments import run_deployment
 import os
@@ -10,9 +11,11 @@ from archiver.utils.datablocks import upload_objects_to_s3, create_tarballs
 from archiver.utils.working_storage_interface import S3Storage
 from archiver.utils.model import OrigDataBlock, DataFile
 from archiver.flows.utils import StoragePaths
+from .task_utils import generate_task_name_dataset
+from archiver.flows.utils import StoragePaths
 
 
-@task
+@task(task_run_name=generate_task_name_dataset)
 def create_dummy_dataset(dataset_id: int, file_size_MB: int, num_files: int):
     scratch_folder = Variables().ARCHIVER_SCRATCH_FOLDER / str(dataset_id)
     if not scratch_folder.exists():
@@ -44,8 +47,9 @@ def create_dummy_dataset(dataset_id: int, file_size_MB: int, num_files: int):
                   data=j)
 
 
-@flow(name="create_test_dataset", )
-def create_test_dataset_flow(dataset_id: int, file_size_MB: int, num_files: int):
+@flow(name="create_test_dataset")
+def create_test_dataset_flow(file_size_MB: int = 10, num_files: int = 10):
+    dataset_id = random.randint(0, 1000)
     create_dummy_dataset(dataset_id, file_size_MB, num_files)
 
 
