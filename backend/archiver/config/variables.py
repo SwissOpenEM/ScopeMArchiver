@@ -41,6 +41,7 @@ class AppConfig(BaseSettings):
     LTS_STORAGE_ROOT: Path = Path("")
     LTS_FREE_SPACE_PERCENTAGE: float = 20
     ARCHIVER_SCRATCH_FOLDER: Path = Path("")
+    ARCHIVER_TARGET_SIZE_MB: int = 20
 
     SCICAT_ENDPOINT: str = ""
     SCICAT_API_PREFIX: str = ""
