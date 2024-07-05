@@ -1,5 +1,5 @@
 import argparse
-from .variables import register_variables_from_config, AppConfig
+from .variables import register_variables_from_config, PrefectVariablesModel
 from pathlib import Path
 
 if __name__ == "__main__":
@@ -10,5 +10,5 @@ if __name__ == "__main__":
     parser.add_argument('-c', '--config', default=None, type=Path)
 
     args, _ = parser.parse_known_args()
-    config = AppConfig(_env_file=args.config)
+    config = PrefectVariablesModel(_env_file=args.config)
     register_variables_from_config(config)

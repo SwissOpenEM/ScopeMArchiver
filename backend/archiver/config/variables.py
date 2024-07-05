@@ -10,7 +10,7 @@ from pydantic_settings import (
 )
 
 
-class AppConfig(BaseSettings):
+class PrefectVariablesModel(BaseSettings):
     """Pydantic model of the Prefect Variables config
 
     Args:
@@ -25,18 +25,11 @@ class AppConfig(BaseSettings):
     )
 
     MINIO_REGION: str = ""
-    MINIO_USER: str = ""
-    MINIO_PASSWORD: str = ""
     MINIO_RETRIEVAL_BUCKET: str = ""
     MINIO_STAGING_BUCKET: str = ""
     MINIO_LANDINGZONE_BUCKET: str = ""
     MINIO_ENDPOINT: str = ""
     MINIO_EXTERNAL_ENDPOINT: str = ""
-
-    API_ROOT_PATH: str = ""
-    API_PORT: int = 0
-    API_LOG_LEVEL: str = ""
-    API_RELOAD: bool = False
 
     LTS_STORAGE_ROOT: Path = Path("")
     LTS_FREE_SPACE_PERCENTAGE: float = 20
@@ -70,7 +63,8 @@ class Variables:
             c = Variable.get(name)
         finally:
             if c is None or c.value is None:
-                getLogger().warning(f"Value {name} not found in config, returning empty string")
+                getLogger().warning(
+                    f"Value {name} not found in config, returning empty string")
                 return ""
             return c.value
 
@@ -99,14 +93,6 @@ class Variables:
         return self.__get("minio_region")
 
     @property
-    def MINIO_USER(self) -> str:
-        return self.__get("minio_user")
-
-    @property
-    def MINIO_PASSWORD(self) -> str:
-        return self.__get("minio_password")
-
-    @property
     def MINIO_ENDPOINT(self) -> str:
         return self.__get("minio_endpoint")
 
@@ -131,7 +117,7 @@ class Variables:
         return float(self.__get("lts_free_space_percentage") or 1.0)
 
 
-def register_variables_from_config(config: AppConfig) -> None:
+def register_variables_from_config(config: PrefectVariablesModel) -> None:
     model = config.model_dump()
     print(model)
     for s in [s for s in dir(Variables()) if not s.startswith('__') and not s.startswith('_')]:

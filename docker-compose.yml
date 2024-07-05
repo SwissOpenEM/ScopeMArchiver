@@ -49,11 +49,14 @@ services:
     networks:
       - scopemarchiver_network
     environment:
-      MINIO_ROOT_USER: ${MINIO_USER}
-      MINIO_ROOT_PASSWORD: ${MINIO_PASS}
+      MINIO_ROOT_USER_FILE: /run/secrets/minio_user
+      MINIO_ROOT_PASSWORD_FILE: /run/secrets/minio_pass
       MINIO_PROMETHEUS_AUTH_TYPE: "public"
       MINIO_PROMETHEUS_URL: "http://prometheus:9090"
       MINIO_BROWSER_REDIRECT_URL: "http://${HOST}/minio/"
+    secrets:
+      - minio_user
+      - minio_pass
     command: server --console-address ":9001" /data
     labels:
       - "traefik.enable=true"
@@ -85,10 +88,21 @@ services:
     profiles:
       - development
       - production
-    entrypoint: >
-      /bin/sh -c " /usr/bin/mc alias set local-minio http://minio:9000 ${MINIO_USER} ${MINIO_PASS}; /usr/bin/mc mb -p local-minio/${MINIO_RETRIEVAL_BUCKET}; /usr/bin/mc mb -p local-minio/${MINIO_LANDINGZONE_BUCKET}; /usr/bin/mc mb -p local-minio/${MINIO_STAGING_BUCKET}; exit 0; "
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        export MINIO_USER=$$(cat /var/run/secrets/minio_user)
+        export MINIO_PASS=$$(cat /var/run/secrets/minio_pass)
+        /usr/bin/mc alias set local-minio http://minio:9000 $$MINIO_USER $$MINIO_PASS
+        /usr/bin/mc mb -p local-minio/${MINIO_RETRIEVAL_BUCKET}
+        /usr/bin/mc mb -p local-minio/${MINIO_LANDINGZONE_BUCKET}
+        /usr/bin/mc mb -p local-minio/${MINIO_STAGING_BUCKET}
     networks:
       - scopemarchiver_network
+    secrets:
+      - minio_user
+      - minio_pass
 
   frontend:
     image: ${WEBUPLOADER_IMAGE_NAME}:${OPENEM_IMAGE_TAG}
@@ -146,3 +160,9 @@ volumes:
 networks:
   scopemarchiver_network:
     name: scopemarchiver_network
+
+secrets:
+  minio_user:
+    file: ./.secrets/miniouser.txt
+  minio_pass:
+    file: ./.secrets/miniopass.txt
