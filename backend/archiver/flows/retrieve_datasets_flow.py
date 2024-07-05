@@ -68,7 +68,7 @@ async def retrieve_single_dataset_flow(dataset_id: int):
     # check if enough space available in bucket
     retrieval_tasks = []
     for d in datablocks_not_in_retrieval_bucket:
-        retrieval_tasks.append(move_datablock_from_LTS_to_S3.submit(dataset_id=dataset_id, datablock=d))
+        retrieval_tasks.append(copy_datablock_from_LTS_to_S3.submit(dataset_id=dataset_id, datablock=d))
 
     report_task = report_retrieved_datablocks.submit(datablocks, wait_for=[retrieval_tasks])
 
