@@ -72,14 +72,24 @@ services:
     environment:
       - PREFECT_LOGGING_LEVEL=DEBUG
       - PREFECT_API_URL=http://prefect-server:4200/api
+      # Secrets are stored as blocks, removing _FILE suffix
+      - MINIO_USER_FILE=/run/secrets/minio_user
+      - MINIO_PASSWORD_FILE=/run/secrets/minio_pass
+      - GITHUB_USER_FILE=/run/secrets/github_user
+      - GITHUB_PASSWORD_FILE=/run/secrets/github_pass
     volumes:
       - type: bind
-        source: ./backend/config.toml
+        source: ./backend/prefect-vars.toml
         target: /var/local/config.toml
-    command: "/var/local/config.toml"
+    command: "-v /var/local/prefect-vars.toml -s MINIO_USER_FILE MINIO_PASSWORD_FILE GITHUB_USER_FILE GITHUB_PASSWORD_FILE"
     depends_on:
       prefect-server:
         condition: service_healthy
+    secrets:
+      - minio_user
+      - minio_pass
+      - github_user
+      - github_pass
   prefect-deploy:
     image: ${PREFECT_FLOWS_IMAGE_NAME}:${OPENEM_IMAGE_TAG}
     container_name: prefect-deploy
@@ -254,3 +264,7 @@ secrets:
     file: ./.secrets/postgresuser.txt
   postgres_pass:
     file: ./.secrets/postgrespass.txt
+  github_user:
+    file: ./.secrets/githubuser.txt
+  github_pass:
+    file: ./.secrets/githubpass.txt

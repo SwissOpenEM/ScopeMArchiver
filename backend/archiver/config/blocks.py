@@ -14,8 +14,8 @@ class Blocks:
 
     @property
     def MINIO_USER(self) -> str:
-        return self.__get("MINIO_USER")
+        return self.__get("minio-user")
 
     @property
     def MINIO_PASSWORD(self) -> str:
-        return self.__get("MINIO_PASS")
+        return self.__get("minio-password")
