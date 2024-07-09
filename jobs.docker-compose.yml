@@ -80,8 +80,11 @@ services:
     volumes:
       - type: bind
         source: ./backend/prefect-vars.toml
-        target: /var/local/config.toml
-    command: "-v /var/local/prefect-vars.toml -s MINIO_USER_FILE MINIO_PASSWORD_FILE GITHUB_USER_FILE GITHUB_PASSWORD_FILE"
+        target: /var/local/prefect-vars.toml
+      - type: bind
+        source: ./backend/concurrency-limits.toml
+        target: /var/local/concurrency-limits.toml
+    command: "-v /var/local/prefect-vars.toml -s MINIO_USER_FILE MINIO_PASSWORD_FILE GITHUB_USER_FILE GITHUB_PASSWORD_FILE -l /var/local/concurrency-limits.toml"
     depends_on:
       prefect-server:
         condition: service_healthy
@@ -109,7 +112,7 @@ services:
       - PREFECT_WORKER_LTS_VOLUME_NAME=scopemarchiver_${PREFECT_WORKER_LTS_VOLUME_NAME}
       - PREFECT_NETWORK=scopemarchiver_network
       - FLOWS_DOCKER_IMAGE=${PREFECT_FLOWS_IMAGE_NAME}:${OPENEM_IMAGE_TAG}
-      - MINIO_EXTERNAL_ENDPOINT="${HOST}:9000"
+      - MINIO_EXTERNAL_ENDPOINT=${HOST}:9000
     command: prefect --no-prompt deploy --all --prefect-file prefect.yaml
     working_dir: /home/dev
     volumes:

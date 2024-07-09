@@ -5,8 +5,6 @@ import asyncio
 
 from prefect import flow, task, State, Task, Flow
 from prefect.client.schemas.objects import TaskRun, FlowRun
-from prefect.concurrency.sync import concurrency
-from prefect.deployments.deployments import run_deployment
 
 from .utils import report_archival_error
 from .task_utils import generate_task_name_dataset, generate_flow_name_job_id, generate_subflow_run_name_job_id_dataset_id
@@ -16,6 +14,7 @@ from archiver.scicat.scicat_tasks import report_job_failure_system_error, report
 from archiver.utils.datablocks import wait_for_free_space
 from archiver.utils.model import OrigDataBlock, DataBlock, Job
 import archiver.utils.datablocks as datablocks_operations
+from archiver.config.concurrency_limits import ConcurrencyLimits
 
 
 def on_get_origdatablocks_error(dataset_id: int, task: Task, task_run: TaskRun, state: State):
@@ -39,7 +38,7 @@ def create_datablocks(dataset_id: int, origDataBlocks: List[OrigDataBlock]) -> L
     return datablocks_operations.create_datablocks(dataset_id, origDataBlocks)
 
 
-@task(tags=["wait-for-free-space-in-lts"])
+@task(tags=[ConcurrencyLimits.LTS_FREE_TAG])
 def check_free_space_in_LTS():
     """ Prefect task to wait for free space in the LTS. Checks periodically if the condition for enough
     free space is fulfilled. Only one of these task runs at time; the others are only scheduled once this task
@@ -48,7 +47,7 @@ def check_free_space_in_LTS():
     asyncio.run(wait_for_free_space())
 
 
-@task(task_run_name=generate_task_name_dataset, tags=["move-datablocks-to-lts"])
+@task(task_run_name=generate_task_name_dataset, tags=[ConcurrencyLimits.MOVE_TO_LTS_TAG])
 def move_data_to_LTS(dataset_id: int, datablock: DataBlock) -> str:
     """ Prefect task to move a datablock (.tar.gz file) to the LTS. Concurrency of this task is limited to 2 instances
     at the same time.
@@ -56,7 +55,7 @@ def move_data_to_LTS(dataset_id: int, datablock: DataBlock) -> str:
     return datablocks_operations.move_data_to_LTS(dataset_id, datablock)
 
 
-@task(task_run_name=generate_task_name_dataset, tags=["verify-datablocks-in-lts"])
+@task(task_run_name=generate_task_name_dataset, tags=[ConcurrencyLimits.VERIFY_LTS_TAG])
 def verify_data_in_LTS(dataset_id: int, datablock: DataBlock, checksum: str) -> None:
     """ Prefect Task to verify a datablock in the LTS against a checksum. Task of this type run with no concurrency since the LTS
     does only allow limited concurrent access.
@@ -190,12 +189,3 @@ async def archive_datasets_flow(dataset_ids: List[int], job_id: int):
 
     update_scicat_archival_job_status.submit(
         job_id=job_id, status=SciCat.JOBSTATUS.FINISHED_SUCCESSFULLY)
-
-
-# Deployment function
-async def run_archiving_deployment(job: Job):
-    a = await asyncio.create_task(run_deployment("archive_datasetlist/datasets_archival", parameters={
-        "dataset_ids": [d.pid for d in job.datasetList or []],
-        "job_id": job.id
-    }, timeout=0))
-    return a

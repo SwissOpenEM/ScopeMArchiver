@@ -13,6 +13,7 @@ from archiver.scicat.scicat_interface import SciCat
 from archiver.utils.model import Job, DataBlock
 from archiver.scicat.scicat_tasks import update_scicat_retrieval_job_status, update_scicat_retrieval_dataset_lifecycle
 from archiver.scicat.scicat_tasks import report_job_failure_system_error, report_dataset_user_error, get_datablocks
+from archiver.config.concurrency_limits import ConcurrencyLimits
 import archiver.utils.datablocks as datablocks_operations
 
 
@@ -28,7 +29,7 @@ def report_retrieved_datablocks(datablocks: List[DataBlock]):
         print(u)
 
 
-@task(task_run_name=generate_task_name_dataset, tags=["copy-from-LTS-to-retrieval"])
+@task(task_run_name=generate_task_name_dataset, tags=[ConcurrencyLimits.LTS_TO_RETRIEVAL_TAG])
 def copy_datablock_from_LTS_to_S3(dataset_id: int, datablock: DataBlock) -> str:
     datablocks_operations.copy_from_LTS_to_retrieval(dataset_id, datablock)
 
@@ -97,9 +98,3 @@ async def retrieve_datasets_flow(dataset_ids: List[int], job_id: int):
         job_id, SciCat.JOBSTATUS.FINISHED_SUCCESSFULLY)
 
 
-async def run_retrieval_deployment(job: Job):
-    a = await asyncio.create_task(run_deployment("retrieve_datasetlist/dataset_retrieval", parameters={
-        "dataset_ids": [d.pid for d in job.datasetList or []],
-        "job_id": job.id
-    }, timeout=0))
-    return a

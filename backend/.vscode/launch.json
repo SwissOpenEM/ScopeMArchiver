@@ -51,7 +51,9 @@
       "program": "prefect-config.py",
       "args": [
         "-s",
-        "MINIO_PASSWORD_FILE"
+        "MINIO_PASSWORD_FILE",
+        "-l",
+        "${workspaceFolder}/concurrency-limits.toml"
       ]
     },
     {

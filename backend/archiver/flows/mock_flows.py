@@ -53,10 +53,3 @@ def create_test_dataset_flow(file_size_MB: int = 10, num_files: int = 10):
     create_dummy_dataset(dataset_id, file_size_MB, num_files)
 
 
-async def run_create_dataset_deployment(dataset_id: int, file_size_MB: int, num_files: int):
-    a = await asyncio.create_task(run_deployment("create_test_dataset/dataset_creation", parameters={
-        "dataset_id": dataset_id,
-        "file_size_MB": file_size_MB,
-        "num_files": num_files
-    }, timeout=0))
-    return a

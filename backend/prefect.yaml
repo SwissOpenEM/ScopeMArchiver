@@ -71,7 +71,7 @@ deployments:
     job_variables:
       image: "{{ $FLOWS_DOCKER_IMAGE }}"
       env:
-        MINIO_EXTERNAL_ENDPOINT: "{{ $MINIO_EXTERNAL_ENDPOINT }}"
+        MINIO_EXTERNAL_ENDPOINT: {{ $MINIO_EXTERNAL_ENDPOINT }}
       registry_credentials:
         registry_url: ghcr.io
         username: "{{ prefect.blocks.secret.github-openem-username }}"
