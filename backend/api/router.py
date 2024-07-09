@@ -3,7 +3,7 @@ from fastapi.responses import JSONResponse
 
 from archiver.utils.working_storage_interface import S3Storage
 from archiver.utils.model import StorageObject, Job
-from archiver.flows import archive_datasets_flow, retrieve_datasets_flow
+from archiver.flows import archive_datasets_flow, retrieve_datasets_flow, mock_flows
 
 router = APIRouter()
 
@@ -18,6 +18,15 @@ def get_archivable_objects() -> list[StorageObject]:
 def get_retrievable_objects() -> list[StorageObject]:
     objects = S3Storage().list_objects(bucket=S3Storage().RETRIEVAL_BUCKET)
     return [StorageObject(object_name=o.object_name or "") for o in objects]
+
+
+@router.post("/new_dataset/")
+async def create_new_dataset(id: int):
+    try:
+        m = await mock_flows.run_create_dataset_deployment(id)
+        return JSONResponse(content={f"status: flow scheduled '{m.name}'"}, status_code=200)
+    except Exception as e:
+        return JSONResponse(content={"error": str(e)}, status_code=500)
 
 
 @router.post("/job/")

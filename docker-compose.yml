@@ -141,6 +141,10 @@ services:
     environment:
       - PREFECT_LOGGING_LEVEL=DEBUG
       - PREFECT_API_URL=http://prefect-server:4200/api
+      - UVICORN_ROOT_PATH=/api/v1
+      - UVICORN_PORT=8000
+      - UVICORN_LOG_LEVEL=info
+      - UVICORN_RELOAD=False
     ports:
       - 8004:8000
     labels:

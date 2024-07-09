@@ -1,14 +1,23 @@
 import uvicorn
-from archiver.config.variables import AppConfig
 import api.router as archiver_api
 import pathlib
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-import argparse
+from pydantic_settings import BaseSettings
 
 
-def init_app(config: AppConfig):
-    app = FastAPI(root_path=config.API_ROOT_PATH)
+class Settings(BaseSettings):
+    UVICORN_PORT: int = 8000
+    UVICORN_ROOT_PATH: str = "/"
+    UVICORN_RELOAD: bool = False
+    UVICORN_LOG_LEVEL: str = "info"
+
+
+if __name__ == "__main__":
+
+    settings = Settings()
+    print(settings)
+    app = FastAPI()
 
     app.include_router(archiver_api.router)
 
@@ -24,22 +33,13 @@ def init_app(config: AppConfig):
         allow_methods=["*"],
         allow_headers=["*"],
     )
-
-    return app
-
-
-if __name__ == "__main__":
-
-    parser = argparse.ArgumentParser(prog='ScopeM Archiver Backend')
-
-    parser.add_argument('-c', '--config', default=None, type=pathlib.Path)
-
-    args, _ = parser.parse_known_args()
-    config = AppConfig(_env_file=args.config)
-    print(config)
-    app = init_app(config)
-
-    uvi_config = uvicorn.Config(app, port=config.API_PORT, host="0.0.0.0", log_level=config.API_LOG_LEVEL, reload_dirs=[
-        str(pathlib.Path(__file__).parent)], reload=config.API_RELOAD)
+    uvi_config = uvicorn.Config(app,
+                                host="0.0.0.0",
+                                port=settings.UVICORN_PORT,
+                                root_path=settings.UVICORN_ROOT_PATH,
+                                reload=settings.UVICORN_RELOAD,
+                                log_level=settings.UVICORN_LOG_LEVEL,
+                                reload_dirs=[
+                                    str(pathlib.Path(__file__).parent)])
     server = uvicorn.Server(uvi_config)
     server.run()
