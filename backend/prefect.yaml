@@ -1,0 +1,61 @@
+# Welcome to your prefect.yaml file! You can use this file for storing and managing
+# configuration for deploying your flows. We recommend committing this file to source
+# control along with your flow code.
+
+# Generic metadata about this project
+name: ScopeMArchiver
+prefect-version: 2.19.2
+
+deployments:
+- name: dataset_creation
+  version: 1.0
+  tags: []
+  description:
+  entrypoint: archiver/flows/mock_flows.py:create_test_dataset_flow
+  parameters: {}
+  work_pool:
+    name: archival-docker-workpool
+    work_queue_name: default
+    job_variables:
+      image: "{{ $FLOWS_DOCKER_IMAGE }}"
+      registry_credentials:
+        registry_url: ghcr.io
+        username: "{{ prefect.blocks.secret.github-openem-username }}"
+        password: "{{ prefect.blocks.secret.github-openem-access-token }}"
+      image_pull_policy: Always
+      networks:
+        - "{{ $PREFECT_NETWORK }}"
+  schedules: []
+  build: null
+  pull:
+    # required see https://github.com/PrefectHQ/prefect/issues/10285
+    - prefect.deployments.steps.set_working_directory:
+        directory: /home/dev
+
+- name: datasets_archival 
+  version: 1.0
+  tags: []
+  description:
+  entrypoint: archiver/flows/archive_datasets_flow.py:archive_datasets_flow
+  parameters: {}
+  work_pool:
+    name: archival-docker-workpool
+    work_queue_name: default
+    job_variables:
+      image: "{{ $FLOWS_DOCKER_IMAGE }}"
+      registry_credentials:
+        registry_url: ghcr.io
+        username: "{{ prefect.blocks.secret.github-openem-username }}"
+        password: "{{ prefect.blocks.secret.github-openem-access-token }}"
+      image_pull_policy: Always
+      volumes:
+        - "{{ $PREFECT_WORKER_LTS_VOLUME_NAME }}:/tmp/LTS"
+      networks:
+        - "{{ $PREFECT_NETWORK }}"
+  schedules: []
+  build: null
+  pull:
+    # required see https://github.com/PrefectHQ/prefect/issues/10285
+    - prefect.deployments.steps.set_working_directory:
+        directory: /home/dev
+

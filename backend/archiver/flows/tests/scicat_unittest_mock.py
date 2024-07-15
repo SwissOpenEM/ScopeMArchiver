@@ -2,7 +2,7 @@ from typing import List
 import requests_mock
 
 import archiver.scicat.scicat_tasks as tasks
-from archiver.utils.model import DataFile, OrigDataBlock
+from archiver.utils.model import DataFile, OrigDataBlock, DataBlock
 
 
 class ScicatMock(requests_mock.Mocker):
@@ -27,6 +27,28 @@ class ScicatMock(requests_mock.Mocker):
             blocks.append(b)
         return blocks
 
+    def create_datablocks(self, num_blocks: int = 10, num_files_per_block: int = 10) -> List[DataBlock]:
+        size_per_file = 1024 * 1024 * 100
+        blocks: List[DataBlock] = []
+        for k in range(num_blocks):
+            b = DataBlock(
+                id=f"Block_{k}",
+                archiveId=f"openem/datasets/{k}/block_{k}",
+                size=size_per_file * num_files_per_block,
+                version=str(1),
+                ownerGroup="me",
+                dataFileList=[]
+            )
+            for i in range(num_files_per_block):
+                d = DataFile(
+                    path=f"/some/path/file_{i}.png",
+                    size=size_per_file
+                )
+                b.dataFileList.append(d)
+            blocks.append(b)
+
+        return blocks
+
     def __init__(self, job_id: int, dataset_id: int, num_blocks: int = 10, num_files_per_block: int = 10):
         super().__init__()
 
@@ -43,25 +65,34 @@ class ScicatMock(requests_mock.Mocker):
 
         origdatablocks = self.create_orig_datablocks(
             num_blocks, num_files_per_block)
-        json_list = []
+        orig_json_list = []
         for o in origdatablocks:
-            json_list.append(o.model_dump_json())
+            orig_json_list.append(o.model_dump_json())
 
         self.matchers["origdatablocks"] = self.get(
-            f"{self.ENDPOINT}{tasks.scicat.API}Datasets/{dataset_id}/origdatablocks", json=json_list)
+            f"{self.ENDPOINT}{tasks.scicat.API}Datasets/{dataset_id}/origdatablocks", json=orig_json_list)
 
-    @property
+        datablocks = self.create_orig_datablocks(
+            num_blocks, num_files_per_block)
+        datablocks_json_list = []
+        for o in datablocks:
+            datablocks_json_list.append(o.model_dump_json())
+
+        self.matchers["datablocks"] = self.get(
+            f"{self.ENDPOINT}{tasks.scicat.API}Datasets/{dataset_id}/datablocks", json=datablocks_json_list)
+
+    @ property
     def jobs_matcher(self):
         return self.matchers["jobs"]
 
-    @property
+    @ property
     def datasets_matcher(self):
         return self.matchers["datasets"]
 
-    @property
+    @ property
     def datablocks_matcher(self):
         return self.matchers["datablocks"]
 
-    @property
+    @ property
     def origdatablocks_matcher(self):
         return self.matchers["origdatablocks"]

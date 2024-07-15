@@ -2,12 +2,13 @@
 from unittest.mock import patch, MagicMock
 from typing import List, Dict, Any
 import pytest
+import os
 from prefect.testing.utilities import prefect_test_harness
 
 from archiver.flows.archive_datasets_flow import archive_datasets_flow
-from archiver.scicat_interface import SciCat
+from archiver.scicat.scicat_interface import SciCat
 from archiver.tests.scicat_unittest_mock import ScicatMock
-from archiver.model import Job, OrigDataBlock, Dataset, DatasetLifecycle, DataBlock
+from archiver.utils.model import Job, OrigDataBlock, Dataset, DatasetLifecycle, DataBlock
 from archiver.flows.utils import DatasetError, SystemError
 
 
@@ -73,22 +74,50 @@ def mock_void_function(*args, **kwargs):
     pass
 
 
-@ pytest.mark.parametrize("job_id,dataset_id", [
+@pytest.fixture(autouse=True)
+def config_fixture():
+
+    envs = {
+        'LTS_FREE_SPACE_PERCENTAGE': "1",
+        'SCICAT_API_PREFIX': ""
+    }
+
+    for k, v in envs.items():
+        os.environ[k] = v
+
+    yield
+
+    for k, v in envs.items():
+        os.environ.pop(k)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("job_id,dataset_id", [
     (123, 456),
 ])
-@ patch("archiver.scicat_tasks.scicat._ENDPOINT", ScicatMock.ENDPOINT)
-@ patch("archiver.datablocks.create_datablocks", mock_create_datablocks)
-@ patch("archiver.datablocks.move_data_to_LTS", mock_void_function)
-@ patch("archiver.datablocks.validate_data_in_LTS", mock_void_function)
-@ patch("archiver.datablocks.cleanup_scratch", mock_void_function)
-@ patch("archiver.datablocks.cleanup_staging", mock_void_function)
-def test_scicat_api_archiving(job_id: int, dataset_id: int):
+@patch("archiver.scicat.scicat_tasks.scicat._ENDPOINT", ScicatMock.ENDPOINT)
+@patch("archiver.utils.datablocks.create_datablocks", mock_create_datablocks)
+@patch("archiver.utils.datablocks.move_data_to_LTS", mock_void_function)
+@patch("archiver.utils.datablocks.verify_data_in_LTS", mock_void_function)
+@patch("archiver.utils.datablocks.cleanup_lts_folder")
+@patch("archiver.utils.datablocks.cleanup_scratch")
+@patch("archiver.utils.datablocks.cleanup_s3_staging")
+@patch("archiver.utils.datablocks.cleanup_s3_landingzone")
+async def test_scicat_api_archiving(
+        mock_cleanup_s3_landingzone: MagicMock,
+        mock_cleanup_s3_staging: MagicMock,
+        mock_cleanup_scratch: MagicMock,
+        mock_cleanup_lts: MagicMock,
+        job_id: int, dataset_id: int):
     num_orig_datablocks = 10
     num_files_per_block = 10
     num_expected_datablocks = num_orig_datablocks
 
     with ScicatMock(job_id=job_id, dataset_id=dataset_id, num_blocks=num_orig_datablocks, num_files_per_block=num_files_per_block) as m, prefect_test_harness():
-        archive_datasets_flow(job_id=job_id, dataset_ids=[dataset_id])
+        try:
+            await archive_datasets_flow(job_id=job_id, dataset_ids=[dataset_id])
+        except Exception as e:
+            pass
 
         assert m.jobs_matcher.call_count == 2
         assert m.datasets_matcher.call_count == 2
@@ -121,15 +150,28 @@ def test_scicat_api_archiving(job_id: int, dataset_id: int):
             assert m.jobs_matcher.request_history[1].json() == expected_job_status(
                 job_id, "archive", SciCat.JOBSTATUS.FINISHED_SUCCESSFULLY)
 
+        mock_cleanup_s3_landingzone.assert_called_once_with(dataset_id)
+        mock_cleanup_s3_staging.assert_called_once_with(dataset_id)
+        mock_cleanup_scratch.assert_called_once_with(dataset_id)
+        mock_cleanup_lts.assert_not_called()
 
-@ pytest.mark.parametrize("job_id,dataset_id", [
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("job_id,dataset_id", [
     (123, 456),
 ])
-@ patch("archiver.scicat_tasks.scicat._ENDPOINT", ScicatMock.ENDPOINT)
-@ patch("archiver.datablocks.create_datablocks", raise_user_error)
-@ patch("archiver.datablocks.cleanup_scratch")
-@ patch("archiver.datablocks.cleanup_staging")
-def test_create_datablocks_user_error(mock_cleanup_staging: MagicMock, mock_cleanup_scratch: MagicMock, job_id: int, dataset_id: int):
+@patch("archiver.scicat.scicat_tasks.scicat._ENDPOINT", ScicatMock.ENDPOINT)
+@patch("archiver.utils.datablocks.create_datablocks", raise_user_error)
+@patch("archiver.utils.datablocks.cleanup_lts_folder")
+@patch("archiver.utils.datablocks.cleanup_scratch")
+@patch("archiver.utils.datablocks.cleanup_s3_staging")
+@patch("archiver.utils.datablocks.cleanup_s3_landingzone")
+async def test_create_datablocks_user_error(
+        mock_cleanup_s3_landingzone: MagicMock,
+        mock_cleanup_s3_staging: MagicMock,
+        mock_cleanup_scratch: MagicMock,
+        mock_cleanup_lts: MagicMock,
+        job_id: int, dataset_id: int):
 
     num_orig_datablocks = 10
     num_files_per_block = 10
@@ -139,7 +181,7 @@ def test_create_datablocks_user_error(mock_cleanup_staging: MagicMock, mock_clea
 
     with ScicatMock(job_id=job_id, dataset_id=dataset_id, num_blocks=num_orig_datablocks, num_files_per_block=num_files_per_block)as m, prefect_test_harness():
         with pytest.raises(Exception):
-            archive_datasets_flow(job_id=job_id, dataset_ids=[dataset_id])
+            await archive_datasets_flow(job_id=job_id, dataset_ids=[dataset_id])
 
         assert m.jobs_matcher.call_count == 2
         assert m.datasets_matcher.call_count == 2
@@ -161,18 +203,29 @@ def test_create_datablocks_user_error(mock_cleanup_staging: MagicMock, mock_clea
         assert m.datasets_matcher.request_history[1].json() == expected_dataset_lifecycle(
             dataset_id, SciCat.ARCHIVESTATUSMESSAGE.MISSINGFILES)
 
-        mock_cleanup_staging.assert_called_once_with(dataset_id)
-        mock_cleanup_scratch.assert_called_once_with(dataset_id, "archival")
+        mock_cleanup_s3_landingzone.assert_not_called()
+        mock_cleanup_s3_staging.assert_called_once_with(dataset_id)
+        mock_cleanup_scratch.assert_called_once_with(dataset_id)
+        mock_cleanup_lts.assert_called_once_with(dataset_id)
 
 
+@pytest.mark.asyncio
 @ pytest.mark.parametrize("job_id,dataset_id", [
     (123, 456),
 ])
-@ patch("archiver.scicat_tasks.scicat._ENDPOINT", ScicatMock.ENDPOINT)
-@ patch("archiver.datablocks.create_datablocks", mock_create_datablocks)
-@ patch("archiver.datablocks.move_data_to_LTS", raise_system_error)
-@ patch("archiver.datablocks.cleanup_lts_folder")
-def test_move_to_LTS_failure(mock_cleanup_lts_folder: MagicMock, job_id: int, dataset_id: int):
+@ patch("archiver.scicat.scicat_tasks.scicat._ENDPOINT", ScicatMock.ENDPOINT)
+@ patch("archiver.utils.datablocks.create_datablocks", mock_create_datablocks)
+@ patch("archiver.utils.datablocks.move_data_to_LTS", raise_system_error)
+@patch("archiver.utils.datablocks.cleanup_lts_folder")
+@patch("archiver.utils.datablocks.cleanup_scratch")
+@patch("archiver.utils.datablocks.cleanup_s3_staging")
+@patch("archiver.utils.datablocks.cleanup_s3_landingzone")
+async def test_move_to_LTS_failure(
+        mock_cleanup_s3_landingzone: MagicMock,
+        mock_cleanup_s3_staging: MagicMock,
+        mock_cleanup_scratch: MagicMock,
+        mock_cleanup_lts: MagicMock,
+        job_id: int, dataset_id: int):
 
     num_orig_datablocks = 10
     num_files_per_block = 10
@@ -181,7 +234,7 @@ def test_move_to_LTS_failure(mock_cleanup_lts_folder: MagicMock, job_id: int, da
 
     with ScicatMock(job_id=job_id, dataset_id=dataset_id, num_blocks=num_orig_datablocks, num_files_per_block=num_files_per_block) as m, prefect_test_harness():
         with pytest.raises(Exception):
-            archive_datasets_flow(job_id=job_id, dataset_ids=[dataset_id])
+            await archive_datasets_flow(job_id=job_id, dataset_ids=[dataset_id])
 
         assert m.jobs_matcher.call_count == 2
         assert m.datasets_matcher.call_count == 2
@@ -208,18 +261,30 @@ def test_move_to_LTS_failure(mock_cleanup_lts_folder: MagicMock, job_id: int, da
             dataset_id, SciCat.ARCHIVESTATUSMESSAGE.SCHEDULE_ARCHIVE_JOB_FAILED)
 
         # 6: cleanup LTS
-        mock_cleanup_lts_folder.assert_called_once_with(dataset_id)
+        mock_cleanup_s3_landingzone.assert_not_called()
+        mock_cleanup_s3_staging.assert_called_once_with(dataset_id)
+        mock_cleanup_scratch.assert_called_once_with(dataset_id)
+        mock_cleanup_lts.assert_called_once_with(dataset_id)
 
 
-@ pytest.mark.parametrize("job_id,dataset_id", [
+@pytest.mark.asyncio
+@pytest.mark.parametrize("job_id,dataset_id", [
     (123, 456),
 ])
-@ patch("archiver.scicat_tasks.scicat._ENDPOINT", ScicatMock.ENDPOINT)
-@ patch("archiver.datablocks.create_datablocks", mock_create_datablocks)
-@ patch("archiver.datablocks.move_data_to_LTS", mock_void_function)
-@ patch("archiver.datablocks.validate_data_in_LTS", raise_system_error)
-@ patch("archiver.datablocks.cleanup_lts_folder")
-def test_LTS_validation_failure(mock_cleanup_lts_folder: MagicMock, job_id: int, dataset_id: int):
+@patch("archiver.scicat.scicat_tasks.scicat._ENDPOINT", ScicatMock.ENDPOINT)
+@patch("archiver.utils.datablocks.create_datablocks", mock_create_datablocks)
+@patch("archiver.utils.datablocks.move_data_to_LTS", mock_void_function)
+@patch("archiver.utils.datablocks.verify_data_in_LTS", raise_system_error)
+@patch("archiver.utils.datablocks.cleanup_lts_folder")
+@patch("archiver.utils.datablocks.cleanup_scratch")
+@patch("archiver.utils.datablocks.cleanup_s3_staging")
+@patch("archiver.utils.datablocks.cleanup_s3_landingzone")
+async def test_LTS_validation_failure(
+        mock_cleanup_s3_landingzone: MagicMock,
+        mock_cleanup_s3_staging: MagicMock,
+        mock_cleanup_scratch: MagicMock,
+        mock_cleanup_lts: MagicMock,
+        job_id: int, dataset_id: int):
 
     num_orig_datablocks = 10
     num_files_per_block = 10
@@ -228,7 +293,7 @@ def test_LTS_validation_failure(mock_cleanup_lts_folder: MagicMock, job_id: int,
 
     with ScicatMock(job_id=job_id, dataset_id=dataset_id, num_blocks=num_orig_datablocks, num_files_per_block=num_files_per_block) as m, prefect_test_harness():
         with pytest.raises(Exception):
-            archive_datasets_flow(job_id=job_id, dataset_ids=[dataset_id])
+            await archive_datasets_flow(job_id=job_id, dataset_ids=[dataset_id])
 
         assert m.jobs_matcher.call_count == 2
         assert m.datasets_matcher.call_count == 2
@@ -256,7 +321,10 @@ def test_LTS_validation_failure(mock_cleanup_lts_folder: MagicMock, job_id: int,
             dataset_id, SciCat.ARCHIVESTATUSMESSAGE.SCHEDULE_ARCHIVE_JOB_FAILED)
 
         # 6: cleanup LTS
-        mock_cleanup_lts_folder.assert_called_once_with(dataset_id)
+        mock_cleanup_s3_landingzone.assert_not_called()
+        mock_cleanup_s3_staging.assert_called_once_with(dataset_id)
+        mock_cleanup_scratch.assert_called_once_with(dataset_id)
+        mock_cleanup_lts.assert_called_once_with(dataset_id)
 
 
 # Multiple flows

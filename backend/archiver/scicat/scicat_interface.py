@@ -2,7 +2,7 @@ from enum import StrEnum
 import logging
 import requests
 from typing import List
-from .model import Job, DataBlock, Dataset, DatasetLifecycle, OrigDataBlock
+from archiver.utils.model import Job, DataBlock, Dataset, DatasetLifecycle, OrigDataBlock
 
 _LOGGER = logging.getLogger("Jobs")
 
