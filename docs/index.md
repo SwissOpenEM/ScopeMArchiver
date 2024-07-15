@@ -35,19 +35,51 @@ In addition to the services, several docker containers are started that configur
 
 ## Deployment
 
+### Docker Compose Profiles
+
+| Name     | Function                                                                         |
+| -------- | -------------------------------------------------------------------------------- |
+| services | deploys all the services without reconfigerung, relies on previous configuration |
+| config   | configures prefect (variables, blocks, limits)                                   |
+| flows    | deploys the prefect flows                                                        |
+| full     | deploys all the above                                                            |
+
+### Step by step
+
 1. Startup services
     Using docker compose allows starting up all services.
 
     ```bash
-    docker compose --env-file .production.env up -d
+    docker compose --profile services --env-file .production.env up -d
     ```
   
     This sets up all the necessary services, including the Prefect server instance.
 
-> Note:  The environment variable `HOST` in `.production.env` determines where the services are hosted and are accessible from
+    > Note:  The environment variable `HOST` in `.production.env` determines where the services are hosted and are accessible from
 
 1. Configure Secrets
+    1. Create secrets as local text file to be used during deployment in docker compose:
 
+        ```bash
+        # Minio
+        echo "minioadminuser" > .secrets/miniouser.txt
+        openssl rand -base64 12 > .secrets/miniopass.txt # creates random string
+        # Postgres
+        echo "postgres_user" > .secrets/postgresuser.txt
+        openssl rand -base64 12 > .secrets/postgrespass.txt # creates random string
+        # Github
+        echo "<github_user>" > .secrets/githubuser.txt
+        echo "<github_access_token>" > .secrets/githubpass.txt
+
+        ```
+
+    1. Deploy secrets as [Prefect Blocks](https://docs.prefect.io/latest/concepts/blocks/) automatically
+
+        ```bash
+        docker compose --profiles config --env-file .production.env run --rm
+        ```
+
+1. Add external secrets
     Before being able to deploy flows secrets to the Github container registry need to be configured manually in [the Prefect UI](https://docs.prefect.io/latest/concepts/blocks/) as a `Secret`.
 
     | Name                       | Description                                        |
@@ -60,10 +92,11 @@ In addition to the services, several docker containers are started that configur
     The [flows](../backend/archiver/flows/__init__.py) can be deployed using a container:
 
     ```bash
-    docker compose --profile config --env-file .prodduction.env run --rm
+    docker compose --profile flows --env-file .prodduction.env run --rm
     ```
 
     This deploys the flows as defined in the [prefect.yaml](https://github.com/SwissOpenEM/ScopeMArchiver/backend/prefect.yaml) and requires the secrets set up in the previous step.
+
 
 ## Development
 
@@ -72,7 +105,7 @@ In addition to the services, several docker containers are started that configur
 1. Start up all the services
 
     ```bash
-    docker compose --env-file .production.env --env-file .development.env up -d
+    docker compose --profile services --env-file .production.env --env-file .development.env up -d
     ```
 
 > **Note**: Secrets and flows don't need to be deployed as in the production deployment 

@@ -6,8 +6,8 @@ services:
     image: "traefik:v2.10"
     container_name: "traefik"
     profiles:
-      - development
-      - production
+      - services
+      - full
     command:
       - "--log.level=DEBUG"
       - "--api.insecure=true"
@@ -38,8 +38,8 @@ services:
     image: minio/minio
     container_name: minio
     profiles:
-      - development
-      - production
+      - services
+      - full
     # S3 specs for presigned urls require minio to be directly exposed, with path?
     ports:
       - 9000:9000
@@ -86,8 +86,8 @@ services:
     depends_on:
       - minio
     profiles:
-      - development
-      - production
+      - config
+      - full
     entrypoint:
       - /bin/sh
       - -c
@@ -130,8 +130,8 @@ services:
       - ./backend/config.toml:/var/local/config.toml
     command: "/var/local/config.toml"
     profiles:
-      - development
-      - production
+      - services
+      - full
     depends_on:
       prefect-config:
         condition: service_completed_successfully
