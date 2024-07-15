@@ -191,15 +191,13 @@ sequenceDiagram
   participant S as SciCat
   participant LTS as LTS
 
-  activate AS
   S --) AS: Retrieve: POST /api/v1/jobs
+  activate AS
   Note right of AS: Job {"id" : "id", "type":"retrieve", "datasetlist": [], ... } as defined in Scicat
-
   AS --) J: Create Retrieval Flow
-
   AS -->> S: Reply?
-  Note left of S: {}
   deactivate AS 
+  Note left of S: {}
   loop Retry: Exponential backoff
     activate J
       J -->> S: PATCH /api/v4/Jobs/{JobId}
