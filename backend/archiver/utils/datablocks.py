@@ -356,6 +356,8 @@ def verify_data_in_LTS(dataset_id: int, datablock: DataBlock, expected_checksum:
     lts_datablock_path = StoragePaths.lts_datablocks_folder(
         dataset_id) / Path(datablock.archiveId).name
 
+    asyncio.run(wait_for_file_accessible(lts_datablock_path.absolute(), Variables().ARCHIVER_LTS_FILE_TIMEOUT_S))
+
     copy_file_to_folder(src_file=lts_datablock_path.absolute(), dst_folder=dst_folder.absolute())
 
     checksum = calculate_checksum(local_datablock_path)
@@ -506,6 +508,24 @@ async def wait_for_free_space():
 
 
 @log
+async def wait_for_file_accessible(file: Path, timeout_s=360):
+    """
+    Returns:
+        boolean: Returns True once there is enough free space
+    """
+    total_time_waited_s = 0
+    while not os.access(path=file, mode=os.R_OK):
+        seconds_to_wait = 30
+        getLogger().info(f"File {file} currently not available. Try again in {seconds_to_wait} seconds.")
+        await asyncio.sleep(seconds_to_wait)
+        total_time_waited_s += seconds_to_wait
+        if total_time_waited_s > timeout_s:
+            raise SystemError(f"File f{file} was not accessible within {timeout_s} seconds")
+
+    return True
+
+
+@log
 def get_datablock_path_in_LTS(datablock: DataBlock) -> Path:
     datablock_in_lts = Variables().LTS_STORAGE_ROOT / datablock.archiveId
 
@@ -531,6 +551,9 @@ def copy_from_LTS_to_retrieval(dataset_id: int, datablock: DataBlock):
     # copy to local folder
     scratch_destination_folder = StoragePaths.scratch_archival_datablocks_folder(dataset_id)
     scratch_destination_folder.mkdir(exist_ok=True, parents=True)
+
+    asyncio.run(wait_for_file_accessible(datablock_in_lts.absolute(), Variables().ARCHIVER_LTS_FILE_TIMEOUT_S))
+
     copy_file_to_folder(src_file=datablock_in_lts, dst_folder=scratch_destination_folder)
 
     # TODO: verify checksum
