@@ -141,7 +141,9 @@ def cleanup_dataset(flow: Flow, flow_run: FlowRun, state: State):
 
 @flow(name="archive_dataset", log_prints=True, flow_run_name=generate_subflow_run_name_job_id_dataset_id,
       on_failure=[on_dataset_flow_failure],
-      on_completion=[cleanup_dataset])
+      on_completion=[cleanup_dataset],
+      on_cancellation=[on_dataset_flow_failure]
+      )
 async def archive_single_dataset_flow(dataset_id: int):
 
     try:
@@ -165,7 +167,20 @@ def on_job_flow_failure(flow: Flow, flow_run: FlowRun, state: State):
     report_job_failure_system_error(job_id=flow_run.parameters['job_id'], type=SciCat.JOBTYPE.ARCHIVE)
 
 
-@flow(name="archive_datasetlist", log_prints=True, flow_run_name=generate_flow_name_job_id, on_failure=[on_job_flow_failure])
+def on_job_flow_cancellation(flow: Flow, flow_run: FlowRun, state: State):
+    report_job_failure_system_error(job_id=flow_run.parameters['job_id'], type=SciCat.JOBTYPE.ARCHIVE)
+
+    dataset_ids = flow_run.parameters['dataset_ids']
+
+    for dataset_id in dataset_ids:
+        datablocks_operations.cleanup_lts_folder(dataset_id)
+        datablocks_operations.cleanup_scratch(dataset_id)
+        datablocks_operations.cleanup_s3_staging(dataset_id)
+
+
+@flow(
+    name="archive_datasetlist", log_prints=True, flow_run_name=generate_flow_name_job_id, on_failure=[on_job_flow_failure],
+    on_cancellation=[on_job_flow_cancellation])
 async def archive_datasets_flow(dataset_ids: List[int], job_id: int):
     """Prefect flow to archive a list of datasets. Corresponds to a "Job" in Scicat. Runs the individual archivals of the single datasets as subflows and reports
     the overall job status to Scicat.
