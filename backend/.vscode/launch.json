@@ -11,14 +11,12 @@
       "env": {
         "PREFECT_API_URL": "http://localhost:4200/api",
         "PREFECT_LOGGING_LEVEL": "DEBUG",
-        "API_ROOT_PATH": "/",
-        "API_RELOAD": "true"
+        "UVICORN_ROOT_PATH": "/",
+        "UVICORN_RELOAD": "true",
+        "UVICORN_LOG_LEVEL": "debug",
+        "UVICORN_PORT": "8888"
       },
       "module": "api",
-      "args": [
-        "--config",
-        "${workspaceRoot}/config.toml"
-      ],
       "jinja": true
     },
     {
@@ -31,12 +29,32 @@
         // "PREFECT_API_URL": "http://scopem-openem:4200/api",
         "PREFECT_LOGGING_LEVEL": "DEBUG",
         "SCICAT_ENDPOINT": "http://localhost:8005",
-        "MINIO_URL": "localhost:9000",
+        "MINIO_ENDPOINT": "localhost:9000",
+        "MINIO_EXTERNAL_ENDPOINT": "localhost:9000",
         "LTS_STORAGE_ROOT": "/tmp/data/LTS/",
+        "LTS_FREE_SPACE_PERCENTAGE": "0.2",
         "ARCHIVER_SCRATCH_FOLDER": "/tmp/data/scratch/",
+        "SCICAT_TOKEN": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2NjgzZWNlMjRjZWU2MTU5NjdmNGZhOWMiLCJ1c2VybmFtZSI6ImluZ2VzdG9yIiwiZW1haWwiOiJzY2ljYXRpbmdlc3RvckB5b3VyLnNpdGUiLCJhdXRoU3RyYXRlZ3kiOiJsb2NhbCIsIl9fdiI6MCwiaWQiOiI2NjgzZWNlMjRjZWU2MTU5NjdmNGZhOWMiLCJpYXQiOjE3MTk5MjI3MDQsImV4cCI6MTcxOTkyNjMwNH0.1FnRjviLTRJ6O5j_ZZ55cfqabrE43ZxbArEl-Aim_VQ"
       },
       "module": "archiver.flows",
       "jinja": true
+    },
+    {
+      "name": "Prefect Config",
+      "type": "debugpy",
+      "request": "launch",
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "PREFECT_API_URL": "http://localhost:4200/api",
+        "MINIO_PASSWORD_FILE": "${workspaceFolder}/../.secrets/miniopass.txt"
+      },
+      "program": "prefect-config.py",
+      "args": [
+        "-s",
+        "MINIO_PASSWORD_FILE",
+        "-l",
+        "${workspaceFolder}/concurrency-limits.toml"
+      ]
     },
     {
       "name": "SciCat API Mock",

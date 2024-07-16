@@ -22,7 +22,7 @@ deployments:
         registry_url: ghcr.io
         username: "{{ prefect.blocks.secret.github-openem-username }}"
         password: "{{ prefect.blocks.secret.github-openem-access-token }}"
-      image_pull_policy: Always
+      image_pull_policy: Never
       networks:
         - "{{ $PREFECT_NETWORK }}"
   schedules: []
@@ -47,7 +47,7 @@ deployments:
         registry_url: ghcr.io
         username: "{{ prefect.blocks.secret.github-openem-username }}"
         password: "{{ prefect.blocks.secret.github-openem-access-token }}"
-      image_pull_policy: Always
+      image_pull_policy: Never 
       volumes:
         - "{{ $PREFECT_WORKER_LTS_VOLUME_NAME }}:/tmp/LTS"
       networks:
@@ -59,3 +59,31 @@ deployments:
     - prefect.deployments.steps.set_working_directory:
         directory: /home/dev
 
+- name: datasets_retrieval
+  version: 1.0
+  tags: []
+  description:
+  entrypoint: archiver/flows/retrieve_datasets_flow.py:retrieve_datasets_flow
+  parameters: {}
+  work_pool:
+    name: retrieval-docker-workpool
+    work_queue_name: default
+    job_variables:
+      image: "{{ $FLOWS_DOCKER_IMAGE }}"
+      env:
+        MINIO_EXTERNAL_ENDPOINT: {{ $MINIO_EXTERNAL_ENDPOINT }}
+      registry_credentials:
+        registry_url: ghcr.io
+        username: "{{ prefect.blocks.secret.github-openem-username }}"
+        password: "{{ prefect.blocks.secret.github-openem-access-token }}"
+      image_pull_policy: Never 
+      volumes:
+        - "{{ $PREFECT_WORKER_LTS_VOLUME_NAME }}:/tmp/LTS"
+      networks:
+        - "{{ $PREFECT_NETWORK }}"
+  schedules: []
+  build: null
+  pull:
+    # required see https://github.com/PrefectHQ/prefect/issues/10285
+    - prefect.deployments.steps.set_working_directory:
+        directory: /home/dev

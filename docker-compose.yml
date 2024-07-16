@@ -6,8 +6,8 @@ services:
     image: "traefik:v2.10"
     container_name: "traefik"
     profiles:
-      - development
-      - production
+      - services
+      - full
     command:
       - "--log.level=DEBUG"
       - "--api.insecure=true"
@@ -38,8 +38,8 @@ services:
     image: minio/minio
     container_name: minio
     profiles:
-      - development
-      - production
+      - services
+      - full
     # S3 specs for presigned urls require minio to be directly exposed, with path?
     ports:
       - 9000:9000
@@ -49,11 +49,14 @@ services:
     networks:
       - scopemarchiver_network
     environment:
-      MINIO_ROOT_USER: ${MINIO_USER}
-      MINIO_ROOT_PASSWORD: ${MINIO_PASS}
+      MINIO_ROOT_USER_FILE: /run/secrets/minio_user
+      MINIO_ROOT_PASSWORD_FILE: /run/secrets/minio_pass
       MINIO_PROMETHEUS_AUTH_TYPE: "public"
       MINIO_PROMETHEUS_URL: "http://prometheus:9090"
-      MINIO_BROWSER_REDIRECT_URL: "http://${HOST}/minio"
+      MINIO_BROWSER_REDIRECT_URL: "http://${HOST}/minio/"
+    secrets:
+      - minio_user
+      - minio_pass
     command: server --console-address ":9001" /data
     labels:
       - "traefik.enable=true"
@@ -72,7 +75,7 @@ services:
       - "traefik.http.middlewares.minio-headers.headers.customrequestheaders.X-Forwarded-Host=${HOST}/minio"
       - "traefik.http.routers.minio.middlewares=minio-stripprefix,minio-headers,minio-cors"
 
-      - "traefik.http.routers.minio-api.rule=Host(`${HOST}`) && PathPrefix(`/minio-api`)"
+      - "traefik.http.routers.minio-api.rule=Host(`${HOST}/minio-api`) && PathPrefix(`/minio-api`)"
       - "traefik.http.middlewares.minio-api-stripprefix.stripprefix.prefixes=/minio-api"
       - "traefik.http.routers.minio-api.entrypoints=web"
       - "traefik.http.routers.minio-api.service=minio-api"
@@ -83,12 +86,23 @@ services:
     depends_on:
       - minio
     profiles:
-      - development
-      - production
-    entrypoint: >
-      /bin/sh -c " /usr/bin/mc alias set local-minio http://minio:9000 ${MINIO_USER} ${MINIO_PASS}; /usr/bin/mc mb -p local-minio/${MINIO_RETRIEVAL_BUCKET}; /usr/bin/mc mb -p local-minio/${MINIO_LANDINGZONE_BUCKET}; /usr/bin/mc mb -p local-minio/${MINIO_STAGING_BUCKET}; exit 0; "
+      - config
+      - full
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        export MINIO_USER=$$(cat /var/run/secrets/minio_user)
+        export MINIO_PASS=$$(cat /var/run/secrets/minio_pass)
+        /usr/bin/mc alias set local-minio http://minio:9000 $$MINIO_USER $$MINIO_PASS
+        /usr/bin/mc mb -p local-minio/${MINIO_RETRIEVAL_BUCKET}
+        /usr/bin/mc mb -p local-minio/${MINIO_LANDINGZONE_BUCKET}
+        /usr/bin/mc mb -p local-minio/${MINIO_STAGING_BUCKET}
     networks:
       - scopemarchiver_network
+    secrets:
+      - minio_user
+      - minio_pass
 
   frontend:
     image: ${WEBUPLOADER_IMAGE_NAME}:${OPENEM_IMAGE_TAG}
@@ -116,8 +130,8 @@ services:
       - ./backend/config.toml:/var/local/config.toml
     command: "/var/local/config.toml"
     profiles:
-      - development
-      - production
+      - services
+      - full
     depends_on:
       prefect-config:
         condition: service_completed_successfully
@@ -127,6 +141,10 @@ services:
     environment:
       - PREFECT_LOGGING_LEVEL=DEBUG
       - PREFECT_API_URL=http://prefect-server:4200/api
+      - UVICORN_ROOT_PATH=/api/v1
+      - UVICORN_PORT=8000
+      - UVICORN_LOG_LEVEL=info
+      - UVICORN_RELOAD=False
     ports:
       - 8004:8000
     labels:
@@ -146,3 +164,9 @@ volumes:
 networks:
   scopemarchiver_network:
     name: scopemarchiver_network
+
+secrets:
+  minio_user:
+    file: ./.secrets/miniouser.txt
+  minio_pass:
+    file: ./.secrets/miniopass.txt

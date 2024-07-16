@@ -3,7 +3,6 @@
 ARCHIVER_SCRATCH_FOLDER = "/tmp/scratch" #string
 ARCHIVER_TARGET_SIZE_MB = 200
 
-
 [lts]
 LTS_STORAGE_ROOT = "/tmp/LTS"  #string
 LTS_FREE_SPACE_PERCENTAGE = 20

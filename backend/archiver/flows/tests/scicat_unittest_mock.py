@@ -8,48 +8,7 @@ from archiver.utils.model import DataFile, OrigDataBlock, DataBlock
 class ScicatMock(requests_mock.Mocker):
     ENDPOINT = "mock://scicat.example.com"
 
-    def create_orig_datablocks(self, num_blocks: int = 10, num_files_per_block: int = 10) -> List[OrigDataBlock]:
-        size_per_file = 1024 * 1024 * 100
-        blocks: List[OrigDataBlock] = []
-        for k in range(num_blocks):
-            b = OrigDataBlock(
-                id=f"Block_{k}",
-                size=size_per_file * num_files_per_block,
-                ownerGroup="me",
-                dataFileList=[]
-            )
-            for i in range(num_files_per_block):
-                d = DataFile(
-                    path=f"/some/path/file_{i}.png",
-                    size=size_per_file
-                )
-                b.dataFileList.append(d)
-            blocks.append(b)
-        return blocks
-
-    def create_datablocks(self, num_blocks: int = 10, num_files_per_block: int = 10) -> List[DataBlock]:
-        size_per_file = 1024 * 1024 * 100
-        blocks: List[DataBlock] = []
-        for k in range(num_blocks):
-            b = DataBlock(
-                id=f"Block_{k}",
-                archiveId=f"openem/datasets/{k}/block_{k}",
-                size=size_per_file * num_files_per_block,
-                version=str(1),
-                ownerGroup="me",
-                dataFileList=[]
-            )
-            for i in range(num_files_per_block):
-                d = DataFile(
-                    path=f"/some/path/file_{i}.png",
-                    size=size_per_file
-                )
-                b.dataFileList.append(d)
-            blocks.append(b)
-
-        return blocks
-
-    def __init__(self, job_id: int, dataset_id: int, num_blocks: int = 10, num_files_per_block: int = 10):
+    def __init__(self, job_id: int, dataset_id: int, origDataBlocks: List[OrigDataBlock], datablocks: List[DataBlock]):
         super().__init__()
 
         self.matchers: dict[str, requests_mock.Request.matcher] = {}
@@ -60,39 +19,39 @@ class ScicatMock(requests_mock.Mocker):
         self.matchers["datasets"] = self.post(
             f"{self.ENDPOINT}{tasks.scicat.API}Datasets/{dataset_id}", json=None)
 
-        self.matchers["datablocks"] = self.post(
+        self.matchers["post_datablocks"] = self.post(
             f"{self.ENDPOINT}{tasks.scicat.API}Datablocks/", json=None)
 
-        origdatablocks = self.create_orig_datablocks(
-            num_blocks, num_files_per_block)
-        orig_json_list = []
-        for o in origdatablocks:
-            orig_json_list.append(o.model_dump_json())
+        json_list = []
+        for o in origDataBlocks:
+            json_list.append(o.model_dump_json())
 
         self.matchers["origdatablocks"] = self.get(
-            f"{self.ENDPOINT}{tasks.scicat.API}Datasets/{dataset_id}/origdatablocks", json=orig_json_list)
+            f"{self.ENDPOINT}{tasks.scicat.API}Datasets/{dataset_id}/origdatablocks", json=json_list)
 
-        datablocks = self.create_orig_datablocks(
-            num_blocks, num_files_per_block)
-        datablocks_json_list = []
+        json_list = []
         for o in datablocks:
-            datablocks_json_list.append(o.model_dump_json())
+            json_list.append(o.model_dump_json())
 
-        self.matchers["datablocks"] = self.get(
-            f"{self.ENDPOINT}{tasks.scicat.API}Datasets/{dataset_id}/datablocks", json=datablocks_json_list)
+        self.matchers["get_datablocks"] = self.get(
+            f"{self.ENDPOINT}{tasks.scicat.API}Datasets/{dataset_id}/datablocks", json=json_list)
 
-    @ property
+    @property
     def jobs_matcher(self):
         return self.matchers["jobs"]
 
-    @ property
+    @property
     def datasets_matcher(self):
         return self.matchers["datasets"]
 
-    @ property
-    def datablocks_matcher(self):
-        return self.matchers["datablocks"]
+    @property
+    def datablocks_post_matcher(self):
+        return self.matchers["post_datablocks"]
 
-    @ property
+    @property
+    def datablocks_get_matcher(self):
+        return self.matchers["get_datablocks"]
+
+    @property
     def origdatablocks_matcher(self):
         return self.matchers["origdatablocks"]

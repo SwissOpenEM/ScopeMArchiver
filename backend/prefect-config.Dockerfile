@@ -28,5 +28,5 @@ RUN PATH="${HOME}/.local/bin:$PATH"
 RUN PIPENV_VENV_IN_PROJECT=1 pipenv install --deploy
 
 # Run our flow script when the container starts
-CMD ["pipenv", "run", "python", "-m", "archiver.config", "-c", "/var/local/config.toml"]
-ENTRYPOINT ["pipenv", "run", "python", "-m", "archiver.config", "-c"]
+CMD ["pipenv", "run", "python", "prefect-.config.py"]
+ENTRYPOINT ["pipenv", "run", "python", "prefect-config.py"]

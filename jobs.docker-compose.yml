@@ -4,24 +4,31 @@ services:
     container_name: prefect-server
     restart: always
     profiles:
-      - development
-      - production
+      - services
+      - full
     volumes:
       - prefect-volume:/root/.prefect
     entrypoint:
-      [
-        "/opt/prefect/entrypoint.sh",
-        "prefect",
-        "server",
-        "start"
-      ]
+      - /bin/sh
+      - -c
+      - |
+        export PREFECT_API_DATABASE_PASSWORD=$$(cat /var/run/secrets/postgres_pass)
+        export PREFECT_API_DATABASE_USER=$$(cat /var/run/secrets/postgres_user)
+        export PREFECT_API_DATABASE_CONNECTION_URL=postgresql+asyncpg://$$PREFECT_API_DATABASE_USER:$$PREFECT_API_DATABASE_PASSWORD@postgres:5432/prefect
+        /opt/prefect/entrypoint.sh prefect server start
+
+    secrets:
+      - postgres_pass
+      - postgres_user
     healthcheck:
       test: [ "CMD", "prefect", "version" ]
       interval: 5s
-      timeout: 5s
+      timeout: 15s
       retries: 5
       start_period: 5s
     environment:
+      - PREFECT_LOGGING_LEVEL=DEBUG
+      - PREFECT_HOME=/opt/prefect
       - PREFECT_API_DATABASE_ECHO=False
       - PREFECT_API_DATABASE_MIGRATE_ON_START=True
       - PREFECT_UI_SERVE_BASE=/prefect-ui
@@ -30,9 +37,7 @@ services:
       # working; PREFECT has some issues with api prefixes...
       - PREFECT_UI_URL=http://prefect-server:4200/api
       - PREFECT_API_URL=http://prefect-server:4200/api
-
       - PREFECT_SERVER_API_HOST=0.0.0.0
-      - PREFECT_API_DATABASE_CONNECTION_URL=postgresql+asyncpg://postgres_user:postgres_pw@postgres:5432/prefect
     ports:
       - 4200:4200
     depends_on:
@@ -57,8 +62,8 @@ services:
     image: ${PREFECT_CONFIG_IMAGE_NAME}:${OPENEM_IMAGE_TAG}
     container_name: prefect-config
     profiles:
-      - production
       - config
+      - full
     build:
       context: ./backend/
       dockerfile: ./prefect-config.Dockerfile
@@ -67,14 +72,27 @@ services:
     environment:
       - PREFECT_LOGGING_LEVEL=DEBUG
       - PREFECT_API_URL=http://prefect-server:4200/api
+      # Secrets are stored as blocks, removing _FILE suffix
+      - MINIO_USER_FILE=/run/secrets/minio_user
+      - MINIO_PASSWORD_FILE=/run/secrets/minio_pass
+      - GITHUB_USER_FILE=/run/secrets/github_user
+      - GITHUB_PASSWORD_FILE=/run/secrets/github_pass
     volumes:
       - type: bind
-        source: ./backend/config.toml
-        target: /var/local/config.toml
-    command: "/var/local/config.toml"
+        source: ./backend/prefect-vars.toml
+        target: /var/local/prefect-vars.toml
+      - type: bind
+        source: ./backend/concurrency-limits.toml
+        target: /var/local/concurrency-limits.toml
+    command: "-v /var/local/prefect-vars.toml -s MINIO_USER_FILE MINIO_PASSWORD_FILE GITHUB_USER_FILE GITHUB_PASSWORD_FILE -l /var/local/concurrency-limits.toml"
     depends_on:
       prefect-server:
         condition: service_healthy
+    secrets:
+      - minio_user
+      - minio_pass
+      - github_user
+      - github_pass
   prefect-deploy:
     image: ${PREFECT_FLOWS_IMAGE_NAME}:${OPENEM_IMAGE_TAG}
     container_name: prefect-deploy
@@ -91,9 +109,10 @@ services:
       - PREFECT_LOGGING_LEVEL=DEBUG
       - PREFECT_API_URL=http://prefect-server:4200/api
       ### values in prefect.yaml
-      - PREFECT_WORKER_LTS_VOLUME_NAME=${PREFECT_WORKER_LTS_VOLUME_NAME}
+      - PREFECT_WORKER_LTS_VOLUME_NAME=scopemarchiver_${PREFECT_WORKER_LTS_VOLUME_NAME}
       - PREFECT_NETWORK=scopemarchiver_network
       - FLOWS_DOCKER_IMAGE=${PREFECT_FLOWS_IMAGE_NAME}:${OPENEM_IMAGE_TAG}
+      - MINIO_EXTERNAL_ENDPOINT=${HOST}:9000
     command: prefect --no-prompt deploy --all --prefect-file prefect.yaml
     working_dir: /home/dev
     volumes:
@@ -106,7 +125,8 @@ services:
   prefect-archival-worker:
     image: prefecthq/prefect:2-python3.11
     profiles:
-      - production
+      - config
+      - full
     restart: always
     deploy:
       mode: replicated
@@ -141,7 +161,8 @@ services:
   prefect-retrieval-worker:
     image: prefecthq/prefect:2-python3.11
     profiles:
-      - production
+      - config
+      - full
     restart: always
     deploy:
       mode: replicated
@@ -195,12 +216,15 @@ services:
     image: postgres:15.2-alpine
     restart: always
     profiles:
-      - development
-      - production
+      - services
+      - full
     environment:
-      - POSTGRES_USER=postgres_user
-      - POSTGRES_PASSWORD=postgres_pw
+      - POSTGRES_USER_FILE=/run/secrets/postgres_user
+      - POSTGRES_PASSWORD_FILE=/run/secrets/postgres_pass
       - POSTGRES_DB=prefect
+    secrets:
+      - postgres_user
+      - postgres_pass
     expose:
       - 5432
     volumes:
@@ -211,8 +235,8 @@ services:
     image: ${SCICAT_MOCK_IMAGE_NAME}:${OPENEM_IMAGE_TAG}
     container_name: scicatmock
     profiles:
-      - development
-      - production
+      - services
+      - full
     build:
       context: ./backend
       dockerfile: ./scicatmock.Dockerfile
@@ -239,3 +263,13 @@ volumes:
       type: "nfs"
       o: "nfsvers=3,addr=lts22,nolock"
       device: ":/scopem_lts_nfs_test_lts22"
+
+secrets:
+  postgres_user:
+    file: ./.secrets/postgresuser.txt
+  postgres_pass:
+    file: ./.secrets/postgrespass.txt
+  github_user:
+    file: ./.secrets/githubuser.txt
+  github_pass:
+    file: ./.secrets/githubpass.txt

@@ -30,3 +30,4 @@ data/postgres/**
 data/prefect/**
 data/uppy-server-data/**
 .site/**
+.secrets/**

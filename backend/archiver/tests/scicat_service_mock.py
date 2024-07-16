@@ -24,6 +24,7 @@ app.add_middleware(
 )
 
 origdatablocks: Dict[str, List[OrigDataBlock]] = {}
+datablocks: Dict[str, List[DataBlock]] = {}
 
 
 @app.patch("/Jobs/{JobId}/")
@@ -32,8 +33,12 @@ def jobs(JobId: int, job: Job):
 
 
 @app.post("/Datablocks/")
-def datablock_post(datablocks: DataBlock):
-    _LOGGER.info(f"{datablocks}: {datablocks.model_dump_json()}")
+def datablock_post(datablock: DataBlock):
+    _LOGGER.info(f"{datablock}: {datablock.model_dump_json()}")
+    if datablock.datasetId is not None:
+        if datablock.datasetId not in datablocks.keys():
+            datablocks[datablock.datasetId] = []
+        datablocks[datablock.datasetId].append(datablock)
 
 
 @app.patch("/Datasets/{DatasetId}")
@@ -57,3 +62,8 @@ def origdatablocks_post(origDatablock: OrigDataBlock) -> None:
 @app.get("/Datasets/{DatasetId}/origdatablocks")
 def origdatablocks_get(DatasetId: int) -> List[OrigDataBlock]:
     return origdatablocks[str(DatasetId)]
+
+
+@app.get("/Datasets/{DatasetId}/datablocks")
+def datablocks_get(DatasetId: int) -> List[DataBlock]:
+    return datablocks[str(DatasetId)]

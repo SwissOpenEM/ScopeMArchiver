@@ -10,7 +10,7 @@ from pydantic_settings import (
 )
 
 
-class AppConfig(BaseSettings):
+class PrefectVariablesModel(BaseSettings):
     """Pydantic model of the Prefect Variables config
 
     Args:
@@ -25,21 +25,16 @@ class AppConfig(BaseSettings):
     )
 
     MINIO_REGION: str = ""
-    MINIO_USER: str = ""
-    MINIO_PASSWORD: str = ""
     MINIO_RETRIEVAL_BUCKET: str = ""
     MINIO_STAGING_BUCKET: str = ""
     MINIO_LANDINGZONE_BUCKET: str = ""
-    MINIO_URL: str = ""
-
-    API_ROOT_PATH: str = ""
-    API_PORT: int = 0
-    API_LOG_LEVEL: str = ""
-    API_RELOAD: bool = False
+    MINIO_ENDPOINT: str = ""
+    MINIO_EXTERNAL_ENDPOINT: str = ""
 
     LTS_STORAGE_ROOT: Path = Path("")
     LTS_FREE_SPACE_PERCENTAGE: float = 20
     ARCHIVER_SCRATCH_FOLDER: Path = Path("")
+    ARCHIVER_TARGET_SIZE_MB: int = 20
 
     SCICAT_ENDPOINT: str = ""
     SCICAT_API_PREFIX: str = ""
@@ -68,7 +63,8 @@ class Variables:
             c = Variable.get(name)
         finally:
             if c is None or c.value is None:
-                getLogger().warning(f"Value {name} not found in config, returning empty string")
+                getLogger().warning(
+                    f"Value {name} not found in config, returning empty string")
                 return ""
             return c.value
 
@@ -97,20 +93,20 @@ class Variables:
         return self.__get("minio_region")
 
     @property
-    def MINIO_USER(self) -> str:
-        return self.__get("minio_user")
+    def MINIO_ENDPOINT(self) -> str:
+        return self.__get("minio_endpoint")
 
     @property
-    def MINIO_PASSWORD(self) -> str:
-        return self.__get("minio_password")
-
-    @property
-    def MINIO_URL(self) -> str:
-        return self.__get("minio_url")
+    def MINIO_EXTERNAL_ENDPOINT(self) -> str:
+        return self.__get("minio_external_endpoint")
 
     @property
     def ARCHIVER_SCRATCH_FOLDER(self) -> Path:
         return Path(self.__get("archiver_scratch_folder"))
+
+    @property
+    def ARCHIVER_TARGET_SIZE_MB(self) -> int:
+        return int(self.__get("archiver_target_size_mb") or 200)
 
     @property
     def LTS_STORAGE_ROOT(self) -> Path:
@@ -121,8 +117,9 @@ class Variables:
         return float(self.__get("lts_free_space_percentage") or 1.0)
 
 
-def register_variables_from_config(config: AppConfig) -> None:
+def register_variables_from_config(config: PrefectVariablesModel) -> None:
     model = config.model_dump()
     print(model)
     for s in [s for s in dir(Variables()) if not s.startswith('__') and not s.startswith('_')]:
-        Variable.set(s.lower(), str(model[s]), overwrite=True)
+        if s in model.keys():
+            Variable.set(s.lower(), str(model[s]), overwrite=True)
