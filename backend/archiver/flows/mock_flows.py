@@ -8,7 +8,7 @@ import requests
 from pathlib import Path
 from archiver.config.variables import Variables
 from archiver.utils.datablocks import upload_objects_to_s3, create_tarballs
-from archiver.utils.working_storage_interface import S3Storage
+from archiver.utils.working_storage_interface import Bucket
 from archiver.utils.model import OrigDataBlock, DataFile
 from archiver.flows.utils import StoragePaths
 from .task_utils import generate_task_name_dataset
@@ -34,7 +34,7 @@ def create_dummy_dataset(dataset_id: int, file_size_MB: int, num_files: int, dat
                     dst_folder=datablocks_folder, target_size=datablock_size_MB * (1024**2))
 
     files = upload_objects_to_s3(prefix=Path(StoragePaths.relative_origdatablocks_folder(dataset_id)),
-                                 bucket=S3Storage().LANDINGZONE_BUCKET, source_folder=datablocks_folder, ext=".gz")
+                                 bucket=Bucket.landingzone_bucket(), source_folder=datablocks_folder, ext=".gz")
 
     shutil.rmtree(dataset_root)
     checksums = []

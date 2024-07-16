@@ -3,7 +3,7 @@ from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 from prefect.deployments.deployments import run_deployment
 
-from archiver.utils.working_storage_interface import S3Storage
+from archiver.utils.working_storage_interface import S3Storage, Bucket
 from archiver.utils.model import StorageObject, Job
 
 router = APIRouter()
@@ -38,13 +38,13 @@ async def run_create_dataset_deployment(dataset_id: int, file_size_MB: int, num_
 
 @router.get("/archivable_objects")
 def get_archivable_objects() -> list[StorageObject]:
-    objects = S3Storage().list_objects(bucket=S3Storage().STAGING_BUCKET)
+    objects = S3Storage().list_objects(bucket=Bucket.staging_bucket())
     return [StorageObject(object_name=o.object_name or "") for o in objects]
 
 
 @router.get("/retrievable_objects")
 def get_retrievable_objects() -> list[StorageObject]:
-    objects = S3Storage().list_objects(bucket=S3Storage().RETRIEVAL_BUCKET)
+    objects = S3Storage().list_objects(bucket=Bucket.retrieval_bucket())
     return [StorageObject(object_name=o.object_name or "") for o in objects]
 
 

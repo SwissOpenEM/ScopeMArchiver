@@ -1,3 +1,4 @@
+from __future__ import annotations
 from typing import Iterable
 from datetime import timedelta
 import minio
@@ -16,6 +17,18 @@ from archiver.config.blocks import Blocks
 class Bucket():
     name: str
 
+    @staticmethod
+    def retrieval_bucket() -> Bucket:  # type: ignore
+        return Bucket(Variables().MINIO_RETRIEVAL_BUCKET)
+
+    @staticmethod
+    def staging_bucket() -> Bucket:  # type: ignore
+        return Bucket(Variables().MINIO_STAGING_BUCKET)
+
+    @staticmethod
+    def landingzone_bucket() -> Bucket:  # type: ignore
+        return Bucket(Variables().MINIO_LANDINGZONE_BUCKET)
+
 
 class S3Storage():
 
@@ -33,11 +46,10 @@ class S3Storage():
         self._REGION = Variables().MINIO_REGION
         self._URL = Variables().MINIO_ENDPOINT
 
-        self.STAGING_BUCKET: Bucket = Bucket(Variables().MINIO_STAGING_BUCKET)
-        self.RETRIEVAL_BUCKET: Bucket = Bucket(
-            Variables().MINIO_RETRIEVAL_BUCKET)
-        self.LANDINGZONE_BUCKET: Bucket = Bucket(
-            Variables().MINIO_LANDINGZONE_BUCKET)
+        self.STAGING_BUCKET: Bucket = Bucket.staging_bucket()
+        self.RETRIEVAL_BUCKET: Bucket = Bucket.retrieval_bucket()
+        self.LANDINGZONE_BUCKET: Bucket = Bucket.landingzone_bucket()
+
         self._minio = minio.Minio(
             endpoint=self._URL,
             access_key=self._USER,

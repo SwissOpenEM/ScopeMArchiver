@@ -229,7 +229,7 @@ def find_object_in_s3(dataset_id, datablock_name):
                          for x in list_s3_objects(
                              prefix=StoragePaths.relative_datablocks_folder(
                                  dataset_id),
-                             bucket=S3Storage().STAGING_BUCKET) if x.object_name == datablock_name),
+                             bucket=Bucket.staging_bucket()) if x.object_name == datablock_name),
                         False)
 
     return object_found
@@ -261,7 +261,7 @@ def move_data_to_LTS(dataset_id: int, datablock: DataBlock) -> str:
     datablock_name = Path(datablock.archiveId).name
     datablock_full_path = datablocks_scratch_folder / datablock_name
 
-    download_object_from_s3(bucket=S3Storage().STAGING_BUCKET, folder=StoragePaths.relative_datablocks_folder(
+    download_object_from_s3(bucket=Bucket.staging_bucket(), folder=StoragePaths.relative_datablocks_folder(
         dataset_id), object_name=str(StoragePaths.relative_datablocks_folder(dataset_id) / datablock_name), target_path=datablock_full_path)
 
     getLogger().info("Calculating Checksum.")
@@ -360,16 +360,16 @@ def create_datablocks(dataset_id: int, origDataBlocks: List[OrigDataBlock]) -> L
     if len(origDataBlocks) == 0:
         return []
 
-    if all(False for _ in list_s3_objects(StoragePaths.relative_origdatablocks_folder(dataset_id), S3Storage().LANDINGZONE_BUCKET)):
+    if all(False for _ in list_s3_objects(StoragePaths.relative_origdatablocks_folder(dataset_id), Bucket.landingzone_bucket())):
         raise Exception(
             f"No objects found in landing zone at {StoragePaths.relative_datablocks_folder(dataset_id)} for dataset {dataset_id}. Storage endpoint: {S3Storage().url}")
 
     # files with full path are downloaded to scratch root
     file_paths = download_objects_from_s3(prefix=StoragePaths.relative_origdatablocks_folder(
-        dataset_id), bucket=S3Storage().LANDINGZONE_BUCKET, destination_folder=StoragePaths.scratch_archival_root())
+        dataset_id), bucket=Bucket.landingzone_bucket(), destination_folder=StoragePaths.scratch_archival_root())
 
     getLogger().info(
-        f"Downloaded {len(file_paths)} objects from {S3Storage().LANDINGZONE_BUCKET}")
+        f"Downloaded {len(file_paths)} objects from {Bucket.landingzone_bucket()}")
 
     origdatablocks_scratch_folder = StoragePaths.scratch_archival_origdatablocks_folder(dataset_id)
     origdatablocks_scratch_folder.mkdir(parents=True, exist_ok=True)
@@ -396,10 +396,10 @@ def create_datablocks(dataset_id: int, origDataBlocks: List[OrigDataBlock]) -> L
         dataset_id, StoragePaths.scratch_archival_datablocks_folder(dataset_id), origDataBlocks, tarballs)
 
     uploaded_objects = upload_objects_to_s3(prefix=StoragePaths.relative_datablocks_folder(
-        dataset_id), bucket=S3Storage().STAGING_BUCKET, source_folder=datablocks_scratch_folder, ext=".gz")
+        dataset_id), bucket=Bucket.staging_bucket(), source_folder=datablocks_scratch_folder, ext=".gz")
 
     missing_objects = verify_objects(uploaded_objects, minio_prefix=StoragePaths.relative_datablocks_folder(
-        dataset_id), bucket=S3Storage().STAGING_BUCKET, source_folder=datablocks_scratch_folder)
+        dataset_id), bucket=Bucket.staging_bucket(), source_folder=datablocks_scratch_folder)
 
     if len(missing_objects) > 0:
         raise Exception(f"{len(missing_objects)} datablocks missing")
@@ -421,17 +421,17 @@ def cleanup_lts_folder(dataset_id: int) -> None:
 
 def cleanup_s3_staging(dataset_id: int) -> None:
     delete_objects_from_s3(prefix=StoragePaths.relative_datablocks_folder(dataset_id),
-                           bucket=S3Storage().STAGING_BUCKET)
+                           bucket=Bucket.staging_bucket())
 
 
 def cleanup_s3_retrieval(dataset_id: int) -> None:
     delete_objects_from_s3(prefix=StoragePaths.relative_datablocks_folder(dataset_id),
-                           bucket=S3Storage().RETRIEVAL_BUCKET)
+                           bucket=Bucket.retrieval_bucket())
 
 
 def cleanup_s3_landingzone(dataset_id: int) -> None:
     delete_objects_from_s3(prefix=StoragePaths.relative_datablocks_folder(dataset_id),
-                           bucket=S3Storage().LANDINGZONE_BUCKET)
+                           bucket=Bucket.landingzone_bucket())
 
 
 def verify_objects(uploaded_objects: List[Path],
@@ -496,7 +496,7 @@ def upload_datablock(file: Path, datablock: DataBlock):
     # upload to s3 retrieval bucket
     S3Storage().fput_object(source_file=file,
                             destination_file=Path(datablock.archiveId),
-                            bucket=S3Storage().RETRIEVAL_BUCKET)
+                            bucket=Bucket.retrieval_bucket())
 
 
 def copy_from_LTS_to_retrieval(dataset_id: int, datablock: DataBlock):
@@ -518,5 +518,5 @@ def copy_from_LTS_to_retrieval(dataset_id: int, datablock: DataBlock):
 def create_presigned_urls(datablocks: List[DataBlock]) -> List[str]:
     urls = []
     for d in datablocks:
-        urls.append(S3Storage().get_presigned_url(S3Storage().RETRIEVAL_BUCKET, d.archiveId))
+        urls.append(S3Storage().get_presigned_url(Bucket.retrieval_bucket(), d.archiveId))
     return urls
