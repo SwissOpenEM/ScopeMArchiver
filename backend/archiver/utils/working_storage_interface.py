@@ -7,7 +7,7 @@ from minio.deleteobjects import DeleteObject
 from dataclasses import dataclass
 from pathlib import Path
 
-from .log import getLogger
+from .log import getLogger, log
 
 from archiver.config.variables import Variables
 from archiver.config.blocks import Blocks
@@ -62,6 +62,7 @@ class S3Storage():
     def url(self):
         return self._URL
 
+    @log
     def get_presigned_url(self, bucket: Bucket, filename: str) -> str:
         external_minio = minio.Minio(
             endpoint=Variables().MINIO_EXTERNAL_ENDPOINT,
@@ -78,24 +79,29 @@ class S3Storage():
 
         return url
 
+    @log
     def stat_object(self, bucket: Bucket, filename: str) -> minio.datatypes.Object:
         return self._minio.stat_object(
             bucket_name=bucket.name,
             object_name=filename
         )
 
+    @log
     def fget_object(self, bucket: Bucket, folder: str, object_name: str, target_path: Path):
         self._minio.fget_object(
             bucket_name=bucket.name, object_name=object_name, file_path=str(target_path.absolute()))
 
+    @log
     def list_objects(self, bucket: Bucket, folder: str | None = None):
         f = folder or ""
         return self._minio.list_objects(bucket_name=bucket.name, prefix=f + "/", start_after=f"{f}/")
 
+    @log
     def fput_object(self, source_file: Path, destination_file: Path, bucket: Bucket):
         self._minio.fput_object(bucket.name, str(
             destination_file), str(source_file))
 
+    @log
     def delete_object(self, minio_prefix: Path, bucket: Bucket) -> None:
         delete_object_list: Iterable[DeleteObject] = list(
             map(
