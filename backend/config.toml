@@ -2,6 +2,7 @@
 [archiver]
 ARCHIVER_SCRATCH_FOLDER = "/tmp/scratch" #string
 ARCHIVER_TARGET_SIZE_MB = 200
+ARCHIVER_LTS_FILE_TIMEOUT_S = 300
 
 
 [lts]
