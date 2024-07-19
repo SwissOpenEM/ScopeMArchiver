@@ -6,7 +6,7 @@ import asyncio
 import time
 
 from uuid import uuid4
-from typing import Iterator, List
+from typing import Iterator, List, Dict
 from pathlib import Path
 
 from archiver.utils.working_storage_interface import S3Storage, Bucket
@@ -564,8 +564,8 @@ def copy_from_LTS_to_retrieval(dataset_id: int, datablock: DataBlock):
 
 
 @log
-def create_presigned_urls(datablocks: List[DataBlock]) -> List[str]:
-    urls = []
+def create_presigned_urls(datablocks: List[DataBlock]) -> Dict[str, str]:
+    urls = {}
     for d in datablocks:
-        urls.append(S3Storage().get_presigned_url(Bucket.retrieval_bucket(), d.archiveId))
+        urls[Path(d.archiveId).name] = S3Storage().get_presigned_url(Bucket.retrieval_bucket(), d.archiveId)
     return urls

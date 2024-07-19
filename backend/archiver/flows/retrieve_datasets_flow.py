@@ -3,6 +3,7 @@ from functools import partial
 import asyncio
 
 from prefect import flow, task, State, Task, Flow
+from prefect.artifacts import create_link_artifact
 from prefect.client.schemas.objects import TaskRun, FlowRun
 from prefect.deployments.deployments import run_deployment
 from prefect.concurrency.sync import concurrency
@@ -25,8 +26,12 @@ def on_get_datablocks_error(dataset_id: int, task: Task, task_run: TaskRun, stat
 def report_retrieved_datablocks(datablocks: List[DataBlock]):
 
     urls = datablocks_operations.create_presigned_urls(datablocks)
-    for u in urls:
-        print(u)
+    for block_name, url in urls.items():
+        create_link_artifact(
+            key=block_name,
+            link=url,
+            description=f"Link to a datablock {block_name}",
+        )
 
 
 @task(task_run_name=generate_task_name_dataset, tags=[ConcurrencyLimits.LTS_TO_RETRIEVAL_TAG])
@@ -96,5 +101,3 @@ async def retrieve_datasets_flow(dataset_ids: List[int], job_id: int):
 
     update_scicat_retrieval_job_status.submit(
         job_id, SciCat.JOBSTATUS.FINISHED_SUCCESSFULLY)
-
-
