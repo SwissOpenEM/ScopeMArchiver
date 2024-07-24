@@ -38,6 +38,18 @@ class Job(BaseModel):
     # updatedAt (string, optional)
     updatedAt: Optional[datetime] = None
 
+    ownerGroup: Optional[str] = None
+    accessGroups: Optional[List[str]] = None
+    instrumentGroup: Optional[str] = None
+    # isPublished: bool
+    # ownerUser: str
+    # type: str
+    statusCode: Optional[str] = None
+    statusMessage: Optional[str] = None
+    # datasetsValidation: bool
+    # contactEmail: str
+    # configuration: Dict[str, Any]
+
 
 class DataFile(BaseModel):
     # Relative path of the file within the dataset folder ,
@@ -46,7 +58,7 @@ class DataFile(BaseModel):
     size: Optional[int] = None
     # Time of file creation on disk, format according to chapter 5.6 internet date/time format in RFC 3339. Local times without
     # timezone/offset info are automatically transformed to UTC using the timezone of the API server ,
-    time: Optional[datetime] = None
+    time: Optional[str] = None
     # Checksum for the file, e.g. its sha-2 hashstring ,
     chk: Optional[str] = None
     # optional: user ID name as seen on filesystem ,
@@ -67,7 +79,7 @@ class DataFile(BaseModel):
 
 class OrigDataBlock(BaseModel):
     # id (string),
-    id: str
+    id: Optional[str] = None
     # Total size in bytes of all files contained in the dataFileList ,
     size: int
     # Defines the group which owns the data, and therefore has unrestricted access to this data. Usually a pgroup like p12151 ,
@@ -95,7 +107,7 @@ class OrigDataBlock(BaseModel):
 
 class DataBlock(BaseModel):
     # Catalog internal UUIDv4 for datablock ,
-    id: str
+    id: Optional[str] = None
     # Unique identifier given bey archive system to the stored datablock. This id is used when data is retrieved back. ,
     archiveId: str
     # Total size in bytes of all files in datablock when unpacked
@@ -107,13 +119,13 @@ class DataBlock(BaseModel):
     # Version string defining format of how data is packed and stored in archive
     version: str
     # Defines the group which owns the data, and therefore has unrestricted access to this data. Usually a pgroup like p12151 ,
-    ownerGroup: str
+    # ownerGroup: str
     # Optional additional groups which have read access to the data. Users which are member in one of the groups listed here are allowed to
     # access this data. The special group 'public' makes data available to all users ,
-    accessGroups: Optional[List[str]] = None
+    # accessGroups: Optional[List[str]] = None
     # Optional additional groups which have read and write access to the data. Users which are member in one of the groups listed here are
     # allowed to access this data. ,
-    instrumentGroup: Optional[str] = None
+    # instrumentGroup: Optional[str] = None
     # Functional or user account name who created this instance ,
     createdBy: Optional[str] = None
     # Functional or user account name who last updated this instance ,
@@ -173,19 +185,25 @@ class DatasetLifecycle(BaseModel):
     retrieveIntegrityCheck: Optional[bool] = None
 
 
-class ArchiveJob(BaseModel):
-    job_id: UUID
-    origDataBlocks: List[OrigDataBlock]
-
-
-class RetrievalJob(BaseModel):
-    filename: str
-
-
 class Dataset(BaseModel):
-    id: Optional[str] = None
-    datasetlifecycle: DatasetLifecycle
-    updatedAt: Optional[datetime] = None
+    pid: Optional[str] = None
+    datasetlifecycle: Optional[DatasetLifecycle] = None
+    updatedAt: Optional[str] = None
+    createdAt: Optional[str] = None
+    updatedBy: Optional[str] = None
+    ownerGroup: Optional[str] = None
+    accessGroups: List[str] = []
+    owner: Optional[str] = None
+    isPublished: bool = False
+    sourceFolder: Optional[str] = None
+    contactEmail: Optional[str] = None
+    size: Optional[int] = None
+    numberOfFiles: Optional[int] = None
+    creationTime: Optional[str] = None
+    type: Optional[str] = None
+    creationLocation: Optional[str] = None
+    origdatablocks: Optional[List[OrigDataBlock]] = None
+    principalInvestigator: Optional[str] = None
 
 
 class StorageObject(BaseModel):

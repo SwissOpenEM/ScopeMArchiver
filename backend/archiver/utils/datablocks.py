@@ -8,6 +8,7 @@ import time
 from uuid import uuid4
 from typing import Iterator, List, Dict
 from pathlib import Path
+from datetime import datetime
 
 from archiver.utils.working_storage_interface import S3Storage, Bucket
 from archiver.utils.model import OrigDataBlock, DataBlock, DataFile
@@ -199,32 +200,20 @@ def create_datablock_entries(
             data_file_list.append(DataFile(
                 path=tar_info.path,
                 size=tar_info.size,
-                # time=tar_info.mtime
                 chk=str(md5_hash),
                 uid=str(tar_info.uid),
                 gid=str(tar_info.gid),
                 perm=str(tar_info.mode),
-                createdBy=str(tar_info.uname),
-                updatedBy=str(tar_info.uname),
-                # createdAt=tar_info.mtime,
-                # updatedAt=tar_info.mtime
+                time=str(datetime.now().isoformat())
             ))
 
         datablocks.append(DataBlock(
-            id=str(uuid4()),
             archiveId=str(StoragePaths.relative_datablocks_folder(
                 dataset_id) / tar_path.name),
             size=1,
             packedSize=1,
             chkAlg="md5",
             version=str(1),
-            ownerGroup=o.ownerGroup,
-            accessGroups=o.accessGroups,
-            instrumentGroup=o.instrumentGroup,
-            # createdBy=
-            # updatedBy=
-            # updatedAt=datetime.datetime.isoformat(),
-            datasetId=str(dataset_id),
             dataFileList=data_file_list,
             rawDatasetId=o.rawdatasetId,
             derivedDatasetId=o.derivedDatasetId
