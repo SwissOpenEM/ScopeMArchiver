@@ -1,5 +1,7 @@
 from unittest.mock import patch, MagicMock, call
 import pytest
+from uuid import UUID, uuid4
+
 
 from prefect.testing.utilities import prefect_test_harness
 
@@ -18,19 +20,29 @@ def mock_get_datablock_path_in_LTS(datablock: DataBlock):
 
 
 def mock_create_presigned_urls(*args, **kwargs):
-    return ["http://url.com"]
+    return {}
 
 
 def mock_raise_system_error(*args, **kwargs):
     raise SystemError("mock system error")
 
 
+def mock_scicat_get_token() -> str:
+    return "secret-test-string"
+
+
+async def mock_wait_for_file_accessible(file, timeout_s=360) -> bool:
+    return True
+
+
 @ pytest.mark.asyncio
 @ pytest.mark.parametrize("job_id,dataset_id", [
-    (123, 456),
+    (uuid4(), 456),
 ])
 @patch("archiver.scicat.scicat_tasks.scicat._ENDPOINT", ScicatMock.ENDPOINT)
+@patch("archiver.scicat.scicat_tasks.scicat.get_token", mock_scicat_get_token)
 @patch("archiver.utils.datablocks.get_datablock_path_in_LTS", mock_get_datablock_path_in_LTS)
+@patch("archiver.utils.datablocks.wait_for_file_accessible", mock_wait_for_file_accessible)
 @patch("archiver.utils.datablocks.copy_file_to_folder")
 @patch("archiver.utils.datablocks.create_presigned_urls", mock_create_presigned_urls)
 @patch("archiver.utils.datablocks.upload_datablock")
@@ -47,7 +59,7 @@ async def test_scicat_api_retrieval(
         mock_cleanup_lts: MagicMock,
         mock_upload_datablock: MagicMock,
         mock_copy_file_to_folder: MagicMock,
-        job_id, dataset_id):
+        job_id: UUID, dataset_id: int):
 
     # data in LTS
     # datablock in SciCat mock
@@ -65,10 +77,10 @@ async def test_scicat_api_retrieval(
 
         assert m.jobs_matcher.call_count == 2
         assert m.jobs_matcher.request_history[0].json() == expected_job_status(
-            job_id, SciCat.JOBTYPE.RETRIEVE, SciCat.JOBSTATUS.IN_PROGRESS)
+            SciCat.JOBTYPE.RETRIEVE, SciCat.JOBSTATUS.IN_PROGRESS)
 
         assert m.jobs_matcher.request_history[1].json() == expected_job_status(
-            job_id, SciCat.JOBTYPE.RETRIEVE, SciCat.JOBSTATUS.FINISHED_SUCCESSFULLY)
+            SciCat.JOBTYPE.RETRIEVE, SciCat.JOBSTATUS.FINISHED_SUCCESSFULLY)
 
         assert m.datasets_matcher.call_count == 2
         assert m.datasets_matcher.request_history[0].json() == expected_retrieval_dataset_lifecycle(
@@ -93,10 +105,12 @@ async def test_scicat_api_retrieval(
 
 @ pytest.mark.asyncio
 @ pytest.mark.parametrize("job_id,dataset_id", [
-    (123, 456),
+    (uuid4(), 456),
 ])
 @patch("archiver.scicat.scicat_tasks.scicat._ENDPOINT", ScicatMock.ENDPOINT)
+@patch("archiver.scicat.scicat_tasks.scicat.get_token", mock_scicat_get_token)
 @patch("archiver.utils.datablocks.get_datablock_path_in_LTS", mock_raise_system_error)
+@patch("archiver.utils.datablocks.wait_for_file_accessible", mock_wait_for_file_accessible)
 @patch("archiver.utils.datablocks.copy_file_to_folder")
 @patch("archiver.utils.datablocks.create_presigned_urls", mock_create_presigned_urls)
 @patch("archiver.utils.datablocks.upload_datablock")
@@ -129,10 +143,10 @@ async def test_datablock_not_found(
 
         assert m.jobs_matcher.call_count == 2
         assert m.jobs_matcher.request_history[0].json() == expected_job_status(
-            job_id, SciCat.JOBTYPE.RETRIEVE, SciCat.JOBSTATUS.IN_PROGRESS)
+            SciCat.JOBTYPE.RETRIEVE, SciCat.JOBSTATUS.IN_PROGRESS)
 
         assert m.jobs_matcher.request_history[1].json() == expected_job_status(
-            job_id, SciCat.JOBTYPE.RETRIEVE, SciCat.JOBSTATUS.FINISHED_UNSUCCESSFULLY)
+            SciCat.JOBTYPE.RETRIEVE, SciCat.JOBSTATUS.FINISHED_UNSUCCESSFULLY)
 
         assert m.datasets_matcher.call_count == 2
         assert m.datasets_matcher.request_history[0].json() == expected_retrieval_dataset_lifecycle(

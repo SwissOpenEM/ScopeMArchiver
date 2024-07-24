@@ -1,4 +1,5 @@
 from pathlib import Path
+from pydantic import SecretStr
 
 from prefect import State
 from prefect.client.schemas.objects import TaskRun
@@ -19,7 +20,7 @@ class SystemError(Exception):
     pass
 
 
-def report_archival_error(dataset_id: int, state: State, task_run: TaskRun):
+def report_archival_error(dataset_id: int, state: State, task_run: TaskRun, token: SecretStr):
     """Report an error of an archival job of a dataset. Differntiates betwen "DatasetError" (User error, e.g. missing files)
     and SystemError (transient error).
 
@@ -32,15 +33,15 @@ def report_archival_error(dataset_id: int, state: State, task_run: TaskRun):
     try:
         state.result()
     except DatasetError:
-        report_dataset_user_error(dataset_id)
+        report_dataset_user_error(dataset_id=dataset_id, token=token)
     except SystemError:
-        report_dataset_system_error(dataset_id)
+        report_dataset_system_error(dataset_id=dataset_id, token=token)
     except Exception:
         # TODO: add some info about unknown errors
-        report_dataset_system_error(dataset_id)
+        report_dataset_system_error(dataset_id=dataset_id, token=token)
 
 
-def report_retrieval_error(dataset_id: int, state: State, task_run: TaskRun):
+def report_retrieval_error(dataset_id: int, state: State, task_run: TaskRun, token: SecretStr):
     """Report a retrieval error of a job of a dataset. Differntiates betwen "DatasetError" (User error, e.g. missing files)
     and SystemError (transient error).
 
@@ -50,7 +51,7 @@ def report_retrieval_error(dataset_id: int, state: State, task_run: TaskRun):
         task_run (TaskRun): task run
     """
 
-    report_dataset_retrieval_error(dataset_id=dataset_id)
+    report_dataset_retrieval_error(dataset_id=dataset_id, token=token)
 
     # try:
     #     state.result()

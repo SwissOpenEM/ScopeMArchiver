@@ -77,6 +77,8 @@ services:
       - MINIO_PASSWORD_FILE=/run/secrets/minio_pass
       - GITHUB_USER_FILE=/run/secrets/github_user
       - GITHUB_PASSWORD_FILE=/run/secrets/github_pass
+      - SCICAT_USER_FILE=/run/secrets/scicat_user
+      - SCICAT_PASSWORD_FILE=/run/secrets/scicat_pass
     volumes:
       - type: bind
         source: ./backend/prefect-vars.toml
@@ -84,7 +86,7 @@ services:
       - type: bind
         source: ./backend/concurrency-limits.toml
         target: /var/local/concurrency-limits.toml
-    command: "-v /var/local/prefect-vars.toml -s MINIO_USER_FILE MINIO_PASSWORD_FILE GITHUB_USER_FILE GITHUB_PASSWORD_FILE -l /var/local/concurrency-limits.toml"
+    command: "-v /var/local/prefect-vars.toml -s MINIO_USER_FILE MINIO_PASSWORD_FILE GITHUB_USER_FILE GITHUB_PASSWORD_FILE SCICAT_USER_FILE SCICAT_PASSWORD_FILE -l /var/local/concurrency-limits.toml"
     depends_on:
       prefect-server:
         condition: service_healthy
@@ -93,6 +95,8 @@ services:
       - minio_pass
       - github_user
       - github_pass
+      - scicat_user
+      - scicat_pass
   prefect-deploy:
     image: ${PREFECT_FLOWS_IMAGE_NAME}:${OPENEM_IMAGE_TAG}
     container_name: prefect-deploy
@@ -273,3 +277,7 @@ secrets:
     file: ./.secrets/githubuser.txt
   github_pass:
     file: ./.secrets/githubpass.txt
+  scicat_user:
+    file: ./.secrets/scicatuser.txt
+  scicat_pass:
+    file: ./.secrets/scicatpass.txt

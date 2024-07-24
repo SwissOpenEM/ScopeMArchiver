@@ -1,5 +1,7 @@
 from typing import List
 import requests_mock
+from uuid import UUID
+
 
 import archiver.scicat.scicat_tasks as tasks
 from archiver.utils.model import DataFile, OrigDataBlock, DataBlock
@@ -8,33 +10,33 @@ from archiver.utils.model import DataFile, OrigDataBlock, DataBlock
 class ScicatMock(requests_mock.Mocker):
     ENDPOINT = "mock://scicat.example.com"
 
-    def __init__(self, job_id: int, dataset_id: int, origDataBlocks: List[OrigDataBlock], datablocks: List[DataBlock]):
+    def __init__(self, job_id: UUID, dataset_id: int, origDataBlocks: List[OrigDataBlock], datablocks: List[DataBlock]):
         super().__init__()
 
         self.matchers: dict[str, requests_mock.Request.matcher] = {}
 
         self.matchers["jobs"] = self.patch(
-            f"{self.ENDPOINT}{tasks.scicat.API}Jobs/{job_id}", json=None)
+            f"{self.ENDPOINT}{tasks.scicat.API}jobs/{job_id}", json=None)
 
-        self.matchers["datasets"] = self.post(
-            f"{self.ENDPOINT}{tasks.scicat.API}Datasets/{dataset_id}", json=None)
+        self.matchers["datasets"] = self.patch(
+            f"{self.ENDPOINT}{tasks.scicat.API}datasets/{dataset_id}", json=None)
 
         self.matchers["post_datablocks"] = self.post(
-            f"{self.ENDPOINT}{tasks.scicat.API}Datablocks/", json=None)
+            f"{self.ENDPOINT}{tasks.scicat.API}datasets/{dataset_id}/datablocks", json=None)
 
         json_list = []
         for o in origDataBlocks:
             json_list.append(o.model_dump_json())
 
         self.matchers["origdatablocks"] = self.get(
-            f"{self.ENDPOINT}{tasks.scicat.API}Datasets/{dataset_id}/origdatablocks", json=json_list)
+            f"{self.ENDPOINT}{tasks.scicat.API}datasets/{dataset_id}/origdatablocks", json=json_list)
 
         json_list = []
         for o in datablocks:
             json_list.append(o.model_dump_json())
 
         self.matchers["get_datablocks"] = self.get(
-            f"{self.ENDPOINT}{tasks.scicat.API}Datasets/{dataset_id}/datablocks", json=json_list)
+            f"{self.ENDPOINT}{tasks.scicat.API}datasets/{dataset_id}/datablocks", json=json_list)
 
     @property
     def jobs_matcher(self):

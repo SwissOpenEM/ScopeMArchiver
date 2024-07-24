@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime
+from uuid import UUID
 
 
 class DatasetListEntry(BaseModel):
@@ -10,9 +11,10 @@ class DatasetListEntry(BaseModel):
 
 
 class Job(BaseModel):
-    id: str
+    # id: Optional[str] = None
+    id: Optional[UUID] = None
     # Type of job, e.g. archive, retrieve etc ,
-    type: str
+    type: Optional[str] = None
     # The email of the person initiating the job request ,
     emailJobInitiator: Optional[str] = None  # TODO: remove optionality
     # Time when job is created. Format according to chapter 5.6 internet date/time format in RFC 3339 ,
@@ -172,7 +174,7 @@ class DatasetLifecycle(BaseModel):
 
 
 class ArchiveJob(BaseModel):
-    job_id: int
+    job_id: UUID
     origDataBlocks: List[OrigDataBlock]
 
 

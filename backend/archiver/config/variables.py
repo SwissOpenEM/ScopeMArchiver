@@ -75,7 +75,7 @@ class Variables:
 
     @property
     def SCICAT_API_PREFIX(self) -> str:
-        return self.__get("scicat_api_prefix")
+        return self.__get("scicat_api_prefix") or "/"
 
     @property
     def MINIO_RETRIEVAL_BUCKET(self) -> str:
