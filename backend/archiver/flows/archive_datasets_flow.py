@@ -12,7 +12,7 @@ from prefect.client.schemas.objects import TaskRun, FlowRun
 from .utils import report_archival_error
 from .task_utils import generate_task_name_dataset, generate_flow_name_job_id, generate_subflow_run_name_job_id_dataset_id
 from archiver.scicat.scicat_interface import SciCat
-from archiver.scicat.scicat_tasks import update_scicat_archival_job_status, update_scicat_archival_dataset_lifecycle, get_origdatablocks, register_datablocks, get_scicat_access_token
+from archiver.scicat.scicat_tasks import update_scicat_archival_job_status, update_scicat_archival_dataset_lifecycle, get_origdatablocks, register_datablocks, get_scicat_access_token, get_job_datasetlist
 from archiver.scicat.scicat_tasks import report_job_failure_system_error, report_dataset_user_error
 from archiver.utils.datablocks import wait_for_free_space
 from archiver.utils.model import OrigDataBlock, DataBlock
@@ -198,7 +198,7 @@ def on_job_flow_cancellation(flow: Flow, flow_run: FlowRun, state: State):
 @flow(
     name="archive_datasetlist", log_prints=True, flow_run_name=generate_flow_name_job_id, on_failure=[on_job_flow_failure],
     on_cancellation=[on_job_flow_cancellation])
-async def archive_datasets_flow(dataset_ids: List[int], job_id: UUID):
+async def archive_datasets_flow(job_id: UUID, dataset_ids: List[int] | None = None):
     """Prefect flow to archive a list of datasets. Corresponds to a "Job" in Scicat. Runs the individual archivals of the single datasets as subflows and reports
     the overall job status to Scicat.
 
@@ -209,6 +209,7 @@ async def archive_datasets_flow(dataset_ids: List[int], job_id: UUID):
     Raises:
         e: _description_
     """
+    dataset_ids = dataset_ids or []
     access_token = get_scicat_access_token.submit()
     access_token.wait()
 
@@ -216,10 +217,10 @@ async def archive_datasets_flow(dataset_ids: List[int], job_id: UUID):
         job_id=job_id, status=SciCat.JOBSTATUS.IN_PROGRESS, token=access_token)
     job_update.wait()
 
-    # TODO:
-    # fetch datasets for this job
-    # dataset_ids = get_job_datasets.submit(job_id=job_id)
-    # dataset_ids.wait()
+    if len(dataset_ids) == 0:
+        dataset_ids_future = get_job_datasetlist.submit(job_id=job_id, token=access_token)
+        dataset_ids_future.wait()
+        dataset_ids = dataset_ids_future.result()
 
     try:
         for id in dataset_ids:

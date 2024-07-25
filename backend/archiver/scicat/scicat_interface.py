@@ -123,6 +123,21 @@ class SciCat():
         return origdatablocks
 
     @log
+    def get_job_datasetlist(self, job_id: UUID, token: SecretStr) -> List[int]:
+        headers = self._headers(token)
+        result = requests.get(
+            f"{self._ENDPOINT}{self.API}jobs/{job_id}", headers=headers)
+        # returns none if status_code is 200
+        result.raise_for_status()
+        datasetlistStr = result.json()["jobParams"]["datasetList"]
+        import json
+        datasets = json.loads(datasetlistStr)
+        final_list: List[int] = []
+        for d in datasets:
+            final_list.append(int(d['pid']))
+        return final_list
+
+    @log
     def get_datablocks(self, dataset_id: int, token: SecretStr) -> List[DataBlock]:
         headers = self._headers(token)
         result = requests.get(

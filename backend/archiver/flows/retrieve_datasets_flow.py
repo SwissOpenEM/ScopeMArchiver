@@ -13,7 +13,7 @@ from .task_utils import generate_flow_name_job_id, generate_task_name_dataset
 from .utils import report_retrieval_error
 from archiver.scicat.scicat_interface import SciCat
 from archiver.utils.model import Job, DataBlock
-from archiver.scicat.scicat_tasks import update_scicat_retrieval_job_status, update_scicat_retrieval_dataset_lifecycle, get_scicat_access_token
+from archiver.scicat.scicat_tasks import update_scicat_retrieval_job_status, update_scicat_retrieval_dataset_lifecycle, get_scicat_access_token, get_job_datasetlist
 from archiver.scicat.scicat_tasks import report_job_failure_system_error, report_dataset_user_error, get_datablocks
 from archiver.config.concurrency_limits import ConcurrencyLimits
 import archiver.utils.datablocks as datablocks_operations
@@ -98,13 +98,19 @@ def on_job_flow_failure(flow: Flow, flow_run: FlowRun, state: State):
 
 
 @ flow(name="retrieve_datasetlist", log_prints=True, flow_run_name=generate_flow_name_job_id, on_failure=[on_job_flow_failure])
-async def retrieve_datasets_flow(dataset_ids: List[int], job_id: UUID):
+async def retrieve_datasets_flow(job_id: UUID, dataset_ids: List[int] | None = None):
+    dataset_ids = dataset_ids or []
 
     access_token = get_scicat_access_token.submit()
     access_token.wait()
 
     job_update = update_scicat_retrieval_job_status.submit(job_id=job_id, status=SciCat.JOBSTATUS.IN_PROGRESS, token=access_token)
     job_update.wait()
+
+    if len(dataset_ids) == 0:
+        dataset_ids_future = get_job_datasetlist.submit(job_id=job_id, token=access_token)
+        dataset_ids_future.wait()
+        dataset_ids = dataset_ids_future.result()
 
     try:
         for id in dataset_ids:
