@@ -20,8 +20,8 @@ deployments:
       image: "{{ $FLOWS_DOCKER_IMAGE }}"
       registry_credentials:
         registry_url: ghcr.io
-        username: "{{ prefect.blocks.secret.github-openem-username }}"
-        password: "{{ prefect.blocks.secret.github-openem-access-token }}"
+        username: "{{ prefect.blocks.secret.github-user }}"
+        password: "{{ prefect.blocks.secret.github-password }}"
       image_pull_policy: Never
       networks:
         - "{{ $PREFECT_NETWORK }}"
@@ -45,8 +45,8 @@ deployments:
       image: "{{ $FLOWS_DOCKER_IMAGE }}"
       registry_credentials:
         registry_url: ghcr.io
-        username: "{{ prefect.blocks.secret.github-openem-username }}"
-        password: "{{ prefect.blocks.secret.github-openem-access-token }}"
+        username: "{{ prefect.blocks.secret.github-user }}"
+        password: "{{ prefect.blocks.secret.github-password }}"
       image_pull_policy: Never 
       volumes:
         - "{{ $PREFECT_WORKER_LTS_VOLUME_NAME }}:/tmp/LTS"
@@ -71,11 +71,11 @@ deployments:
     job_variables:
       image: "{{ $FLOWS_DOCKER_IMAGE }}"
       env:
-        MINIO_EXTERNAL_ENDPOINT: {{ $MINIO_EXTERNAL_ENDPOINT }}
+        MINIO_EXTERNAL_ENDPOINT: "{{ $MINIO_EXTERNAL_ENDPOINT }}"
       registry_credentials:
         registry_url: ghcr.io
-        username: "{{ prefect.blocks.secret.github-openem-username }}"
-        password: "{{ prefect.blocks.secret.github-openem-access-token }}"
+        username: "{{ prefect.blocks.secret.github-user }}"
+        password: "{{ prefect.blocks.secret.github-password }}"
       image_pull_policy: Never 
       volumes:
         - "{{ $PREFECT_WORKER_LTS_VOLUME_NAME }}:/tmp/LTS"
