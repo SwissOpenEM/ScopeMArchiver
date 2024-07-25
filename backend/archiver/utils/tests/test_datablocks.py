@@ -38,7 +38,7 @@ def dst_folder(tmp_path_factory: pytest.TempPathFactory):
 
 def test_create_tarballs(create_raw_files: Path, dst_folder: Path):
 
-    target_size = 2.5 * file_size_in_bytes
+    target_size = int(2.5 * file_size_in_bytes)
 
     tarballs = create_tarballs(
         test_id, create_raw_files, dst_folder, target_size=target_size)

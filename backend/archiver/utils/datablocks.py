@@ -52,21 +52,21 @@ def create_tarballs(dataset_id: int, src_folder: Path, dst_folder: Path,
     # TODO: corner case: target size < file size
     tarballs: List[Path] = []
 
-    current_tar_file_path: Path = Path(f"{dataset_id}_{len(tarballs)}.tar.gz")
-    filepath = dst_folder / current_tar_file_path
+    current_tar_file_path: Path = dst_folder / Path(f"{dataset_id}_{len(tarballs)}.tar.gz")
 
-    current_tarfile: tarfile.TarFile = tarfile.open(filepath, 'x:gz', compresslevel=4)
+    current_tarfile: tarfile.TarFile = tarfile.open(current_tar_file_path, 'x:gz', compresslevel=4)
 
     if not any(Path(src_folder).iterdir()):
         raise SystemError(f"Empty folder {src_folder} found.")
 
     for file in src_folder.iterdir():
-        if filepath.stat().st_size + file.stat().st_size > target_size:
+        if file.stat().st_size > target_size:
+            raise SystemError(f"Size of {file} is larger than target size {target_size}. Increase target_size.")
+        if current_tar_file_path.stat().st_size + file.stat().st_size > target_size:
             current_tarfile.close()
             tarballs.append(current_tar_file_path)
-            current_tar_file_path = Path(f"{dataset_id}_{len(tarballs)}.tar.gz")
-            filepath = dst_folder / current_tar_file_path
-            current_tarfile = tarfile.open(filepath, 'w')
+            current_tar_file_path = dst_folder / Path(f"{dataset_id}_{len(tarballs)}.tar.gz")
+            current_tarfile = tarfile.open(current_tar_file_path, 'w')
 
         current_tarfile.add(name=file, arcname=file.name, recursive=False)
 
