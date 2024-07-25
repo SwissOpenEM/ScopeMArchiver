@@ -20,7 +20,8 @@ import archiver.utils.datablocks as datablocks_operations
 
 
 def on_get_datablocks_error(dataset_id: int, task: Task, task_run: TaskRun, state: State):
-    report_dataset_user_error(dataset_id)
+    scicat_token = get_scicat_access_token()
+    report_dataset_user_error(dataset_id, token=scicat_token)
 
 
 @task
@@ -36,18 +37,18 @@ def report_retrieved_datablocks(datablocks: List[DataBlock]):
 
 
 @task(task_run_name=generate_task_name_dataset, tags=[ConcurrencyLimits.LTS_TO_RETRIEVAL_TAG], retries=3, retry_delay_seconds=30)
-def copy_datablock_from_LTS_to_S3(dataset_id: int, datablock: DataBlock) -> str:
+def copy_datablock_from_LTS_to_S3(dataset_id: int, datablock: DataBlock):
     datablocks_operations.copy_from_LTS_to_retrieval(dataset_id, datablock)
 
 
 def on_dataset_flow_failure(flow: Flow, flow_run: FlowRun, state: State):
+    datablocks_operations.cleanup_scratch(flow_run.parameters['dataset_id'])
+    datablocks_operations.cleanup_s3_retrieval(flow_run.parameters['dataset_id'])
+
     scicat_token = get_scicat_access_token()
 
     report_retrieval_error(
         dataset_id=flow_run.parameters['dataset_id'], state=state, task_run=None, token=scicat_token)
-
-    datablocks_operations.cleanup_scratch(flow_run.parameters['dataset_id'])
-    datablocks_operations.cleanup_s3_retrieval(flow_run.parameters['dataset_id'])
 
 
 def cleanup_dataset(flow: Flow, flow_run: FlowRun, state: State):

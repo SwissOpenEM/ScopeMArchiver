@@ -23,7 +23,8 @@ from archiver.config.concurrency_limits import ConcurrencyLimits
 def on_get_origdatablocks_error(dataset_id: int, task: Task, task_run: TaskRun, state: State):
     """Callback for get_origdatablocks tasks. Reports a user error.
     """
-    report_dataset_user_error(dataset_id)
+    scicat_token = get_scicat_access_token()
+    report_dataset_user_error(dataset_id, token=scicat_token)
 
 
 # Tasks
@@ -173,15 +174,13 @@ async def archive_single_dataset_flow(dataset_id: int, scicat_token: SecretStr):
 
 
 def on_job_flow_failure(flow: Flow, flow_run: FlowRun, state: State):
+    # Getting the token here should just fetch it from the cache
     token = get_scicat_access_token()
     # TODO: differrentiate user error
     report_job_failure_system_error(job_id=flow_run.parameters['job_id'], type=SciCat.JOBTYPE.ARCHIVE, token=token)
 
 
 def on_job_flow_cancellation(flow: Flow, flow_run: FlowRun, state: State):
-    token = get_scicat_access_token()
-
-    report_job_failure_system_error(job_id=flow_run.parameters['job_id'], type=SciCat.JOBTYPE.ARCHIVE, token=token)
 
     dataset_ids = flow_run.parameters['dataset_ids']
 
@@ -189,6 +188,11 @@ def on_job_flow_cancellation(flow: Flow, flow_run: FlowRun, state: State):
         datablocks_operations.cleanup_lts_folder(dataset_id)
         datablocks_operations.cleanup_scratch(dataset_id)
         datablocks_operations.cleanup_s3_staging(dataset_id)
+
+    # Getting the token here should just fetch it from the cache
+    token = get_scicat_access_token()
+
+    report_job_failure_system_error(job_id=flow_run.parameters['job_id'], type=SciCat.JOBTYPE.ARCHIVE, token=token)
 
 
 @flow(
