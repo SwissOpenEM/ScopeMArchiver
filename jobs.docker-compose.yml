@@ -5,6 +5,7 @@ services:
     restart: always
     profiles:
       - services
+      - deploy
       - full
     volumes:
       - prefect-volume:/root/.prefect
@@ -101,7 +102,7 @@ services:
     image: ${PREFECT_FLOWS_IMAGE_NAME}:${OPENEM_IMAGE_TAG}
     container_name: prefect-deploy
     profiles:
-      - production
+      - full
       - config
       - deploy
     build:
@@ -134,7 +135,7 @@ services:
     restart: always
     deploy:
       mode: replicated
-      replicas: 2
+      replicas: 1
     command:
       [
         "prefect",
@@ -170,7 +171,7 @@ services:
     restart: always
     deploy:
       mode: replicated
-      replicas: 2
+      replicas: 1
     command:
       [
         "prefect",
@@ -221,6 +222,7 @@ services:
     restart: always
     profiles:
       - services
+      - delpoy
       - full
     environment:
       - POSTGRES_USER_FILE=/run/secrets/postgres_user
