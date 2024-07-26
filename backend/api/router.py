@@ -1,6 +1,4 @@
 from uuid import UUID
-import requests
-from archiver.scicat
 import asyncio
 from fastapi import APIRouter, Body
 from typing import Any, List
@@ -8,7 +6,7 @@ from fastapi.responses import JSONResponse
 from prefect.deployments.deployments import run_deployment
 
 from archiver.utils.working_storage_interface import S3Storage, Bucket
-from archiver.utils.model import StorageObject, Job
+from archiver.utils.model import StorageObject
 
 router = APIRouter()
 

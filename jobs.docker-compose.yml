@@ -1,6 +1,6 @@
 services:
   prefect-server:
-    image: prefecthq/prefect:2-python3.11
+    image: prefecthq/prefect:2.19.9-python3.11
     container_name: prefect-server
     restart: always
     profiles:
@@ -37,7 +37,7 @@ services:
       - PREFECT_TASK_DEFAULT_RETRY_DELAY_SECONDS=[1,10,100]
       # working; PREFECT has some issues with api prefixes...
       - PREFECT_UI_URL=http://prefect-server:4200/api
-      - PREFECT_API_URL=http://prefect-server:4200/api
+      - PREFECT_API_URL=http://localhost/api
       - PREFECT_SERVER_API_HOST=0.0.0.0
     ports:
       - 4200:4200
@@ -53,8 +53,8 @@ services:
       - "traefik.http.routers.prefect-api-server.rule=Host(`${HOST}`) && PathPrefix(`/api`)"
       - "traefik.http.routers.prefect-api-server.entrypoints=web"
 
-      - "traefik.http.routers.prefect-api-strip-server.rule=Host(`  ${HOST}`) && PathPrefix(`/perfect`)"
-      - "traefik.http.middlewares.prefect-api-strip-server.stripprefix.prefixes=/perfect`"
+      - "traefik.http.routers.prefect-api-strip-server.rule=Host(`${HOST}`) && PathPrefix(`/prefect`)"
+      - "traefik.http.middlewares.prefect-api-strip-server.stripprefix.prefixes=/prefect`"
       - "traefik.http.routers.prefect-api-strip-server.entrypoints=web"
       - "traefik.http.routers.prefect-server.middlewares=prefect-api-strip-server"
     networks:
@@ -128,7 +128,7 @@ services:
       prefect-server:
         condition: service_healthy
   prefect-archival-worker:
-    image: prefecthq/prefect:2-python3.11
+    image: prefecthq/prefect:2.19.9-python3.11
     profiles:
       - config
       - full
@@ -164,7 +164,7 @@ services:
       - PREFECT_LOGGING_LEVEL=DEBUG
       - PREFECT_API_URL=http://prefect-server:4200/api
   prefect-retrieval-worker:
-    image: prefecthq/prefect:2-python3.11
+    image: prefecthq/prefect:2.19.9-python3.11
     profiles:
       - config
       - full

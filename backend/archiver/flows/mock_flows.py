@@ -19,7 +19,7 @@ from uuid import UUID
 
 
 @task(task_run_name=generate_task_name_dataset, persist_result=True, log_prints=True)
-def create_dummy_dataset(dataset_id: int, file_size_MB: int, num_files: int, datablock_size_MB: int):
+def create_dummy_dataset(dataset_id: int, file_size_MB: int, num_files: int, datablock_size_MB: int, create_job: bool = False):
     dataset_root = Variables().ARCHIVER_SCRATCH_FOLDER / str(dataset_id)
 
     raw_files_folder = dataset_root / "raw_files"
@@ -105,30 +105,34 @@ def create_dummy_dataset(dataset_id: int, file_size_MB: int, num_files: int, dat
 
     shutil.rmtree(dataset_root)
 
-    # create Job
-    datasetlist_entry = DatasetListEntry(pid=str(dataset_id), files=[])
+    if not create_job:
+        print("not creating job")
+    else:
+        print("creating job...")
+        # create Job
+        datasetlist_entry = DatasetListEntry(pid=str(dataset_id), files=[])
 
-    job = Job(
-        jobParams={"username": "ingestor",
-                   "datasetList": f"[{datasetlist_entry.model_dump_json(exclude_none=True)}]"
-                   },
-        emailJobInitiator="testuser@testfacility.com",
-        type="archive",
-        ownerGroup="ingestor",
-        accessGroups=["ingestor"]
-    )
-    j = job.model_dump_json(exclude_none=True)
-    print(j)
-    resp = requests.post(f"{Variables().SCICAT_ENDPOINT}{Variables().SCICAT_API_PREFIX}jobs",
-                         data=j, headers=headers)
-    resp.raise_for_status()
-    # {"jobParams":{"username":"ingestor"},"emailJobInitiator":"scicatingestor@your.site","datasetList":[{"pid":"5244","files":[]}],"type":"archive"}
-    print(resp.json())
-    id = resp.json()["id"]
+        job = Job(
+            jobParams={"username": "ingestor",
+                       "datasetList": f"[{datasetlist_entry.model_dump_json(exclude_none=True)}]"
+                       },
+            emailJobInitiator="testuser@testfacility.com",
+            type="archive",
+            ownerGroup="ingestor",
+            accessGroups=["ingestor"]
+        )
+        j = job.model_dump_json(exclude_none=True)
+        print(j)
+        resp = requests.post(f"{Variables().SCICAT_ENDPOINT}{Variables().SCICAT_API_PREFIX}jobs",
+                             data=j, headers=headers)
+        resp.raise_for_status()
+        # {"jobParams":{"username":"ingestor"},"emailJobInitiator":"scicatingestor@your.site","datasetList":[{"pid":"5244","files":[]}],"type":"archive"}
+        print(resp.json())
+        id = resp.json()["id"]
 
-    print(f"job id: {id}")
-    created_job = Job.model_validate(resp.json())
-    return created_job
+        print(f"job id: {id}")
+        created_job = Job.model_validate(resp.json())
+        return created_job
 
     # {
     #     "ownerGroup": "ingestor",
@@ -267,7 +271,7 @@ def create_dummy_dataset(dataset_id: int, file_size_MB: int, num_files: int, dat
 
 
 @ flow(name="create_test_dataset", persist_result=True)
-def create_test_dataset_flow(file_size_MB: int = 10, num_files: int = 10, datablock_size_MB: int = 20):
+def create_test_dataset_flow(file_size_MB: int = 10, num_files: int = 10, datablock_size_MB: int = 20, create_job: bool = False):
     dataset_id = random.randint(0, 10000)
-    job = create_dummy_dataset(dataset_id, file_size_MB, num_files, datablock_size_MB)
+    job = create_dummy_dataset(dataset_id, file_size_MB, num_files, datablock_size_MB, create_job=create_job)
     return dataset_id

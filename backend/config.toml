@@ -17,5 +17,5 @@ MINIO_STAGING_BUCKET = "staging"         #string
 MINIO_ENDPOINT = "minio:9000"            #string
 
 [scicat]
-SCICAT_ENDPOINT = "http://scicatmock:8000" # string
-SCICAT_API_PREFIX = "/"                    # string
+SCICAT_ENDPOINT = "http://scopem-openem.ethz.ch:89" # string
+SCICAT_API_PREFIX = "/api/v3/"                      # string
