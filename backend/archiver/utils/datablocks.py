@@ -204,7 +204,7 @@ def create_datablock_entries(
                 uid=str(tar_info.uid),
                 gid=str(tar_info.gid),
                 perm=str(tar_info.mode),
-                time=str(datetime.now().isoformat())
+                time=str(datetime.now(datetime.UTC).isoformat())
             ))
 
         datablocks.append(DataBlock(
@@ -555,6 +555,11 @@ def copy_from_LTS_to_retrieval(dataset_id: int, datablock: DataBlock):
 @log
 def create_presigned_urls(datablocks: List[DataBlock]) -> Dict[str, str]:
     urls = {}
+    # TODO: verify this is good enough
+    invalid_chars = ['/', '.', '_']
     for d in datablocks:
-        urls[Path(d.archiveId).name] = S3Storage().get_presigned_url(Bucket.retrieval_bucket(), d.archiveId)
+        name = str(Path(d.archiveId).name)
+        for c in invalid_chars:
+            name = name.replace(c, "-")
+        urls[name] = S3Storage().get_presigned_url(Bucket.retrieval_bucket(), d.archiveId)
     return urls

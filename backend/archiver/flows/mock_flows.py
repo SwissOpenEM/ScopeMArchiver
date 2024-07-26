@@ -45,7 +45,7 @@ def create_dummy_dataset(dataset_id: int, file_size_MB: int, num_files: int, dat
 
     dataset = Dataset(
         pid=str(dataset_id),
-        # createdAt=datetime.datetime.now().isoformat(),
+        # createdAt=datetime.datetime.now(datetime.UTC).isoformat(),
         principalInvestigator="testPI",
         ownerGroup="ingestor",
         owner="ingestor",
@@ -53,7 +53,7 @@ def create_dummy_dataset(dataset_id: int, file_size_MB: int, num_files: int, dat
         contactEmail="testuser@testfacility.com",
         size=1234,
         numberOfFiles=len(files),
-        creationTime=datetime.datetime.now().isoformat(),
+        creationTime=datetime.datetime.now(datetime.UTC).isoformat(),
         type="raw",
         creationLocation="ETHZ",
         datasetlifecycle=DatasetLifecycle(
@@ -83,7 +83,7 @@ def create_dummy_dataset(dataset_id: int, file_size_MB: int, num_files: int, dat
                 path=str(raw_files_folder / f),
                 chk="1234",
                 size=Path(raw_files_folder / f).stat().st_size,
-                time=str(datetime.datetime.now().isoformat())) for f in files_in_tar]
+                time=str(datetime.datetime.now(datetime.UTC).isoformat())) for f in files_in_tar]
 
             origdatablock = OrigDataBlock(
                 datasetId=str(dataset_id),
@@ -94,7 +94,7 @@ def create_dummy_dataset(dataset_id: int, file_size_MB: int, num_files: int, dat
                 #     path=str(p),
                 #     chk=c,
                 #     size=1111,
-                #     time=str(datetime.datetime.now().isoformat())) for p, c in zip(files, checksums)]
+                #     time=str(datetime.datetime.now(datetime.UTC).isoformat())) for p, c in zip(files, checksums)]
             )
 
             j = origdatablock.model_dump_json(exclude_none=True)

@@ -129,9 +129,7 @@ class SciCat():
             f"{self._ENDPOINT}{self.API}jobs/{job_id}", headers=headers)
         # returns none if status_code is 200
         result.raise_for_status()
-        datasetlistStr = result.json()["jobParams"]["datasetList"]
-        import json
-        datasets = json.loads(datasetlistStr)
+        datasets = result.json()["jobParams"]["datasetList"]
         final_list: List[int] = []
         for d in datasets:
             final_list.append(int(d['pid']))
