@@ -14,9 +14,10 @@
     "--max-line-length=140"
   ],
   "python.testing.pytestArgs": [
+    "-m not endtoend",
     // "--cov=./archiver",
     // "--cov-report=html",
-    ".",
+    "."
   ],
   "python.testing.pytestEnabled": true,
   "python.testing.unittestEnabled": false,

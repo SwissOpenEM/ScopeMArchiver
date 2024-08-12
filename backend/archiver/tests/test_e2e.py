@@ -1,20 +1,14 @@
 import logging
 import pytest
 import requests
-import prefect
-from typing import Any
+import time
+from typing import Dict, Optional
 from uuid import UUID
 from archiver.utils.model import Job, DatasetListEntry
 from pydantic import SecretStr
+import minio
 
-
-from prefect.client.schemas.filters import (
-    DeploymentFilter, FlowRunFilter
-)
-from prefect.client.schemas.objects import FlowRun
-from prefect.client.schemas.sorting import FlowRunSort
-from prefect.states import Scheduled
-from prefect.blocks.system import Secret
+from prefect.client.schemas.objects import FlowRun, State
 from prefect.client.orchestration import PrefectClient
 
 from prefect.flow_runs import wait_for_flow_run
@@ -26,10 +20,12 @@ SCICAT_BACKEND_ENDPOINT = "scopem-openem.ethz.ch:89"
 SCICAT_BACKEND_API_PREFIX = "/api/v3"
 
 PREFECT_SERVER_URL = "http://scopem-openem.ethz.ch/api"
+MINIO_SERVER_URL = "scopem-openem.ethz.ch:9000"
 
 
 CREATE_DATASET_PATH = "/new_dataset/"
 JOB_PATH = "/jobs"
+DATASETS_PATH = "/datasets"
 
 LTS_ROOT_PATH = "/tmp/LTS"
 
@@ -55,6 +51,17 @@ def headers(token: SecretStr):
 @pytest.fixture
 def scicat_token_setup():
     yield get_scicat_token()
+
+
+@pytest.fixture
+def minio_client():
+    return minio.Minio(
+        endpoint=MINIO_SERVER_URL,
+        access_key="minio_user",
+        secret_key="minio_pass",
+        region="eu-west1",
+        secure=False
+    )
 
 
 @pytest.fixture
@@ -91,12 +98,12 @@ async def create_dataset() -> str:
     assert new_dataset_flow_id is not None
 
     LOGGER.info("Waiting for dataset flow")
-    dataset = await get_flow_result(new_dataset_flow_id)
-    # assert dataset.state == COMPLETED
+    flow_state = await get_flow_result(new_dataset_flow_id)
+    assert flow_state is not None and flow_state.is_completed()
     return new_dataset_id
 
 
-async def scicat_create_retrieve_job(dataset: str, token: SecretStr) -> UUID:
+async def scicat_create_retrieval_job(dataset: str, token: SecretStr) -> UUID:
     LOGGER.info("Creating retrieve job")
 
     job = Job(
@@ -117,7 +124,7 @@ async def scicat_create_retrieve_job(dataset: str, token: SecretStr) -> UUID:
     return job_uuid
 
 
-async def scicat_create_archive_job(dataset: str, token: SecretStr) -> UUID:
+async def scicat_create_archival_job(dataset: str, token: SecretStr) -> UUID:
     LOGGER.info("Creating archive job")
 
     job = Job(
@@ -140,11 +147,17 @@ async def scicat_create_archive_job(dataset: str, token: SecretStr) -> UUID:
     return archive_job_uuid
 
 
-async def get_flow_result(flow_run_id: UUID) -> Any:
+async def get_scicat_dataset(dataset_pid: str, token: SecretStr) -> Dict[str, str]:
+    response = requests.get(url=f"http://{SCICAT_BACKEND_ENDPOINT}{SCICAT_BACKEND_API_PREFIX}{DATASETS_PATH}/{dataset_pid}",
+                            headers=headers(token))
+    return response.json()
+
+
+async def get_flow_result(flow_run_id: UUID) -> Optional[State]:
     async with PrefectClient(api=PREFECT_SERVER_URL) as client:
         flow_run: FlowRun = await wait_for_flow_run(flow_run_id=flow_run_id, client=client)
-        state = await client.read_flow_run(flow_run.id)
-        return state.state
+        flow_run = await client.read_flow_run(flow_run.id)
+        return flow_run.state
 
 
 async def find_flow_in_prefect(job_id: UUID) -> UUID:
@@ -161,104 +174,84 @@ async def find_flow_in_prefect(job_id: UUID) -> UUID:
     headers = {
         "Content-Type": "application/json",
     }
-    # Making the POST request
-    response = requests.post(url, json=payload, headers=headers)
 
-    assert response.status_code == 200
-    flow_run_ids = response.json()
+    flow_run_ids = []
+    max_retries = 4
+    retry = 0
+    while len(flow_run_ids) == 0 and retry < max_retries:
+        # Making the POST request
+        response = requests.post(url, json=payload, headers=headers)
+
+        assert response.status_code == 200
+        flow_run_ids = response.json()
+        time.sleep(3)
+        retry += 1
+
     assert len(flow_run_ids) == 1
     return flow_run_ids[0]['id']
 
 
+@pytest.mark.endtoend
 @pytest.mark.asyncio
-async def test_end_to_end(scicat_token_setup, set_env):
+async def test_end_to_end(scicat_token_setup, set_env, minio_client):
+    """Runs a full workflow, i.e. 
+    - creating and registering a dataset
+    - archving (on test volume)
+    - retrieving
+
+    It checks the following endpoints involved for the final result
+    - Prefect for flow execution
+    - Minio for the created/retrieved data
+    - Scicat for dataset and job creation
+
+    """
 
     # Create and register dataset -> dataset pid
     dataset_pid = await create_dataset()
-    # TODO: verify dataset in scicat
-    # TODO: verify minio
+    dataset = await get_scicat_dataset(dataset_pid=dataset_pid, token=scicat_token_setup)
+    assert dataset["datasetlifecycle"]["archiveStatusMessage"] == "datasetCreated"
+    assert dataset["datasetlifecycle"]["archivable"] == True
+    assert dataset["datasetlifecycle"]["retrievable"] == False
+    # TODO: Verify dataset in Scicat
+
+    # Verify datablocks in MINIO
+    orig_datablocks = list(map(lambda idx: minio_client.stat_object(bucket_name="landingzone",
+                           object_name=f"openem-network/datasets/{dataset_pid}/origdatablocks/{dataset_pid}_{idx}.tar.gz"), range(9)))
+    assert len(orig_datablocks) == 9
 
     # trigger archive job in scicat
-    scicat_job_id = await scicat_create_archive_job(dataset=dataset_pid, token=scicat_token_setup)
+    scicat_archival_job_id = await scicat_create_archival_job(dataset=dataset_pid, token=scicat_token_setup)
     # TODO: verify job in scicat
 
-    import time
     time.sleep(10)
-    archive_flow_run_id = await find_flow_in_prefect(scicat_job_id)
+    archival_flow_run_id = await find_flow_in_prefect(scicat_archival_job_id)
+    archival_state = await get_flow_result(flow_run_id=archival_flow_run_id)
+    assert archival_state is not None
 
-    # when done
-    state = await get_flow_result(flow_run_id=archive_flow_run_id)
-    LOGGER.info(f"archiving result {state}")
-
-    # TODO: verify job in scicat
-    # TODO: verify dataset in scicat
-    # TODO: verify LTS? minio?
+    # Verify dataset on Scicat
+    dataset = await get_scicat_dataset(dataset_pid=dataset_pid, token=scicat_token_setup)
+    assert dataset["datasetlifecycle"]["archiveStatusMessage"] == "datasetOnArchiveDisk"
+    assert dataset["datasetlifecycle"]["retrieveStatusMessage"] == ""
+    assert dataset["datasetlifecycle"]["archivable"] == False
+    assert dataset["datasetlifecycle"]["retrievable"] == True
 
     # trigger retrieval job in scicat
-    scicat_job_id = await scicat_create_retrieve_job(dataset=dataset_pid, token=scicat_token_setup)
-
+    scicat_retrieval_job_id = await scicat_create_retrieval_job(dataset=dataset_pid, token=scicat_token_setup)
     time.sleep(10)
-    retrieve_flow_run_id = await find_flow_in_prefect(scicat_job_id)
+    retrieve_flow_run_id = await find_flow_in_prefect(scicat_retrieval_job_id)
+    retrieval_state = await get_flow_result(retrieve_flow_run_id)
+    assert retrieval_state is not None
 
-    retrieve_state = await get_flow_result(retrieve_flow_run_id)
-    LOGGER.info(f"archiving result {retrieve_state}")
+    # Verify retrieved datablock in MINIO
+    retrieved_datablock = minio_client.stat_object(
+        bucket_name="retrieval", object_name=f"openem-network/datasets/{dataset_pid}/datablocks/{dataset_pid}_0.tar.gz")
+    assert retrieved_datablock is not None
+
+    # Verify dataset on Scicat
+    dataset = await get_scicat_dataset(dataset_pid=dataset_pid, token=scicat_token_setup)
+    # TODO: fix lifecycle updates
+    # assert dataset["datasetlifecycle"]["archiveStatusMessage"] == ""
+    assert dataset["datasetlifecycle"]["retrieveStatusMessage"] == "datasetRetrieved"
+    assert dataset["datasetlifecycle"]["archivable"] == False
+    assert dataset["datasetlifecycle"]["retrievable"] == True
     # TODO: verify job in scicat
-
-    # when done
-    # TODO: verify job in scicat
-    # TODO: verify dataset in scicat (download urls)
-    # TODO: verify data in minio
-
-    # # TODO: get flow uuid
-    # async with prefect.get_client() as client:
-    #     resp = await client.hello()
-    #     print(resp.json())
-
-    #     new_dataset_deployment_name = ""
-
-    #     # TODO: find flow by uuid
-    #     flow_run = await client.read_flow_runs(
-    #         flow_run_filter=FlowRunFilter(
-    #             # state=dict(name=dict(any_=states)),
-    #             # expected_start_time=dict(
-    #             #     before_=datetime.now(timezone.utc)
-    #             # ),
-    #         ),
-
-    #         deployment_filter=DeploymentFilter(
-    #             name={'like_': new_dataset_deployment_name}
-    #         ),
-    #     )
-
-    # TODO: verify minio
-
-    # # trigger archiving flow
-    # job = Job(
-    #     jobParams={"username": "ingestor"},
-    #     emailJobInitiator="testuser@testfacility.com",
-    #     datasetList=[DatasetListEntry(pid=str(dataset_id), files=[])],
-    #     type="archive",
-    #     ownerGroup="ingestor",
-    #     accessGroups=["ingestor"]
-    # )
-    # # TODO: this entry point needs alignment with SciCat
-    # response = requests.post(url=f"http://{EXTERNAL_BACKEND_SERVER_URL}{API_PREFIX}{JOB_PATH}", json=job.model_dump_json(exclude_none=True))
-    # response.raise_for_status()
-    # archive_job_uuid: UUID = UUID(response.json()["uuid"])
-
-    # archive_flow_run_id = await wait_for_flow_run(flow_run_id=archive_job_uuid)
-
-    # job = Job(
-    #     id=str(1234),
-    #     type="retrieve",
-    #     datasetList=[DatasetListEntry(pid=str(dataset_id), files=[""])]
-    # )
-
-    # response = requests.post(url=f"http://{EXTERNAL_BACKEND_SERVER_URL}{API_PREFIX}{JOB_PATH}", json=job.model_dump_json(exclude_none=True))
-    # response.raise_for_status()
-    # retrieve_job_uuid: UUID = UUID(response.json()["uuid"])
-    # retrieve_flow_run = await wait_for_flow_run(flow_run_id=retrieve_job_uuid)
-
-    # TODO: verify Scicat status
-
-    # check archiving result
