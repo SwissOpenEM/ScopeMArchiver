@@ -67,7 +67,7 @@ class S3Storage():
         external_minio = minio.Minio(
             endpoint=Variables().MINIO_EXTERNAL_ENDPOINT,
             access_key=self._USER,
-            secret_key=self._PASSWORD,
+            secret_key=self._PASSWORD.get_secret_value(),
             region=self._REGION,
             secure=False
         )
