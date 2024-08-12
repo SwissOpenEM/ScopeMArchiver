@@ -4,11 +4,11 @@ import os
 import shutil
 import asyncio
 import time
+import datetime
 
 from uuid import uuid4
 from typing import Iterator, List, Dict
 from pathlib import Path
-from datetime import datetime
 
 from archiver.utils.working_storage_interface import S3Storage, Bucket
 from archiver.utils.model import OrigDataBlock, DataBlock, DataFile
@@ -204,7 +204,7 @@ def create_datablock_entries(
                 uid=str(tar_info.uid),
                 gid=str(tar_info.gid),
                 perm=str(tar_info.mode),
-                time=str(datetime.now(datetime.UTC).isoformat())
+                time=str(datetime.datetime.now(datetime.UTC).isoformat())
             ))
 
         datablocks.append(DataBlock(

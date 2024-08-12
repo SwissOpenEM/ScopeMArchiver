@@ -21,18 +21,19 @@ async def run_archiving_deployment(job_id: UUID, dataset_list: List[str]):
 
 
 async def run_retrieval_deployment(job_id: UUID, dataset_list: List[str]):
-    a = await asyncio.create_task(run_deployment("retrieve_datasetlist/dataset_retrieval", parameters={
+    a = await asyncio.create_task(run_deployment("retrieve_datasetlist/datasets_retrieval", parameters={
         "dataset_ids": dataset_list,
         "job_id": job_id
     }, timeout=0))
     return a
 
 
-async def run_create_dataset_deployment(file_size_MB: int = 10, num_files: int = 10, datablock_size_MB: int = 20):
-    a = await asyncio.create_task(run_deployment("create_test_dataset/DEV_dataset_creation", parameters={
+async def run_create_dataset_deployment(file_size_MB: int = 10, num_files: int = 10, datablock_size_MB: int = 20, dataset_id: int = None):
+    a = await asyncio.create_task(run_deployment("create_test_dataset/dataset_creation", parameters={
         "num_files": num_files,
         "file_size_MB": file_size_MB,
-        "datablock_size_MB": datablock_size_MB
+        "datablock_size_MB": datablock_size_MB,
+        "dataset_id" : dataset_id
     }, timeout=0))
     return a
 
@@ -52,8 +53,10 @@ def get_retrievable_objects() -> list[StorageObject]:
 @ router.post("/new_dataset/")
 async def create_new_dataset():
     try:
-        m = await run_create_dataset_deployment(file_size_MB=10, num_files=10, datablock_size_MB=20)
-        return JSONResponse(content={"name": m.name, "uuid": str(m.id)}, status_code=200)
+        import random
+        dataset_id = random.randint(0, 10000)
+        m = await run_create_dataset_deployment(file_size_MB=10, num_files=10, datablock_size_MB=20, dataset_id=dataset_id)
+        return JSONResponse(content={"name": m.name, "uuid": str(m.id), "dataset_id": str(dataset_id)}, status_code=200)
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)
 
@@ -61,8 +64,13 @@ async def create_new_dataset():
 @ router.post("/jobs/")
 async def job_created(payload: Any = Body(None)):
     try:
-        id = payload['id']
-        type = payload['type']
+        print(payload)
+        payload = payload.decode('ASCII')
+        print(payload)
+        import json
+        payload = json.loads(payload)
+        id = payload["id"]
+        type = payload["type"]
         match type:
             case "archive":
                 m = await run_archiving_deployment(job_id=id, dataset_list=[])
@@ -73,4 +81,5 @@ async def job_created(payload: Any = Body(None)):
 
         return JSONResponse(content={"name": m.name, "uuid": str(m.id)}, status_code=200)
     except Exception as e:
+        print(e)
         return JSONResponse(content={"error": str(e)}, status_code=500)

@@ -99,179 +99,20 @@ def create_dummy_dataset(dataset_id: int, file_size_MB: int, num_files: int, dat
 
             j = origdatablock.model_dump_json(exclude_none=True)
 
+            print(f"Register datablock {orig}")
             resp = requests.post(f"{Variables().SCICAT_ENDPOINT}{Variables().SCICAT_API_PREFIX}origdatablocks",
                                  data=j, headers=headers)
             resp.raise_for_status()
 
     shutil.rmtree(dataset_root)
 
-    if not create_job:
-        print("not creating job")
-    else:
-        print("creating job...")
-        # create Job
-        datasetlist_entry = DatasetListEntry(pid=str(dataset_id), files=[])
-
-        job = Job(
-            jobParams={"username": "ingestor",
-                       "datasetList": f"[{datasetlist_entry.model_dump_json(exclude_none=True)}]"
-                       },
-            emailJobInitiator="testuser@testfacility.com",
-            type="archive",
-            ownerGroup="ingestor",
-            accessGroups=["ingestor"]
-        )
-        j = job.model_dump_json(exclude_none=True)
-        print(j)
-        resp = requests.post(f"{Variables().SCICAT_ENDPOINT}{Variables().SCICAT_API_PREFIX}jobs",
-                             data=j, headers=headers)
-        resp.raise_for_status()
-        # {"jobParams":{"username":"ingestor"},"emailJobInitiator":"scicatingestor@your.site","datasetList":[{"pid":"5244","files":[]}],"type":"archive"}
-        print(resp.json())
-        id = resp.json()["id"]
-
-        print(f"job id: {id}")
-        created_job = Job.model_validate(resp.json())
-        return created_job
-
-    # {
-    #     "ownerGroup": "ingestor",
-    #     "accessGroups": [
-    #         "ingestor"
-    #     ],
-    #     "instrumentGroup": "string",
-    #     "owner": "ingestor",
-    #     "ownerEmail": "scicatingestor@your.site",
-    #     "orcidOfOwner": "ingestor",
-    #     "contactEmail": "name@mail.com",
-    #     "sourceFolder": "./",
-    #     "sourceFolderHost": "test.com",
-    #     "size": 0,
-    #     "packedSize": 0,
-    #     "numberOfFiles": 0,
-    #     "numberOfFilesArchived": 0,
-    #     "creationTime": "2024-07-02T12:11:56.234Z",
-    #     "validationStatus": "string",
-    #     "keywords": [
-    #         "string"
-    #     ],
-    #     "description": "string",
-    #     "datasetName": "string",
-    #     "classification": "string",
-    #     "license": "string",
-    #     "isPublished": false,
-    #     "techniques": [],
-    #     "sharedWith": [],
-    #     "relationships": [],
-    #     "datasetlifecycle": {},
-    #     "scientificMetadata": {},
-    #     "comment": "string",
-    #     "dataQualityMetrics": 0,
-    #     "principalInvestigator": "string",
-    #     "endTime": "2024-07-02T12:11:56.234Z",
-    #     "creationLocation": "string",
-    #     "dataFormat": "string",
-    #     "proposalId": "string",
-    #     "sampleId": "string",
-    #     "instrumentId": "string",
-    #     "pid": "1122",
-    #     "version": "string",
-    #     "type": "raw",
-    #     "investigator": "string",
-    #     "inputDatasets": [
-    #         "string"
-    #     ],
-    #     "usedSoftware": [
-    #         "string"
-    #     ],
-    #     "jobParameters": {},
-    #     "jobLogData": "string",
-    #     "attachments": [
-    #         {
-    #             "createdBy": "string",
-    #             "updatedBy": "string",
-    #             "createdAt": "2024-07-02T12:11:56.234Z",
-    #             "updatedAt": "2024-07-02T12:11:56.234Z",
-    #             "ownerGroup": "string",
-    #             "accessGroups": [
-    #                 "string"
-    #             ],
-    #             "instrumentGroup": "string",
-    #             "isPublished": false,
-    #             "id": "string",
-    #             "thumbnail": "string",
-    #             "caption": "string",
-    #             "datasetId": "string",
-    #             "proposalId": "string",
-    #             "sampleId": "string"
-    #         }
-    #     ],
-    #     "origdatablocks": [
-    #         {
-    #             "createdBy": "ingestor",
-    #             "updatedBy": "ingestor",
-    #             "createdAt": "2024-07-02T12:11:56.234Z",
-    #             "updatedAt": "2024-07-02T12:11:56.234Z",
-    #             "ownerGroup": "ingestor",
-    #             "accessGroups": [
-    #                 "ingestor"
-    #             ],
-    #             "instrumentGroup": "string",
-    #             "isPublished": false,
-    #             "_id": "1122",
-    #             "datasetId": "1122",
-    #             "size": 0,
-    #             "chkAlg": "string",
-    #             "dataFileList": [
-    #                 {
-    #                     "path": "string",
-    #                     "size": 0,
-    #                     "time": "2024-07-02T12:11:56.234Z",
-    #                     "chk": "string",
-    #                     "uid": "string",
-    #                     "gid": "string",
-    #                     "perm": "string"
-    #                 }
-    #             ]
-    #         }
-    #     ],
-    #     "datablocks": [
-    #         {
-    #             "createdBy": "string",
-    #             "updatedBy": "string",
-    #             "createdAt": "2024-07-02T12:11:56.234Z",
-    #             "updatedAt": "2024-07-02T12:11:56.234Z",
-    #             "ownerGroup": "string",
-    #             "accessGroups": [
-    #                 "string"
-    #             ],
-    #             "instrumentGroup": "string",
-    #             "isPublished": false,
-    #             "_id": "string",
-    #             "datasetId": "string",
-    #             "archiveId": "string",
-    #             "size": 0,
-    #             "packedSize": 0,
-    #             "chkAlg": "string",
-    #             "version": "string",
-    #             "dataFileList": [
-    #                 {
-    #                     "path": "string",
-    #                     "size": 0,
-    #                     "time": "2024-07-02T12:11:56.234Z",
-    #                     "chk": "string",
-    #                     "uid": "string",
-    #                     "gid": "string",
-    #                     "perm": "string"
-    #                 }
-    #             ]
-    #         }
-    #     ]
-    # }
 
 
 @ flow(name="create_test_dataset", persist_result=True)
-def create_test_dataset_flow(file_size_MB: int = 10, num_files: int = 10, datablock_size_MB: int = 20, create_job: bool = False):
-    dataset_id = random.randint(0, 10000)
-    job = create_dummy_dataset(dataset_id, file_size_MB, num_files, datablock_size_MB, create_job=create_job)
+def create_test_dataset_flow(dataset_id:int|None, file_size_MB: int = 10, num_files: int = 10, datablock_size_MB: int = 20):
+    dataset_id = dataset_id or random.randint(0, 10000)
+    job = create_dummy_dataset(dataset_id=dataset_id,
+                               file_size_MB=file_size_MB,
+                               num_files=num_files, 
+                               datablock_size_MB=datablock_size_MB)
     return dataset_id
