@@ -208,6 +208,8 @@ services:
     command: ls -l /tmp/LTS
     volumes:
       - ${PREFECT_WORKER_LTS_VOLUME_NAME}:/tmp/LTS
+    networks:
+      - scopemarchiver_network
   scopemarchiver-flows:
     image: ${PREFECT_FLOWS_IMAGE_NAME}:${OPENEM_IMAGE_TAG}
     container_name: scopemarchiver-flows
@@ -217,6 +219,8 @@ services:
     command: ls -l /tmp/LTS
     volumes:
       - ${PREFECT_WORKER_LTS_VOLUME_NAME}:/tmp/LTS
+    networks:
+      - scopemarchiver_network
   postgres:
     image: postgres:15.2-alpine
     restart: always
