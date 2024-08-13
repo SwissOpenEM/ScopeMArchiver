@@ -69,30 +69,19 @@ async def test_scicat_api_archiving(
         assert m.datasets_matcher.call_count == 2
         assert m.datablocks_post_matcher.call_count == num_expected_datablocks
 
-        # 3: Update job status
         assert m.jobs_matcher.request_history[0].json() == expected_job_status(
             "archive", SciCat.JOBSTATUS.IN_PROGRESS)
 
-        # 4: Update dataset lifecycle
         assert m.datasets_matcher.request_history[0].json() == expected_archival_dataset_lifecycle(
             dataset_id, SciCat.ARCHIVESTATUSMESSAGE.STARTED)
 
-        # 5: Create datablocks: mocked
-
-        # 11: Register Datablocks
         for i in range(num_expected_datablocks):
             assert m.datablocks_post_matcher.request_history[i].json(
             ) == expected_datablocks(dataset_id, i)
 
-            # 12: Move datablocks: mocked
-
-            # 15: Validate datablocks: mocked
-
-        # 18: Update dataset lifecycle
         assert m.datasets_matcher.request_history[1].json() == expected_archival_dataset_lifecycle(
             dataset_id, SciCat.ARCHIVESTATUSMESSAGE.DATASET_ON_ARCHIVEDISK, archivable=False, retrievable=True)
 
-        # 19: Update job status
         assert m.jobs_matcher.request_history[1].json() == expected_job_status(
             "archive", SciCat.JOBSTATUS.FINISHED_SUCCESSFULLY)
 
@@ -140,19 +129,15 @@ async def test_create_datablocks_user_error(
         assert m.datasets_matcher.call_count == 2
         assert m.datablocks_post_matcher.call_count == num_expected_datablocks
 
-        # 5: Update job status
         assert m.jobs_matcher.request_history[0].json() == expected_job_status(
             "archive", SciCat.JOBSTATUS.IN_PROGRESS)
 
-        # 6: Update dataset lifecycle
         assert m.datasets_matcher.request_history[0].json() == expected_archival_dataset_lifecycle(
             dataset_id, SciCat.ARCHIVESTATUSMESSAGE.STARTED)
 
-        # 5: Report User Error
         assert m.jobs_matcher.request_history[1].json() == expected_job_status(
             "archive", SciCat.JOBSTATUS.FINISHED_UNSUCCESSFULLY)
 
-        # 13: Missing files
         assert m.datasets_matcher.request_history[1].json() == expected_archival_dataset_lifecycle(
             dataset_id, SciCat.ARCHIVESTATUSMESSAGE.MISSING_FILES)
 
@@ -200,20 +185,16 @@ async def test_move_to_LTS_failure(
         assert m.datasets_matcher.call_count == 2
         assert m.datablocks_post_matcher.call_count == num_expected_datablocks
 
-        # 3: Update job status
         assert m.jobs_matcher.request_history[0].json() == expected_job_status(
             "archive", SciCat.JOBSTATUS.IN_PROGRESS)
 
-        # 4: Update dataset lifecycle
         assert m.datasets_matcher.request_history[0].json() == expected_archival_dataset_lifecycle(
             dataset_id, SciCat.ARCHIVESTATUSMESSAGE.STARTED)
 
-        # 11: Register Datablocks
         for i in range(num_expected_datablocks):
             assert m.datablocks_post_matcher.request_history[i].json(
             ) == expected_datablocks(dataset_id, i)
 
-        # 5: Report Error
         assert m.jobs_matcher.request_history[1].json() == expected_job_status(
             "archive", SciCat.JOBSTATUS.FINISHED_UNSUCCESSFULLY)
 
@@ -267,33 +248,25 @@ async def test_LTS_validation_failure(
         assert m.datasets_matcher.call_count == 2
         assert m.datablocks_post_matcher.call_count == num_expected_datablocks
 
-        # 3: Update job status
         assert m.jobs_matcher.request_history[0].json() == expected_job_status(
             "archive", SciCat.JOBSTATUS.IN_PROGRESS)
 
-        # 4: Update dataset lifecycle
         assert m.datasets_matcher.request_history[0].json() == expected_archival_dataset_lifecycle(
             dataset_id, SciCat.ARCHIVESTATUSMESSAGE.STARTED)
 
-        # 11: Register Datablocks
         for i in range(num_expected_datablocks):
             assert m.datablocks_post_matcher.request_history[i].json(
             ) == expected_datablocks(dataset_id, i)
 
         # TODO: check for different message, specific to validation
-        # 5: Report Error
         assert m.jobs_matcher.request_history[1].json() == expected_job_status(
             "archive", SciCat.JOBSTATUS.FINISHED_UNSUCCESSFULLY)
 
         assert m.datasets_matcher.request_history[1].json() == expected_archival_dataset_lifecycle(
             dataset_id, SciCat.ARCHIVESTATUSMESSAGE.SCHEDULE_ARCHIVE_JOB_FAILED)
 
-        # 6: cleanup LTS
         mock_cleanup_s3_retrieval.assert_not_called()
         mock_cleanup_s3_landingzone.assert_not_called()
         mock_cleanup_s3_staging.assert_called_once_with(dataset_id)
         mock_cleanup_scratch.assert_called_once_with(dataset_id)
         mock_cleanup_lts.assert_called_once_with(dataset_id)
-
-
-# Multiple flows

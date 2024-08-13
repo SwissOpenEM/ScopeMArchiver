@@ -110,4 +110,4 @@ async def create_job(payload: Any, storage_volume: str | None):
 @ router.post("/jobs/")
 async def job_created(payload: Any = Body(None), storage_volume: Annotated[str | None, Header()] = None):
 
-    return create_job(payload=payload, storage_volume=storage_volume)
+    return await create_job(payload=payload, storage_volume=storage_volume)
