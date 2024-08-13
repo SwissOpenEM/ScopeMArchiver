@@ -21,12 +21,12 @@ def get_scicat_access_token() -> SecretStr:
 
 @task(task_run_name=generate_task_name_job)
 def update_scicat_archival_job_status(job_id: UUID, status: SciCat.JOBSTATUS, token: SecretStr) -> None:
-    scicat.update_job_status(job_id, SciCat.JOBTYPE.ARCHIVE, status, token)
+    scicat.update_job_status(job_id=job_id, type=SciCat.JOBTYPE.ARCHIVE, status=status, token=token)
 
 
 @task(task_run_name=generate_task_name_job)
 def update_scicat_retrieval_job_status(job_id: UUID, status: SciCat.JOBSTATUS, token: SecretStr) -> None:
-    scicat.update_job_status(job_id, SciCat.JOBTYPE.RETRIEVE, status, token=token)
+    scicat.update_job_status(job_id=job_id, type=SciCat.JOBTYPE.RETRIEVE, status=status, token=token)
 
 
 @task(task_run_name=generate_task_name_dataset)
@@ -36,7 +36,7 @@ def update_scicat_archival_dataset_lifecycle(
         retrievable: bool | None = None) -> None:
 
     scicat.update_archival_dataset_lifecycle(
-        dataset_id, status, archivable=archivable, retrievable=retrievable, token=token)
+        dataset_id=dataset_id, status=status, archivable=archivable, retrievable=retrievable, token=token)
 
 
 @task(task_run_name=generate_task_name_dataset)
@@ -44,12 +44,14 @@ def update_scicat_retrieval_dataset_lifecycle(
         dataset_id: int, status: SciCat.RETRIEVESTATUSMESSAGE, token: SecretStr) -> None:
 
     scicat.update_retrieval_dataset_lifecycle(
-        dataset_id, status, token)
+        dataset_id=dataset_id,
+        status=status,
+        token=token)
 
 
 @task
 def get_origdatablocks(dataset_id: int, token: SecretStr) -> List[OrigDataBlock]:
-    return scicat.get_origdatablocks(dataset_id, token)
+    return scicat.get_origdatablocks(dataset_id=dataset_id, token=token)
 
 
 @task
@@ -59,7 +61,7 @@ def get_job_datasetlist(job_id: UUID, token: SecretStr) -> List[int]:
 
 @task(task_run_name=generate_task_name_dataset)
 def register_datablocks(datablocks: List[DataBlock], dataset_id: int, token: SecretStr) -> None:
-    scicat.register_datablocks(dataset_id, datablocks, token)
+    scicat.register_datablocks(dataset_id=dataset_id, data_blocks=datablocks, token=token)
 
 
 @task
