@@ -83,11 +83,20 @@ async def test_scicat_api_retrieval(
             SciCat.JOBTYPE.RETRIEVE, SciCat.JOBSTATUS.FINISHED_SUCCESSFULLY)
 
         assert m.datasets_matcher.call_count == 2
+
         assert m.datasets_matcher.request_history[0].json() == expected_retrieval_dataset_lifecycle(
-            dataset_id, SciCat.RETRIEVESTATUSMESSAGE.STARTED)
+            datasets_id=dataset_id,
+            status=SciCat.RETRIEVESTATUSMESSAGE.STARTED,
+            archivable=False,
+            retrievable=True
+        )
 
         assert m.datasets_matcher.request_history[1].json() == expected_retrieval_dataset_lifecycle(
-            dataset_id, SciCat.RETRIEVESTATUSMESSAGE.DATASET_RETRIEVED)
+            datasets_id=dataset_id,
+            status=SciCat.RETRIEVESTATUSMESSAGE.DATASET_RETRIEVED,
+            archivable=False,
+            retrievable=True
+        )
 
         mock_upload_datablock.assert_called()
         mock_cleanup_s3_staging.assert_not_called()
@@ -150,10 +159,18 @@ async def test_datablock_not_found(
 
         assert m.datasets_matcher.call_count == 2
         assert m.datasets_matcher.request_history[0].json() == expected_retrieval_dataset_lifecycle(
-            dataset_id, SciCat.RETRIEVESTATUSMESSAGE.STARTED)
+            datasets_id=dataset_id,
+            status=SciCat.RETRIEVESTATUSMESSAGE.STARTED,
+            archivable=False,
+            retrievable=True
+        )
 
         assert m.datasets_matcher.request_history[1].json() == expected_retrieval_dataset_lifecycle(
-            dataset_id, SciCat.RETRIEVESTATUSMESSAGE.DATASET_RETRIEVAL_FAILED)
+            datasets_id=dataset_id,
+            status=SciCat.RETRIEVESTATUSMESSAGE.DATASET_RETRIEVAL_FAILED,
+            archivable=False,
+            retrievable=True
+        )
 
         mock_upload_datablock.assert_not_called()
         mock_cleanup_s3_retrieval.assert_called_once_with(dataset_id)

@@ -86,7 +86,12 @@ def report_dataset_user_error(dataset_id: int, token: SecretStr, message: str | 
 def report_dataset_retrieval_error(dataset_id: int, token: SecretStr, message: str | None = None,):
     # TODO: correct error message
     scicat.update_retrieval_dataset_lifecycle(
-        dataset_id=dataset_id, status=SciCat.RETRIEVESTATUSMESSAGE.DATASET_RETRIEVAL_FAILED, token=token)
+        dataset_id=dataset_id,
+        status=SciCat.RETRIEVESTATUSMESSAGE.DATASET_RETRIEVAL_FAILED,
+        token=token,
+        archivable=False,
+        retrievable=True
+    )
 
 
 def report_job_failure_user_error(job_id: UUID, type: SciCat.JOBTYPE, token: SecretStr, message: str | None = None):

@@ -73,6 +73,8 @@ def expected_retrieval_dataset_lifecycle(
         datasets_id: int, status: SciCat.RETRIEVESTATUSMESSAGE, archivable: bool | None = None, retrievable: bool | None = None) -> Dict[
         str, Any]:
     return Dataset(datasetlifecycle=DatasetLifecycle(
+        archivable=archivable,
+        retrievable=retrievable,
         retrieveStatusMessage=str(status),
     )).model_dump(exclude_none=True)
 
