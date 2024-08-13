@@ -86,9 +86,12 @@ class SciCat():
         result.raise_for_status()
 
     @log
-    def update_retrieval_dataset_lifecycle(self, dataset_id: int, status: RETRIEVESTATUSMESSAGE, token: SecretStr) -> None:
+    def update_retrieval_dataset_lifecycle(self, dataset_id: int, status: RETRIEVESTATUSMESSAGE, token: SecretStr, archivable: bool | None = None, retrievable: bool |
+            None = None) -> None:
         dataset = Dataset(datasetlifecycle=DatasetLifecycle(
             retrieveStatusMessage=str(status),
+            archivable=archivable,
+            retrievable=retrievable
         ))
         headers = self._headers(token)
         result = requests.patch(f"{self._ENDPOINT}{self.API}datasets/{dataset_id}",
