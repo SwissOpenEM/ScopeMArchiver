@@ -198,7 +198,7 @@ async def find_flow_in_prefect(job_id: UUID) -> UUID:
     return flow_run_ids[0]['id']
 
 
-# @pytest.mark.endtoend
+@pytest.mark.endtoend
 @pytest.mark.asyncio
 async def test_end_to_end(scicat_token_setup, set_env, minio_client):
     """Runs a full workflow, i.e.
