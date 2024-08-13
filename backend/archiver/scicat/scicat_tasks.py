@@ -43,10 +43,14 @@ def update_scicat_archival_dataset_lifecycle(
 def update_scicat_retrieval_dataset_lifecycle(
         dataset_id: int, status: SciCat.RETRIEVESTATUSMESSAGE, token: SecretStr) -> None:
 
+    # Due to a bug in Scicat, archivable and retrieveable need to passed as well to the patch request
     scicat.update_retrieval_dataset_lifecycle(
         dataset_id=dataset_id,
         status=status,
-        token=token)
+        token=token,
+        archivable=False,
+        retrievable=True
+    )
 
 
 @task
