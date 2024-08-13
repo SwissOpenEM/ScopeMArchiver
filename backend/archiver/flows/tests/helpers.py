@@ -2,6 +2,7 @@ from typing import List, Dict, Any
 from archiver.utils.model import DataFile, OrigDataBlock, DataBlock
 from archiver.utils.model import Job, Dataset, DatasetLifecycle
 from archiver.scicat.scicat_interface import SciCat
+from uuid import UUID
 
 
 def create_orig_datablocks(num_blocks: int = 10, num_files_per_block: int = 10) -> List[OrigDataBlock]:
@@ -46,16 +47,16 @@ def create_datablocks(num_blocks: int = 10, num_files_per_block: int = 10) -> Li
     return blocks
 
 
-def expected_job_status(job_id: int, job_type: str, status: SciCat.JOBSTATUS) -> Dict[str, Any]:
+def expected_job_status(job_type: str, status: SciCat.JOBSTATUS) -> Dict[str, Any]:
     match status:
         case SciCat.JOBSTATUS.IN_PROGRESS:
-            return Job(id=str(job_id), type=job_type, jobStatusMessage="inProgress").model_dump(exclude_none=True)
+            return Job(statusCode="1", statusMessage="inProgress").model_dump(exclude_none=True)
         case SciCat.JOBSTATUS.FINISHED_SUCCESSFULLY:
-            return Job(id=str(job_id), type=job_type, jobStatusMessage="finishedSuccessful").model_dump(exclude_none=True)
+            return Job(statusCode="1", statusMessage="finishedSuccessful").model_dump(exclude_none=True)
         case SciCat.JOBSTATUS.FINISHED_UNSUCCESSFULLY:
-            return Job(id=str(job_id), type=job_type, jobStatusMessage="finishedUnsuccessful").model_dump(exclude_none=True)
+            return Job(statusCode="1", statusMessage="finishedUnsuccessful").model_dump(exclude_none=True)
         case SciCat.JOBSTATUS.FINISHED_WITHDATASET_ERRORS:
-            return Job(id=str(job_id), type=job_type, jobStatusMessage="finishedWithDatasetErrors").model_dump(exclude_none=True)
+            return Job(statusCode="1", statusMessage="finishedWithDatasetErrors").model_dump(exclude_none=True)
 
 
 def expected_archival_dataset_lifecycle(
@@ -72,6 +73,8 @@ def expected_retrieval_dataset_lifecycle(
         datasets_id: int, status: SciCat.RETRIEVESTATUSMESSAGE, archivable: bool | None = None, retrievable: bool | None = None) -> Dict[
         str, Any]:
     return Dataset(datasetlifecycle=DatasetLifecycle(
+        archivable=archivable,
+        retrievable=retrievable,
         retrieveStatusMessage=str(status),
     )).model_dump(exclude_none=True)
 

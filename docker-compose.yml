@@ -123,7 +123,7 @@ services:
       - "traefik.http.routers.webuploader.entrypoints=web"
       - "traefik.http.services.webuploader.loadbalancer.server.port=3000"
 
-  backend:
+  archiver-backend:
     image: ${OPENEM_BACKEND_IMAGE_NAME}:${OPENEM_IMAGE_TAG}
     container_name: backend
     volumes:
@@ -132,9 +132,6 @@ services:
     profiles:
       - services
       - full
-    depends_on:
-      prefect-config:
-        condition: service_completed_successfully
     build:
       context: ./backend
       dockerfile: ./web.Dockerfile
@@ -164,6 +161,7 @@ volumes:
 networks:
   scopemarchiver_network:
     name: scopemarchiver_network
+    driver: bridge
 
 secrets:
   minio_user:

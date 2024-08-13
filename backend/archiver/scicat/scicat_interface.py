@@ -1,10 +1,12 @@
 from enum import StrEnum
-import logging
 import requests
 from typing import List
-from archiver.utils.model import Job, DataBlock, Dataset, DatasetLifecycle, OrigDataBlock
+from uuid import UUID
+from pydantic import SecretStr
 
-_LOGGER = logging.getLogger("Jobs")
+from archiver.utils.model import Job, DataBlock, Dataset, DatasetLifecycle, OrigDataBlock
+from archiver.utils.log import log
+from archiver.config.blocks import Blocks
 
 
 class SciCat():
@@ -30,55 +32,88 @@ class SciCat():
         ARCHIVE = "archive"
         RETRIEVE = "retrieve"
 
-    def __init__(self, endpoint: str = "http://scicat.example.com", prefix: str = None):
+    def __init__(self, endpoint: str = "http://scicat.example.com", prefix: str = "/"):
         self._ENDPOINT = endpoint
-        self._API = prefix or "/"
+        if not prefix.endswith('/'):
+            raise ValueError("Api prefix needs to end with '/'")
+        self._API = prefix
 
-    @property
+    def _headers(self, token: SecretStr):
+        return {"Authorization": f"Bearer {token.get_secret_value()}", "Content-Type": "application/json"}
+
+    def get_token(self) -> str:
+
+        user = Blocks().SCICAT_USER
+        password = Blocks().SCICAT_PASSWORD
+
+        resp = requests.post(url=f"{self._ENDPOINT}{self._API}auth/login", data={
+            "username": user,
+            "password": password.get_secret_value()
+        })
+        resp.raise_for_status()
+        return resp.json()["access_token"]
+
+    @ property
     def API(self):
         return self._API
 
-    def update_job_status(self, job_id: int, type: JOBTYPE, status: JOBSTATUS) -> None:
-        job = Job(id=str(job_id), type=str(type), jobStatusMessage=str(status))
+    @ log
+    def update_job_status(self, job_id: UUID, type: JOBTYPE, status: JOBSTATUS, token: SecretStr) -> None:
+        job = Job(statusCode="1", statusMessage=str(status))
+
+        headers = self._headers(token)
 
         result = requests.patch(
-            f"{self._ENDPOINT}{self.API}Jobs/{job_id}", data=job.model_dump_json(exclude_none=True))
+            f"{self._ENDPOINT}{self.API}jobs/{job_id}", data=job.model_dump_json(exclude_none=True), headers=headers)
 
         # returns none if status_code is 200
         result.raise_for_status()
 
-    def update_archival_dataset_lifecycle(self, dataset_id: int, status: ARCHIVESTATUSMESSAGE, archivable: bool | None = None,
-                                          retrievable: bool | None = None) -> None:
+    @ log
+    def update_archival_dataset_lifecycle(
+            self, dataset_id: int, status: ARCHIVESTATUSMESSAGE, token: SecretStr, archivable: bool | None = None, retrievable: bool |
+            None = None) -> None:
         dataset = Dataset(datasetlifecycle=DatasetLifecycle(
             archiveStatusMessage=str(status),
             archivable=archivable,
             retrievable=retrievable
         ))
-        result = requests.post(f"{self._ENDPOINT}{self.API}Datasets/{dataset_id}",
-                               data=dataset.model_dump_json(exclude_none=True))
+
+        headers = self._headers(token)
+        result = requests.patch(f"{self._ENDPOINT}{self.API}datasets/{dataset_id}",
+                                data=dataset.model_dump_json(exclude_none=True), headers=headers)
         # returns none if status_code is 200
         result.raise_for_status()
 
-    def update_retrieval_dataset_lifecycle(self, dataset_id: int, status: RETRIEVESTATUSMESSAGE) -> None:
+    @log
+    def update_retrieval_dataset_lifecycle(self, dataset_id: int, status: RETRIEVESTATUSMESSAGE, token: SecretStr, archivable: bool | None = None, retrievable: bool |
+            None = None) -> None:
         dataset = Dataset(datasetlifecycle=DatasetLifecycle(
             retrieveStatusMessage=str(status),
+            archivable=archivable,
+            retrievable=retrievable
         ))
-        result = requests.post(f"{self._ENDPOINT}{self.API}Datasets/{dataset_id}",
-                               data=dataset.model_dump_json(exclude_none=True))
+        headers = self._headers(token)
+        result = requests.patch(f"{self._ENDPOINT}{self.API}datasets/{dataset_id}",
+                                data=dataset.model_dump_json(exclude_none=True), headers=headers)
         # returns none if status_code is 200
         result.raise_for_status()
 
-    def register_datablocks(self, dataset_id: int, data_blocks: List[DataBlock]) -> None:
+    @log
+    def register_datablocks(self, dataset_id: int, data_blocks: List[DataBlock], token: SecretStr) -> None:
 
+        headers = self._headers(token)
         for d in data_blocks:
-            result = requests.post(
-                f"{self._ENDPOINT}{self.API}Datablocks/", data=d.model_dump_json(exclude_none=True))
+            result = requests.post(f"{self._ENDPOINT}{self.API}datasets/{dataset_id}/datablocks",
+                                   data=d.model_dump_json(exclude_none=True), headers=headers)
             # returns none if status_code is 200
             result.raise_for_status()
 
-    def get_origdatablocks(self, dataset_id: int) -> List[OrigDataBlock]:
+    @log
+    def get_origdatablocks(self, dataset_id: int, token: SecretStr) -> List[OrigDataBlock]:
+        headers = self._headers(token)
         result = requests.get(
-            f"{self._ENDPOINT}{self.API}Datasets/{dataset_id}/origdatablocks")
+            f"{self._ENDPOINT}{self.API}datasets/{dataset_id}/origdatablocks", headers=headers)
         # returns none if status_code is 200
         result.raise_for_status()
 
@@ -90,9 +125,24 @@ class SciCat():
                 origdatablocks.append(OrigDataBlock.model_validate_json(r))
         return origdatablocks
 
-    def get_datablocks(self, dataset_id: int) -> List[DataBlock]:
+    @log
+    def get_job_datasetlist(self, job_id: UUID, token: SecretStr) -> List[int]:
+        headers = self._headers(token)
         result = requests.get(
-            f"{self._ENDPOINT}{self.API}Datasets/{dataset_id}/datablocks")
+            f"{self._ENDPOINT}{self.API}jobs/{job_id}", headers=headers)
+        # returns none if status_code is 200
+        result.raise_for_status()
+        datasets = result.json()["jobParams"]["datasetList"]
+        final_list: List[int] = []
+        for d in datasets:
+            final_list.append(int(d['pid']))
+        return final_list
+
+    @log
+    def get_datablocks(self, dataset_id: int, token: SecretStr) -> List[DataBlock]:
+        headers = self._headers(token)
+        result = requests.get(
+            f"{self._ENDPOINT}{self.API}datasets/{dataset_id}/datablocks", headers=headers)
         # returns none if status_code is 200
         result.raise_for_status()
 

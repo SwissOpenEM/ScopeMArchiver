@@ -2,6 +2,9 @@
 from typing import List
 from functools import partial
 import asyncio
+from uuid import UUID
+from pydantic import SecretStr
+
 
 from prefect import flow, task, State, Task, Flow
 from prefect.client.schemas.objects import TaskRun, FlowRun
@@ -9,10 +12,10 @@ from prefect.client.schemas.objects import TaskRun, FlowRun
 from .utils import report_archival_error
 from .task_utils import generate_task_name_dataset, generate_flow_name_job_id, generate_subflow_run_name_job_id_dataset_id
 from archiver.scicat.scicat_interface import SciCat
-from archiver.scicat.scicat_tasks import update_scicat_archival_job_status, update_scicat_archival_dataset_lifecycle, get_origdatablocks, register_datablocks
+from archiver.scicat.scicat_tasks import update_scicat_archival_job_status, update_scicat_archival_dataset_lifecycle, get_origdatablocks, register_datablocks, get_scicat_access_token, get_job_datasetlist
 from archiver.scicat.scicat_tasks import report_job_failure_system_error, report_dataset_user_error
 from archiver.utils.datablocks import wait_for_free_space
-from archiver.utils.model import OrigDataBlock, DataBlock, Job
+from archiver.utils.model import OrigDataBlock, DataBlock
 import archiver.utils.datablocks as datablocks_operations
 from archiver.config.concurrency_limits import ConcurrencyLimits
 
@@ -20,7 +23,8 @@ from archiver.config.concurrency_limits import ConcurrencyLimits
 def on_get_origdatablocks_error(dataset_id: int, task: Task, task_run: TaskRun, state: State):
     """Callback for get_origdatablocks tasks. Reports a user error.
     """
-    report_dataset_user_error(dataset_id)
+    scicat_token = get_scicat_access_token()
+    report_dataset_user_error(dataset_id, token=scicat_token)
 
 
 # Tasks
@@ -90,7 +94,7 @@ async def move_datablock_to_lts_flow(dataset_id: int, datablock: DataBlock):
 
 
 @flow(name="create_datablocks", flow_run_name=generate_subflow_run_name_job_id_dataset_id)
-async def create_datablocks_flow(dataset_id: int) -> List[DataBlock]:
+async def create_datablocks_flow(dataset_id: int, scicat_token: SecretStr) -> List[DataBlock]:
     """Prefect (sub-)flow to create datablocks (.tar.gz files) for files of a dataset and register them in Scicat.
 
     Args:
@@ -99,34 +103,39 @@ async def create_datablocks_flow(dataset_id: int) -> List[DataBlock]:
     Returns:
         List[DataBlock]: List of created and registered datablocks
     """
+
     dataset_update = update_scicat_archival_dataset_lifecycle.submit(
         dataset_id=dataset_id,
-        status=SciCat.ARCHIVESTATUSMESSAGE.STARTED
+        status=SciCat.ARCHIVESTATUSMESSAGE.STARTED,
+        token=scicat_token
     )
 
     orig_datablocks = get_origdatablocks.with_options(
         on_failure=[partial(on_get_origdatablocks_error, dataset_id)]
     ).submit(
         dataset_id=dataset_id,
+        token=scicat_token,
         wait_for=[dataset_update]
     )
 
     datablocks = create_datablocks.submit(
         dataset_id=dataset_id,
-        origDataBlocks=orig_datablocks
+        origDataBlocks=orig_datablocks,
     )
 
     register_datablocks.submit(
         datablocks=datablocks,
-        dataset_id=dataset_id
+        dataset_id=dataset_id,
+        token=scicat_token
     )
 
     return datablocks
 
 
 def on_dataset_flow_failure(flow: Flow, flow_run: FlowRun, state: State):
+    scicat_token = get_scicat_access_token()
     report_archival_error(
-        dataset_id=flow_run.parameters['dataset_id'], state=state, task_run=None)
+        dataset_id=flow_run.parameters['dataset_id'], state=state, task_run=None, token=scicat_token)
     datablocks_operations.cleanup_lts_folder(flow_run.parameters['dataset_id'])
     datablocks_operations.cleanup_scratch(flow_run.parameters['dataset_id'])
     datablocks_operations.cleanup_s3_staging(flow_run.parameters['dataset_id'])
@@ -144,10 +153,10 @@ def cleanup_dataset(flow: Flow, flow_run: FlowRun, state: State):
       on_completion=[cleanup_dataset],
       on_cancellation=[on_dataset_flow_failure]
       )
-async def archive_single_dataset_flow(dataset_id: int):
+async def archive_single_dataset_flow(dataset_id: int, scicat_token: SecretStr):
 
     try:
-        datablocks = await create_datablocks_flow(dataset_id)
+        datablocks = await create_datablocks_flow(dataset_id, scicat_token=scicat_token)
     except Exception as e:
         raise e
 
@@ -159,16 +168,19 @@ async def archive_single_dataset_flow(dataset_id: int):
 
     update_scicat_archival_dataset_lifecycle.submit(dataset_id=dataset_id,
                                                     status=SciCat.ARCHIVESTATUSMESSAGE.DATASET_ON_ARCHIVEDISK,
-                                                    retrievable=True)
+                                                    archivable=False,
+                                                    retrievable=True,
+                                                    token=scicat_token)
 
 
 def on_job_flow_failure(flow: Flow, flow_run: FlowRun, state: State):
+    # Getting the token here should just fetch it from the cache
+    token = get_scicat_access_token()
     # TODO: differrentiate user error
-    report_job_failure_system_error(job_id=flow_run.parameters['job_id'], type=SciCat.JOBTYPE.ARCHIVE)
+    report_job_failure_system_error(job_id=flow_run.parameters['job_id'], type=SciCat.JOBTYPE.ARCHIVE, token=token)
 
 
 def on_job_flow_cancellation(flow: Flow, flow_run: FlowRun, state: State):
-    report_job_failure_system_error(job_id=flow_run.parameters['job_id'], type=SciCat.JOBTYPE.ARCHIVE)
 
     dataset_ids = flow_run.parameters['dataset_ids']
 
@@ -177,11 +189,16 @@ def on_job_flow_cancellation(flow: Flow, flow_run: FlowRun, state: State):
         datablocks_operations.cleanup_scratch(dataset_id)
         datablocks_operations.cleanup_s3_staging(dataset_id)
 
+    # Getting the token here should just fetch it from the cache
+    token = get_scicat_access_token()
+
+    report_job_failure_system_error(job_id=flow_run.parameters['job_id'], type=SciCat.JOBTYPE.ARCHIVE, token=token)
+
 
 @flow(
     name="archive_datasetlist", log_prints=True, flow_run_name=generate_flow_name_job_id, on_failure=[on_job_flow_failure],
     on_cancellation=[on_job_flow_cancellation])
-async def archive_datasets_flow(dataset_ids: List[int], job_id: int):
+async def archive_datasets_flow(job_id: UUID, dataset_ids: List[int] | None = None):
     """Prefect flow to archive a list of datasets. Corresponds to a "Job" in Scicat. Runs the individual archivals of the single datasets as subflows and reports
     the overall job status to Scicat.
 
@@ -192,15 +209,24 @@ async def archive_datasets_flow(dataset_ids: List[int], job_id: int):
     Raises:
         e: _description_
     """
+    dataset_ids = dataset_ids or []
+    access_token = get_scicat_access_token.submit()
+    access_token.wait()
+
     job_update = update_scicat_archival_job_status.submit(
-        job_id=job_id, status=SciCat.JOBSTATUS.IN_PROGRESS)
+        job_id=job_id, status=SciCat.JOBSTATUS.IN_PROGRESS, token=access_token)
     job_update.wait()
+
+    if len(dataset_ids) == 0:
+        dataset_ids_future = get_job_datasetlist.submit(job_id=job_id, token=access_token)
+        dataset_ids_future.wait()
+        dataset_ids = dataset_ids_future.result()
 
     try:
         for id in dataset_ids:
-            await archive_single_dataset_flow(dataset_id=id)
+            await archive_single_dataset_flow(dataset_id=id, scicat_token=access_token)
     except Exception as e:
         raise e
 
     update_scicat_archival_job_status.submit(
-        job_id=job_id, status=SciCat.JOBSTATUS.FINISHED_SUCCESSFULLY)
+        job_id=job_id, status=SciCat.JOBSTATUS.FINISHED_SUCCESSFULLY, token=access_token)

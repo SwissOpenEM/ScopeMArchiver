@@ -15,7 +15,7 @@ from archiver.flows.utils import StoragePaths, SystemError
 test_id = 1234
 num_raw_files = 10
 file_size_in_bytes = 1024 * 1024
-target_size = 2 * file_size_in_bytes - 1
+
 expected_num_compressed_files = 5
 
 
@@ -37,6 +37,9 @@ def dst_folder(tmp_path_factory: pytest.TempPathFactory):
 
 
 def test_create_tarballs(create_raw_files: Path, dst_folder: Path):
+
+    target_size = int(2.5 * file_size_in_bytes)
+
     tarballs = create_tarballs(
         test_id, create_raw_files, dst_folder, target_size=target_size)
 

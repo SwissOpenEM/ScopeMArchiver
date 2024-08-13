@@ -1,10 +1,11 @@
 services:
   prefect-server:
-    image: prefecthq/prefect:2-python3.11
+    image: prefecthq/prefect:2.19.9-python3.11
     container_name: prefect-server
     restart: always
     profiles:
       - services
+      - deploy
       - full
     volumes:
       - prefect-volume:/root/.prefect
@@ -36,7 +37,7 @@ services:
       - PREFECT_TASK_DEFAULT_RETRY_DELAY_SECONDS=[1,10,100]
       # working; PREFECT has some issues with api prefixes...
       - PREFECT_UI_URL=http://prefect-server:4200/api
-      - PREFECT_API_URL=http://prefect-server:4200/api
+      - PREFECT_API_URL=http://localhost/api
       - PREFECT_SERVER_API_HOST=0.0.0.0
     ports:
       - 4200:4200
@@ -52,8 +53,8 @@ services:
       - "traefik.http.routers.prefect-api-server.rule=Host(`${HOST}`) && PathPrefix(`/api`)"
       - "traefik.http.routers.prefect-api-server.entrypoints=web"
 
-      - "traefik.http.routers.prefect-api-strip-server.rule=Host(`  ${HOST}`) && PathPrefix(`/perfect`)"
-      - "traefik.http.middlewares.prefect-api-strip-server.stripprefix.prefixes=/perfect`"
+      - "traefik.http.routers.prefect-api-strip-server.rule=Host(`${HOST}`) && PathPrefix(`/prefect`)"
+      - "traefik.http.middlewares.prefect-api-strip-server.stripprefix.prefixes=/prefect`"
       - "traefik.http.routers.prefect-api-strip-server.entrypoints=web"
       - "traefik.http.routers.prefect-server.middlewares=prefect-api-strip-server"
     networks:
@@ -77,6 +78,8 @@ services:
       - MINIO_PASSWORD_FILE=/run/secrets/minio_pass
       - GITHUB_USER_FILE=/run/secrets/github_user
       - GITHUB_PASSWORD_FILE=/run/secrets/github_pass
+      - SCICAT_USER_FILE=/run/secrets/scicat_user
+      - SCICAT_PASSWORD_FILE=/run/secrets/scicat_pass
     volumes:
       - type: bind
         source: ./backend/prefect-vars.toml
@@ -84,7 +87,7 @@ services:
       - type: bind
         source: ./backend/concurrency-limits.toml
         target: /var/local/concurrency-limits.toml
-    command: "-v /var/local/prefect-vars.toml -s MINIO_USER_FILE MINIO_PASSWORD_FILE GITHUB_USER_FILE GITHUB_PASSWORD_FILE -l /var/local/concurrency-limits.toml"
+    command: "-v /var/local/prefect-vars.toml -s MINIO_USER_FILE MINIO_PASSWORD_FILE GITHUB_USER_FILE GITHUB_PASSWORD_FILE SCICAT_USER_FILE SCICAT_PASSWORD_FILE -l /var/local/concurrency-limits.toml"
     depends_on:
       prefect-server:
         condition: service_healthy
@@ -93,11 +96,13 @@ services:
       - minio_pass
       - github_user
       - github_pass
+      - scicat_user
+      - scicat_pass
   prefect-deploy:
     image: ${PREFECT_FLOWS_IMAGE_NAME}:${OPENEM_IMAGE_TAG}
     container_name: prefect-deploy
     profiles:
-      - production
+      - full
       - config
       - deploy
     build:
@@ -123,14 +128,14 @@ services:
       prefect-server:
         condition: service_healthy
   prefect-archival-worker:
-    image: prefecthq/prefect:2-python3.11
+    image: prefecthq/prefect:2.19.9-python3.11
     profiles:
       - config
       - full
     restart: always
     deploy:
       mode: replicated
-      replicas: 2
+      replicas: 1
     command:
       [
         "prefect",
@@ -159,14 +164,14 @@ services:
       - PREFECT_LOGGING_LEVEL=DEBUG
       - PREFECT_API_URL=http://prefect-server:4200/api
   prefect-retrieval-worker:
-    image: prefecthq/prefect:2-python3.11
+    image: prefecthq/prefect:2.19.9-python3.11
     profiles:
       - config
       - full
     restart: always
     deploy:
       mode: replicated
-      replicas: 2
+      replicas: 1
     command:
       [
         "prefect",
@@ -203,6 +208,8 @@ services:
     command: ls -l /tmp/LTS
     volumes:
       - ${PREFECT_WORKER_LTS_VOLUME_NAME}:/tmp/LTS
+    networks:
+      - scopemarchiver_network
   scopemarchiver-flows:
     image: ${PREFECT_FLOWS_IMAGE_NAME}:${OPENEM_IMAGE_TAG}
     container_name: scopemarchiver-flows
@@ -212,11 +219,14 @@ services:
     command: ls -l /tmp/LTS
     volumes:
       - ${PREFECT_WORKER_LTS_VOLUME_NAME}:/tmp/LTS
+    networks:
+      - scopemarchiver_network
   postgres:
     image: postgres:15.2-alpine
     restart: always
     profiles:
       - services
+      - delpoy
       - full
     environment:
       - POSTGRES_USER_FILE=/run/secrets/postgres_user
@@ -273,3 +283,7 @@ secrets:
     file: ./.secrets/githubuser.txt
   github_pass:
     file: ./.secrets/githubpass.txt
+  scicat_user:
+    file: ./.secrets/scicatuser.txt
+  scicat_pass:
+    file: ./.secrets/scicatpass.txt

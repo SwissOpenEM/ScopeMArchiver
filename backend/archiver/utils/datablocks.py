@@ -4,9 +4,10 @@ import os
 import shutil
 import asyncio
 import time
+import datetime
 
 from uuid import uuid4
-from typing import Iterator, List
+from typing import Iterator, List, Dict
 from pathlib import Path
 
 from archiver.utils.working_storage_interface import S3Storage, Bucket
@@ -51,26 +52,26 @@ def create_tarballs(dataset_id: int, src_folder: Path, dst_folder: Path,
     # TODO: corner case: target size < file size
     tarballs: List[Path] = []
 
-    current_tar_file: Path = Path(f"{dataset_id}_{len(tarballs)}.tar.gz")
-    filepath = dst_folder / current_tar_file
+    current_tar_file_path: Path = dst_folder / Path(f"{dataset_id}_{len(tarballs)}.tar.gz")
 
-    tar = tarfile.open(filepath, 'x:gz', compresslevel=4)
+    current_tarfile: tarfile.TarFile = tarfile.open(current_tar_file_path, 'x:gz', compresslevel=4)
 
     if not any(Path(src_folder).iterdir()):
         raise SystemError(f"Empty folder {src_folder} found.")
 
     for file in src_folder.iterdir():
-        tar.add(name=file, arcname=file.name, recursive=False)
+        if file.stat().st_size > target_size:
+            raise SystemError(f"Size of {file} is larger than target size {target_size}. Increase target_size.")
+        if current_tar_file_path.stat().st_size + file.stat().st_size > target_size:
+            current_tarfile.close()
+            tarballs.append(current_tar_file_path)
+            current_tar_file_path = dst_folder / Path(f"{dataset_id}_{len(tarballs)}.tar.gz")
+            current_tarfile = tarfile.open(current_tar_file_path, 'w')
 
-        if filepath.stat().st_size >= target_size:
-            tar.close()
-            tarballs.append(current_tar_file)
-            current_tar_file = Path(f"{dataset_id}_{len(tarballs)}.tar.gz")
-            filepath = dst_folder / current_tar_file
-            tar = tarfile.open(filepath, 'w')
+        current_tarfile.add(name=file, arcname=file.name, recursive=False)
 
-    tar.close()
-    tarballs.append(current_tar_file)
+    current_tarfile.close()
+    tarballs.append(current_tar_file_path)
 
     return tarballs
 
@@ -199,32 +200,20 @@ def create_datablock_entries(
             data_file_list.append(DataFile(
                 path=tar_info.path,
                 size=tar_info.size,
-                # time=tar_info.mtime
                 chk=str(md5_hash),
                 uid=str(tar_info.uid),
                 gid=str(tar_info.gid),
                 perm=str(tar_info.mode),
-                createdBy=str(tar_info.uname),
-                updatedBy=str(tar_info.uname),
-                # createdAt=tar_info.mtime,
-                # updatedAt=tar_info.mtime
+                time=str(datetime.datetime.now(datetime.UTC).isoformat())
             ))
 
         datablocks.append(DataBlock(
-            id=str(uuid4()),
             archiveId=str(StoragePaths.relative_datablocks_folder(
                 dataset_id) / tar_path.name),
             size=1,
             packedSize=1,
             chkAlg="md5",
             version=str(1),
-            ownerGroup=o.ownerGroup,
-            accessGroups=o.accessGroups,
-            instrumentGroup=o.instrumentGroup,
-            # createdBy=
-            # updatedBy=
-            # updatedAt=datetime.datetime.isoformat(),
-            datasetId=str(dataset_id),
             dataFileList=data_file_list,
             rawDatasetId=o.rawdatasetId,
             derivedDatasetId=o.derivedDatasetId
@@ -564,8 +553,13 @@ def copy_from_LTS_to_retrieval(dataset_id: int, datablock: DataBlock):
 
 
 @log
-def create_presigned_urls(datablocks: List[DataBlock]) -> List[str]:
-    urls = []
+def create_presigned_urls(datablocks: List[DataBlock]) -> Dict[str, str]:
+    urls = {}
+    # TODO: verify this is good enough
+    invalid_chars = ['/', '.', '_']
     for d in datablocks:
-        urls.append(S3Storage().get_presigned_url(Bucket.retrieval_bucket(), d.archiveId))
+        name = str(Path(d.archiveId).name)
+        for c in invalid_chars:
+            name = name.replace(c, "-")
+        urls[name] = S3Storage().get_presigned_url(Bucket.retrieval_bucket(), d.archiveId)
     return urls

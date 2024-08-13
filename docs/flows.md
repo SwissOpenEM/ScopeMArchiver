@@ -71,7 +71,7 @@ sequenceDiagram
     activate J
       activate S
         J --) S: PATCH /api/v4/Jobs/{JobId}
-        Note left of S: {"jobStatusMessage": "inProgress", <br>"updatedAt": "...",<br>"updatedBy": "..."}, 
+        Note left of S: {"jobStatusMessage": "inProgress"}, 
       deactivate S
     deactivate J
   end
@@ -84,7 +84,7 @@ sequenceDiagram
           activate J
             activate S
               J --) S:  PATCH /api/v4/Dataset/{DatasetId}
-              Note left of S: {"datasetlifecycle": {"archiveStatusMessage": "started"}, <br> "updatedAt": "...", <br>"updatedBy": "..."}  
+              Note left of S: {"datasetlifecycle": {"archiveStatusMessage": "started"}}  
             deactivate S
           deactivate J
         end
@@ -113,7 +113,7 @@ sequenceDiagram
         %% J --) S: Report Error: PATCH /api/v4/Jobs/{JobId}
         %% Note left of S: {"jobStatusMessage": "finishedWithDatasetErrors" ,<br>  "updatedAt": "...",<br>  "updatedBy": "..."}
         J --) S: Report Error: PATCH /api/v4/Dataset/{DatasetId}
-        Note left of S: {"datasetlifecycle:{"archiveStatusMessage": "missingFilesError"}, <br> "updatedAt": "...", <br> "updatedBy": "..."}
+        Note left of S: {"datasetlifecycle:{"archiveStatusMessage": "missingFilesError", "archivable": False, "retrievable":False}}
         J -->> A: Cleanup Datablocks
         J -->> L: Cleanup Datablocks
         Note right of L: No cleanup of dataset files
@@ -123,7 +123,7 @@ sequenceDiagram
         %% J --) S: Report Error: PATCH /api/v4/Jobs/{JobId}
         %% Note left of S: {"jobStatusMessage": "finishedUnsuccessful",<br>  "updatedAt": "...",<br>  "updatedBy": "..."}
         J --) S: Report Error: PATCH /api/v4/Dataset/{DatasetId}
-        Note left of S: {"datasetlifecycle:{"archiveStatusMessage": "scheduleArchiveJobFailed"}, <br> "updatedAt": "...", <br> "updatedBy": "..."}
+        Note left of S: {"datasetlifecycle:{"archiveStatusMessage": "scheduleArchiveJobFailed", "archivable": "false", "retrievable":"false"}}
         J -->> A: Cleanup Datablocks
         J -->> L: Cleanup Datablocks
         Note right of L: No cleanup of dataset files
@@ -132,12 +132,12 @@ sequenceDiagram
     option Failure User Error
       activate J
         J --) S: Report Error: PATCH /api/v4/Jobs/{JobId}
-        Note left of S: {"jobStatusMessage": "finishedWithDatasetErrors" ,<br>  "updatedAt": "...",<br>  "updatedBy": "..."}
+        Note left of S: {"jobStatusMessage": "finishedWithDatasetErrors"}
       deactivate J
     option Failure System Error
       activate J
         J --) S: Report Error: PATCH /api/v4/Jobs/{JobId}
-        Note left of S: {"jobStatusMessage": "finishedUnsuccessful",<br>  "updatedAt": "...",<br>  "updatedBy": "..."}
+        Note left of S: {"jobStatusMessage": "finishedUnsuccessful"}
       deactivate J
   end
   
@@ -169,13 +169,13 @@ sequenceDiagram
   loop Retry: Exponential backoff
     activate J
     J -->> S:  PATCH /api/v4/Datasets/{DatasetId}
-    Note left of S: {"datasetlifecycle": {"retrievable": True, "archiveStatusMessage": "datasetOnArchiveDisk"}, <br> "updatedAt": "...", <br> "updatedBy": "..."} 
+    Note left of S: {"datasetlifecycle": {"archivable": False, "retrievable": True, "archiveStatusMessage": "datasetOnArchiveDisk"}} 
     deactivate J
   end 
   loop Retry: Exponential backoff
     activate J
     J -->> S: PATCH /api/v4/Jobs/{JobId}
-    Note left of S: {"jobStatusMessage": "finishedSuccessful",<br>  "updatedAt": "...", <br> "updatedBy": "..."} 
+    Note left of S: {"jobStatusMessage": "finishedSuccessful"} 
     deactivate J
   end 
 ```
@@ -201,9 +201,9 @@ sequenceDiagram
   loop Retry: Exponential backoff
     activate J
       J -->> S: PATCH /api/v4/Jobs/{JobId}
-      Note left of S: {"jobStatusMessage": "inProgress",<br> "updatedAt": "...", <br> "updatedBy": "..."}  
+      Note left of S: {"jobStatusMessage": "inProgress"}  
       J -->> S: PATCH /api/v4/Datasets/{DatasetId}
-      Note left of S: {"datasetlifecycle": {"retrieveStatusMessage": "started"},<br> "updatedAt": "...", <br> "updatedBy": "..."}  
+      Note left of S: {"datasetlifecycle": {"retrieveStatusMessage": "started"}}  
     deactivate J
   end
   critical
@@ -213,9 +213,9 @@ sequenceDiagram
   option Retrieval Failure
     activate J
       J --) S: Report Error: PATCH /api/v4/Dataset/{DatasetId}
-          Note left of S: {"retrieveStatusMessage": Scicat specific? valid values?<br>, "retrieveReturnMessage": storage specific? free to choose?, <br> "updatedAt": "...", <br> "updatedBy": "..."}
+          Note left of S: {"retrieveStatusMessage": Scicat specific? valid values?<br>, "retrieveReturnMessage": "retrievalFailed"}
       J --) S: Report Error: PATCH /api/v4/Jobs/{JobId}
-         Note left of S: {"jobStatusMessage": "finishedWithDatasetErrors" Scicat specific?,<br>  "updatedAt": "...",<br>  "updatedBy": "...", <br> "jobResultObject" Storage specific?
+         Note left of S: {"jobStatusMessage": "finishedWithDatasetErrors" Scicat specific?, <br> "jobResultObject" Storage specific?
       J -->> R: Cleanup Files
     deactivate J
   end
@@ -234,12 +234,13 @@ sequenceDiagram
       J -->> S: PATCH /api/v4/Jobs/{JobId}
       Note left of S: {"jobStatusMessage": "finishedSuccessful"} 
       J -->> S: PATCH /api/v4/Datasets/{DatasetId}
-      Note left of S: {"datasetlifecycle":<br> {"retrieveStatusMessage": "datasetRetrieved"}} ? where to put download url? 
+      Note left of S: {"datasetlifecycle":<br> {"retrieveStatusMessage": "datasetRetrieved", "retrievable": True}} 
     deactivate J
   end 
 
 ```
 
+> Note: `updatedBy` and `updatedAt` are omitted for brevity but need to be set for every update of the job status and datsetlifecycle as well.
 
 ```mermaid
 graph LR

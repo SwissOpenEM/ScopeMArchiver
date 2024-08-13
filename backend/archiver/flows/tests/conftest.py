@@ -8,7 +8,7 @@ def config_fixture():
 
     envs = {
         'LTS_FREE_SPACE_PERCENTAGE': ".01",
-        'SCICAT_API_PREFIX': "",
+        'SCICAT_API_PREFIX': "/",
         'LTS_STORAGE_ROOT': "/tmp/LTS",
         'ARCHIVER_SCRATCH_FOLDER': "/tmp/data/scratch",
         'ARCHIVER_LTS_FILE_TIMEOUT_S': "30"

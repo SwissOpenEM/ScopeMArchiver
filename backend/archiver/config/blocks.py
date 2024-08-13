@@ -1,4 +1,5 @@
 from prefect.blocks.system import Secret
+from pydantic import SecretStr
 
 
 class Blocks:
@@ -10,12 +11,26 @@ class Blocks:
         return cls._instance
 
     def __get(self, name: str) -> str:
-        return Secret.load(name).get()
+        s = None
+        try:
+            s = Secret.load(name)
+        finally:
+            if s is None:
+                return ""
+        return s.get()
 
     @property
     def MINIO_USER(self) -> str:
         return self.__get("minio-user")
 
     @property
-    def MINIO_PASSWORD(self) -> str:
-        return self.__get("minio-password")
+    def MINIO_PASSWORD(self) -> SecretStr:
+        return SecretStr(self.__get("minio-password"))
+
+    @property
+    def SCICAT_USER(self) -> str:
+        return self.__get("scicat-user")
+
+    @property
+    def SCICAT_PASSWORD(self) -> SecretStr:
+        return SecretStr(self.__get("scicat-password"))
