@@ -30,7 +30,7 @@ def on_get_origdatablocks_error(dataset_id: int, task: Task, task_run: TaskRun, 
 # Tasks
 @task(task_run_name=generate_task_name_dataset)
 def create_datablocks(dataset_id: int, origDataBlocks: List[OrigDataBlock]) -> List[DataBlock]:
-    """Prefect task to create datablocks. 
+    """Prefect task to create datablocks.
 
     Args:
         dataset_id (int): dataset id
@@ -196,7 +196,9 @@ def on_job_flow_cancellation(flow: Flow, flow_run: FlowRun, state: State):
 
 
 @flow(
-    name="archive_datasetlist", log_prints=True, flow_run_name=generate_flow_name_job_id, on_failure=[on_job_flow_failure],
+    name="archive_datasetlist", log_prints=True,
+    flow_run_name=generate_flow_name_job_id,
+    on_failure=[on_job_flow_failure],
     on_cancellation=[on_job_flow_cancellation])
 async def archive_datasets_flow(job_id: UUID, dataset_ids: List[int] | None = None):
     """Prefect flow to archive a list of datasets. Corresponds to a "Job" in Scicat. Runs the individual archivals of the single datasets as subflows and reports
@@ -209,7 +211,7 @@ async def archive_datasets_flow(job_id: UUID, dataset_ids: List[int] | None = No
     Raises:
         e: _description_
     """
-    dataset_ids = dataset_ids or []
+    dataset_ids: List[int] = dataset_ids or []
     access_token = get_scicat_access_token.submit()
     access_token.wait()
 
