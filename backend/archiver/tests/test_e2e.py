@@ -1,3 +1,5 @@
+import functools
+import asyncio
 import logging
 import pytest
 import requests
@@ -82,13 +84,15 @@ def set_env():
         os.environ.pop(k)
 
 
-async def create_dataset() -> str:
+async def create_dataset(file_size_MB: int = 10, num_files: int = 10, datablock_size_MB: int = 20) -> str:
     LOGGER.info("Creating dataset")
 
     response = requests.post(
         url=f"http://{EXTERNAL_BACKEND_SERVER_URL}{BACKEND_API_PREFIX}{BACKEND_API_CREATE_DATASET_PATH}",
         json={
-
+            "file_size_MB": file_size_MB,
+            "num_files": num_files,
+            "datablock_size_MB": datablock_size_MB
         }
     )
     response.raise_for_status()
@@ -299,3 +303,28 @@ async def test_end_to_end(scicat_token_setup, set_env, minio_client):
     # assert dataset_lifecycle.get("archiveStatusMessage") == "datasetOnArchiveDisk"
     assert not dataset_lifecycle.get("archivable")
     assert dataset_lifecycle.get("retrievable")
+
+
+async def archive_workflow(scicat_token: SecretStr):
+
+    dataset_pid = await create_dataset(num_files=100, file_size_MB=100, datablock_size_MB=500)
+
+    # trigger archive job in scicat
+    scicat_archival_job_id = await scicat_create_archival_job(dataset=dataset_pid, token=scicat_token)
+
+    # Verify Scicat Job status
+    scicat_archival_job_status = await get_scicat_job(job_id=scicat_archival_job_id, token=scicat_token)
+
+
+@pytest.mark.endtoend
+@pytest.mark.asyncio
+async def test_archiving_stress(scicat_token_setup):
+
+    dataset_count = 30
+
+    tasks = []
+
+    for i in range(dataset_count):
+        tasks.append(asyncio.create_task(functools.partial(archive_workflow, scicat_token_setup)()))
+
+    await asyncio.gather(*tasks)
