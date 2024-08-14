@@ -439,7 +439,7 @@ def cleanup_s3_retrieval(dataset_id: int) -> None:
 
 @log
 def cleanup_s3_landingzone(dataset_id: int) -> None:
-    delete_objects_from_s3(prefix=StoragePaths.relative_datablocks_folder(dataset_id),
+    delete_objects_from_s3(prefix=StoragePaths.relative_origdatablocks_folder(dataset_id),
                            bucket=Bucket.landingzone_bucket())
 
 
