@@ -37,7 +37,7 @@ def update_scicat_retrieval_job_status(
 
 @task(task_run_name=generate_task_name_dataset)
 def update_scicat_archival_dataset_lifecycle(
-        dataset_id: int, status: SciCat.ARCHIVESTATUSMESSAGE, token: SecretStr,
+        dataset_id: str, status: SciCat.ARCHIVESTATUSMESSAGE, token: SecretStr,
         archivable: bool | None = None,
         retrievable: bool | None = None) -> None:
 
@@ -47,7 +47,7 @@ def update_scicat_archival_dataset_lifecycle(
 
 @task(task_run_name=generate_task_name_dataset)
 def update_scicat_retrieval_dataset_lifecycle(
-        dataset_id: int, status: SciCat.RETRIEVESTATUSMESSAGE, token: SecretStr) -> None:
+        dataset_id: str, status: SciCat.RETRIEVESTATUSMESSAGE, token: SecretStr) -> None:
 
     # Due to a bug in Scicat, archivable and retrieveable need to passed as well to the patch request
     scicat.update_retrieval_dataset_lifecycle(
@@ -60,7 +60,7 @@ def update_scicat_retrieval_dataset_lifecycle(
 
 
 @task
-def get_origdatablocks(dataset_id: int, token: SecretStr) -> List[OrigDataBlock]:
+def get_origdatablocks(dataset_id: str, token: SecretStr) -> List[OrigDataBlock]:
     return scicat.get_origdatablocks(dataset_id=dataset_id, token=token)
 
 
@@ -70,26 +70,26 @@ def get_job_datasetlist(job_id: UUID, token: SecretStr) -> List[int]:
 
 
 @task(task_run_name=generate_task_name_dataset)
-def register_datablocks(datablocks: List[DataBlock], dataset_id: int, token: SecretStr) -> None:
+def register_datablocks(datablocks: List[DataBlock], dataset_id: str, token: SecretStr) -> None:
     scicat.register_datablocks(dataset_id=dataset_id, data_blocks=datablocks, token=token)
 
 
 @task
-def get_datablocks(dataset_id: int, token: SecretStr) -> List[DataBlock]:
+def get_datablocks(dataset_id: str, token: SecretStr) -> List[DataBlock]:
     return scicat.get_datablocks(dataset_id=dataset_id, token=token)
 
 
-def report_dataset_system_error(dataset_id: int, token: SecretStr, message: str | None = None):
+def report_dataset_system_error(dataset_id: str, token: SecretStr, message: str | None = None):
     scicat.update_archival_dataset_lifecycle(dataset_id=dataset_id, status=SciCat.ARCHIVESTATUSMESSAGE.SCHEDULE_ARCHIVE_JOB_FAILED,
                                              archivable=None, retrievable=None, token=token)
 
 
-def report_dataset_user_error(dataset_id: int, token: SecretStr, message: str | None = None):
+def report_dataset_user_error(dataset_id: str, token: SecretStr, message: str | None = None):
     scicat.update_archival_dataset_lifecycle(dataset_id=dataset_id, status=SciCat.ARCHIVESTATUSMESSAGE.MISSING_FILES,
                                              archivable=None, retrievable=None, token=token)
 
 
-def report_dataset_retrieval_error(dataset_id: int, token: SecretStr, message: str | None = None,):
+def report_dataset_retrieval_error(dataset_id: str, token: SecretStr, message: str | None = None,):
     # TODO: correct error message
     scicat.update_retrieval_dataset_lifecycle(
         dataset_id=dataset_id,
@@ -111,7 +111,7 @@ def report_job_failure_system_error(job_id: UUID, type: SciCat.JOBTYPE, token: S
 
 
 @task
-def create_job_result_object_task(dataset_ids: List[int]) -> List[JobResultEntry]:
+def create_job_result_object_task(dataset_ids: List[str]) -> List[JobResultEntry]:
     access_token = get_scicat_access_token.submit()
     access_token.wait()
 
@@ -126,7 +126,7 @@ def create_job_result_object_task(dataset_ids: List[int]) -> List[JobResultEntry
         datablocks_future.wait()
         datablocks = datablocks_future.result()
 
-        dataset_job_results = create_job_result_object(str(dataset_id), datablocks)
+        dataset_job_results = create_job_result_object(dataset_id, datablocks)
         job_results = job_results + dataset_job_results
 
     return job_results

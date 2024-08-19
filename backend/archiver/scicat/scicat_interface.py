@@ -72,7 +72,7 @@ class SciCat():
 
     @ log
     def update_archival_dataset_lifecycle(
-            self, dataset_id: int, status: ARCHIVESTATUSMESSAGE, token: SecretStr, archivable: bool | None = None, retrievable: bool |
+            self, dataset_id: str, status: ARCHIVESTATUSMESSAGE, token: SecretStr, archivable: bool | None = None, retrievable: bool |
             None = None) -> None:
         dataset = Dataset(datasetlifecycle=DatasetLifecycle(
             archiveStatusMessage=str(status),
@@ -88,7 +88,7 @@ class SciCat():
 
     @log
     def update_retrieval_dataset_lifecycle(
-            self, dataset_id: int, status: RETRIEVESTATUSMESSAGE, token: SecretStr, archivable: bool | None = None, retrievable: bool |
+            self, dataset_id: str, status: RETRIEVESTATUSMESSAGE, token: SecretStr, archivable: bool | None = None, retrievable: bool |
             None = None) -> None:
         dataset = Dataset(datasetlifecycle=DatasetLifecycle(
             retrieveStatusMessage=str(status),
@@ -102,7 +102,7 @@ class SciCat():
         result.raise_for_status()
 
     @log
-    def register_datablocks(self, dataset_id: int, data_blocks: List[DataBlock], token: SecretStr) -> None:
+    def register_datablocks(self, dataset_id: str, data_blocks: List[DataBlock], token: SecretStr) -> None:
 
         headers = self._headers(token)
         for d in data_blocks:
@@ -124,7 +124,7 @@ class SciCat():
         result.raise_for_status()
 
     @log
-    def get_origdatablocks(self, dataset_id: int, token: SecretStr) -> List[OrigDataBlock]:
+    def get_origdatablocks(self, dataset_id: str, token: SecretStr) -> List[OrigDataBlock]:
         headers = self._headers(token)
         result = requests.get(
             f"{self._ENDPOINT}{self.API}datasets/{dataset_id}/origdatablocks", headers=headers)
@@ -140,20 +140,18 @@ class SciCat():
         return origdatablocks
 
     @log
-    def get_job_datasetlist(self, job_id: UUID, token: SecretStr) -> List[int]:
+    def get_job_datasetlist(self, job_id: UUID, token: SecretStr) -> List[str]:
         headers = self._headers(token)
         result = requests.get(
             f"{self._ENDPOINT}{self.API}jobs/{job_id}", headers=headers)
         # returns none if status_code is 200
         result.raise_for_status()
         datasets = result.json()["jobParams"]["datasetList"]
-        final_list: List[int] = []
-        for d in datasets:
-            final_list.append(int(d['pid']))
+        final_list = [d['pid'] for d in datasets]
         return final_list
 
     @log
-    def get_datablocks(self, dataset_id: int, token: SecretStr) -> List[DataBlock]:
+    def get_datablocks(self, dataset_id: str, token: SecretStr) -> List[DataBlock]:
         headers = self._headers(token)
         result = requests.get(
             f"{self._ENDPOINT}{self.API}datasets/{dataset_id}/datablocks", headers=headers)

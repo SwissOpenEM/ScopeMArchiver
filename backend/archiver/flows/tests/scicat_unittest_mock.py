@@ -4,13 +4,13 @@ from uuid import UUID
 
 
 import archiver.scicat.scicat_tasks as tasks
-from archiver.utils.model import DataFile, OrigDataBlock, DataBlock
+from archiver.utils.model import OrigDataBlock, DataBlock
 
 
 class ScicatMock(requests_mock.Mocker):
     ENDPOINT = "mock://scicat.example.com"
 
-    def __init__(self, job_id: UUID, dataset_id: int, origDataBlocks: List[OrigDataBlock], datablocks: List[DataBlock]):
+    def __init__(self, job_id: UUID, dataset_id: str, origDataBlocks: List[OrigDataBlock], datablocks: List[DataBlock]):
         super().__init__()
 
         self.matchers: dict[str, requests_mock.Request.matcher] = {}

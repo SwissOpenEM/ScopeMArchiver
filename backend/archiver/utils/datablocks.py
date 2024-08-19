@@ -34,13 +34,13 @@ def unpack_tarballs(src_folder: Path, dst_folder: Path):
 
 
 @log
-def create_tarballs(dataset_id: int, src_folder: Path, dst_folder: Path,
+def create_tarballs(dataset_id: str, src_folder: Path, dst_folder: Path,
                     target_size: int = 300 * (1024**2)) -> List[Path]:
     """ Create datablocks, i.e. .tar.gz files, from files in a folder. The files will be named according to
     the dataset they belong to. The target size of the created files is 300 MB by default
 
     Args:
-        dataset_id (int):
+        dataset_id (str):
         folder (Path): _description_
         target_size (int, optional): _description_. Defaults to 300*(1024**2).
 
@@ -170,12 +170,12 @@ def delete_objects_from_s3(prefix: Path, bucket: Bucket):
 
 @log
 def create_datablock_entries(
-        dataset_id: int, folder: Path, origDataBlocks: List[OrigDataBlock],
+        dataset_id: str, folder: Path, origDataBlocks: List[OrigDataBlock],
         tarballs: List[Path]) -> List[DataBlock]:
     """Create datablock entries compliant with schema provided by scicat
 
     Args:
-        dataset_id (int): Dataset identifier
+        dataset_id (str): Dataset identifier
         folder (Path): _description_
         origDataBlocks (List[OrigDataBlock]): _description_
         tarballs (List[Path]): _description_
@@ -234,7 +234,7 @@ def find_object_in_s3(dataset_id, datablock_name):
 
 
 @log
-def move_data_to_LTS(dataset_id: int, datablock: DataBlock) -> str:
+def move_data_to_LTS(dataset_id: str, datablock: DataBlock) -> str:
 
     # mount target dir and check access
     if not Variables().LTS_STORAGE_ROOT.exists():
@@ -334,7 +334,7 @@ def copy_file_to_folder(src_file: Path, dst_folder: Path):
 
 
 @log
-def verify_data_in_LTS(dataset_id: int, datablock: DataBlock, expected_checksum: str) -> None:
+def verify_data_in_LTS(dataset_id: str, datablock: DataBlock, expected_checksum: str) -> None:
 
     dst_folder = StoragePaths.scratch_archival_datablocks_folder(
         dataset_id) / "verification"
@@ -358,7 +358,7 @@ def verify_data_in_LTS(dataset_id: int, datablock: DataBlock, expected_checksum:
 
 
 @log
-def create_datablocks(dataset_id: int, origDataBlocks: List[OrigDataBlock]) -> List[DataBlock]:
+def create_datablocks(dataset_id: str, origDataBlocks: List[OrigDataBlock]) -> List[DataBlock]:
     getLogger().info(f"Creating datablocks for {dataset_id}")
 
     if len(origDataBlocks) == 0:
@@ -412,7 +412,7 @@ def create_datablocks(dataset_id: int, origDataBlocks: List[OrigDataBlock]) -> L
 
 
 @log
-def cleanup_lts_folder(dataset_id: int) -> None:
+def cleanup_lts_folder(dataset_id: str) -> None:
     # TODO: is deletion possible?
     lts_folder = StoragePaths.lts_datablocks_folder(dataset_id)
 
@@ -425,19 +425,19 @@ def cleanup_lts_folder(dataset_id: int) -> None:
 
 
 @log
-def cleanup_s3_staging(dataset_id: int) -> None:
+def cleanup_s3_staging(dataset_id: str) -> None:
     delete_objects_from_s3(prefix=StoragePaths.relative_datablocks_folder(dataset_id),
                            bucket=Bucket.staging_bucket())
 
 
 @log
-def cleanup_s3_retrieval(dataset_id: int) -> None:
+def cleanup_s3_retrieval(dataset_id: str) -> None:
     delete_objects_from_s3(prefix=StoragePaths.relative_datablocks_folder(dataset_id),
                            bucket=Bucket.retrieval_bucket())
 
 
 @log
-def cleanup_s3_landingzone(dataset_id: int) -> None:
+def cleanup_s3_landingzone(dataset_id: str) -> None:
     delete_objects_from_s3(prefix=StoragePaths.relative_origdatablocks_folder(dataset_id),
                            bucket=Bucket.landingzone_bucket())
 
@@ -454,7 +454,7 @@ def verify_objects(uploaded_objects: List[Path],
 
 
 @log
-def cleanup_scratch(dataset_id: int):
+def cleanup_scratch(dataset_id: str):
     getLogger().debug(
         f"Cleaning up objects in scratch folder: {StoragePaths.scratch_folder(dataset_id)}")
     shutil.rmtree(StoragePaths.scratch_folder(dataset_id))
@@ -532,7 +532,7 @@ def upload_datablock(file: Path, datablock: DataBlock):
 
 
 @log
-def copy_from_LTS_to_retrieval(dataset_id: int, datablock: DataBlock):
+def copy_from_LTS_to_retrieval(dataset_id: str, datablock: DataBlock):
 
     datablock_in_lts = get_datablock_path_in_LTS(datablock)
 

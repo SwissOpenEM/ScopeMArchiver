@@ -17,13 +17,13 @@ from archiver.config.concurrency_limits import ConcurrencyLimits
 import archiver.utils.datablocks as datablocks_operations
 
 
-def on_get_datablocks_error(dataset_id: int, task: Task, task_run: TaskRun, state: State):
+def on_get_datablocks_error(dataset_id: str, task: Task, task_run: TaskRun, state: State):
     scicat_token = get_scicat_access_token()
     report_dataset_user_error(dataset_id, token=scicat_token)
 
 
 @task(task_run_name=generate_task_name_dataset, tags=[ConcurrencyLimits.LTS_TO_RETRIEVAL_TAG], retries=3, retry_delay_seconds=30)
-def copy_datablock_from_LTS_to_S3(dataset_id: int, datablock: DataBlock):
+def copy_datablock_from_LTS_to_S3(dataset_id: str, datablock: DataBlock):
     datablocks_operations.copy_from_LTS_to_retrieval(dataset_id, datablock)
 
 
@@ -42,7 +42,7 @@ def cleanup_dataset(flow: Flow, flow_run: FlowRun, state: State):
 
 
 @flow(name="retrieve_dataset", log_prints=True, on_failure=[on_dataset_flow_failure], on_completion=[cleanup_dataset])
-async def retrieve_single_dataset_flow(dataset_id: int, job_id: UUID, scicat_token: SecretStr):
+async def retrieve_single_dataset_flow(dataset_id: str, job_id: UUID, scicat_token: SecretStr):
     dataset_update = update_scicat_retrieval_dataset_lifecycle.submit(
         dataset_id=dataset_id,
         status=SciCat.RETRIEVESTATUSMESSAGE.STARTED,
@@ -79,7 +79,7 @@ def on_job_flow_failure(flow: Flow, flow_run: FlowRun, state: State):
 
 
 @ flow(name="retrieve_datasetlist", log_prints=True, flow_run_name=generate_flow_name_job_id, on_failure=[on_job_flow_failure])
-async def retrieve_datasets_flow(job_id: UUID, dataset_ids: List[int] | None = None):
+async def retrieve_datasets_flow(job_id: UUID, dataset_ids: List[str] | None = None):
     dataset_ids = dataset_ids or []
 
     access_token = get_scicat_access_token.submit()

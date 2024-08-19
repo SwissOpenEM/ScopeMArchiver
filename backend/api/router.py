@@ -50,7 +50,7 @@ async def run_retrieval_deployment(job_id: UUID, dataset_list: List[str], storag
 
 
 async def run_create_dataset_deployment(
-        file_size_MB: int = 10, num_files: int = 10, datablock_size_MB: int = 20, dataset_id: int | None = None):
+        file_size_MB: int = 10, num_files: int = 10, datablock_size_MB: int = 20, dataset_id: str | None = None):
     a = await asyncio.create_task(run_deployment("create_test_dataset/dataset_creation", parameters={
         "num_files": num_files,
         "file_size_MB": file_size_MB,
@@ -76,9 +76,9 @@ def get_retrievable_objects() -> list[StorageObject]:
 async def create_new_dataset():
     try:
         import random
-        dataset_id = random.randint(0, 10000)
+        dataset_id = str(random.randint(0, 10000))
         m = await run_create_dataset_deployment(file_size_MB=10, num_files=10, datablock_size_MB=20, dataset_id=dataset_id)
-        return JSONResponse(content={"name": m.name, "uuid": str(m.id), "dataset_id": str(dataset_id)}, status_code=200)
+        return JSONResponse(content={"name": m.name, "uuid": str(m.id), "dataset_id": dataset_id}, status_code=200)
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)
 
