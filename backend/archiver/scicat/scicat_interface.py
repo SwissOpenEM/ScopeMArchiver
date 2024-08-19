@@ -4,7 +4,7 @@ from typing import List
 from uuid import UUID
 from pydantic import SecretStr
 
-from archiver.utils.model import Job, DataBlock, Dataset, DatasetLifecycle, OrigDataBlock
+from archiver.utils.model import Job, JobResultObject, DataBlock, Dataset, DatasetLifecycle, OrigDataBlock
 from archiver.utils.log import log
 from archiver.config.blocks import Blocks
 
@@ -58,8 +58,9 @@ class SciCat():
         return self._API
 
     @ log
-    def update_job_status(self, job_id: UUID, type: JOBTYPE, status: JOBSTATUS, token: SecretStr) -> None:
-        job = Job(statusCode="1", statusMessage=str(status))
+    def update_job_status(
+            self, job_id: UUID, type: JOBTYPE, status: JOBSTATUS, jobResultObject: JobResultObject | None, token: SecretStr) -> None:
+        job = Job(statusCode="1", statusMessage=str(status), jobResultObject=jobResultObject)
 
         headers = self._headers(token)
 
@@ -86,7 +87,8 @@ class SciCat():
         result.raise_for_status()
 
     @log
-    def update_retrieval_dataset_lifecycle(self, dataset_id: int, status: RETRIEVESTATUSMESSAGE, token: SecretStr, archivable: bool | None = None, retrievable: bool |
+    def update_retrieval_dataset_lifecycle(
+            self, dataset_id: int, status: RETRIEVESTATUSMESSAGE, token: SecretStr, archivable: bool | None = None, retrievable: bool |
             None = None) -> None:
         dataset = Dataset(datasetlifecycle=DatasetLifecycle(
             retrieveStatusMessage=str(status),
@@ -108,6 +110,18 @@ class SciCat():
                                    data=d.model_dump_json(exclude_none=True), headers=headers)
             # returns none if status_code is 200
             result.raise_for_status()
+
+    @log
+    def patch_jobresult(self, job_id: UUID, job_result_object: JobResultObject, token: SecretStr) -> None:
+
+        headers = self._headers(token)
+
+        job = Job(jobResultObject=job_result_object)
+
+        result = requests.patch(f"{self._ENDPOINT}{self.API}jobs/{job_id}",
+                                data=job.model_dump_json(exclude_none=True), headers=headers)
+        # returns none if status_code is 200
+        result.raise_for_status()
 
     @log
     def get_origdatablocks(self, dataset_id: int, token: SecretStr) -> List[OrigDataBlock]:

@@ -1,8 +1,8 @@
 from typing import List, Dict, Any
 from archiver.utils.model import DataFile, OrigDataBlock, DataBlock
-from archiver.utils.model import Job, Dataset, DatasetLifecycle
+from archiver.utils.model import Job, Dataset, DatasetLifecycle, JobResultObject, JobResultEntry
 from archiver.scicat.scicat_interface import SciCat
-from uuid import UUID
+from pathlib import Path
 
 
 def create_orig_datablocks(num_blocks: int = 10, num_files_per_block: int = 10) -> List[OrigDataBlock]:
@@ -90,6 +90,20 @@ def expected_datablocks(dataset_id: int, idx: int):
         version=str(1),
         ownerGroup="me"
     ).model_dump(exclude_none=True)
+
+
+def expected_jobresultsobject(dataset_id: str, datablocks: List[DataBlock]):
+    results: List[JobResultEntry] = []
+    for datablock in datablocks:
+        results.append(JobResultEntry(
+            datasetId=dataset_id,
+            name=Path(datablock.archiveId).name,
+            size=datablock.size,
+            archiveId=datablock.archiveId,
+            url=""
+        ))
+
+    return JobResultObject(result=results).model_dump(exclude_none=True)
 
 
 def mock_create_datablocks(dataset_id: int, origDataBlocks: List[OrigDataBlock]) -> List[DataBlock]:

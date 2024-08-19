@@ -10,6 +10,18 @@ class DatasetListEntry(BaseModel):
     files: List[str]
 
 
+class JobResultEntry(BaseModel):
+    datasetId: str
+    name: str
+    size: int
+    archiveId: str
+    url: str
+
+
+class JobResultObject(BaseModel):
+    result: Optional[List[JobResultEntry]]
+
+
 class Job(BaseModel):
     # id: Optional[str] = None
     id: Optional[UUID] = None
@@ -28,7 +40,7 @@ class Job(BaseModel):
     # Array of objects with keys: pid, files. The value for the pid key defines the dataset ID, the value for the files key is an array of file names. This array is either an empty array, implying that all files within the dataset are selected or an explicit list of dataset-relative file paths, which should be selected,
     datasetList: Optional[List[DatasetListEntry]] = None
     # Detailed return value after job is finished ,
-    jobResultObject: Optional[object] = None
+    jobResultObject: Optional[JobResultObject] = None
     # Functional or user account name who created this instance ,
     createdBy: Optional[str] = None
     # Functional or user account name who last updated this instance ,
