@@ -4,6 +4,8 @@ from typing import List
 from uuid import UUID
 from pydantic import SecretStr
 
+import urllib.parse
+
 from archiver.utils.model import Job, JobResultObject, DataBlock, Dataset, DatasetLifecycle, OrigDataBlock
 from archiver.utils.log import log
 from archiver.config.blocks import Blocks
@@ -40,6 +42,9 @@ class SciCat():
 
     def _headers(self, token: SecretStr):
         return {"Authorization": f"Bearer {token.get_secret_value()}", "Content-Type": "application/json"}
+
+    def _safe_dataset_id(self, dataset_id: str):
+        return urllib.parse.quote(dataset_id, safe='', encoding=None, errors=None)
 
     def get_token(self) -> str:
 
@@ -81,7 +86,8 @@ class SciCat():
         ))
 
         headers = self._headers(token)
-        result = requests.patch(f"{self._ENDPOINT}{self.API}datasets/{dataset_id}",
+        safe_dataset_id = self._safe_dataset_id(dataset_id)
+        result = requests.patch(f"{self._ENDPOINT}{self.API}datasets/{safe_dataset_id}",
                                 data=dataset.model_dump_json(exclude_none=True), headers=headers)
         # returns none if status_code is 200
         result.raise_for_status()
@@ -96,7 +102,8 @@ class SciCat():
             retrievable=retrievable
         ))
         headers = self._headers(token)
-        result = requests.patch(f"{self._ENDPOINT}{self.API}datasets/{dataset_id}",
+        safe_dataset_id = self._safe_dataset_id(dataset_id)
+        result = requests.patch(f"{self._ENDPOINT}{self.API}datasets/{safe_dataset_id}",
                                 data=dataset.model_dump_json(exclude_none=True), headers=headers)
         # returns none if status_code is 200
         result.raise_for_status()
@@ -105,8 +112,9 @@ class SciCat():
     def register_datablocks(self, dataset_id: str, data_blocks: List[DataBlock], token: SecretStr) -> None:
 
         headers = self._headers(token)
+        safe_dataset_id = self._safe_dataset_id(dataset_id)
         for d in data_blocks:
-            result = requests.post(f"{self._ENDPOINT}{self.API}datasets/{dataset_id}/datablocks",
+            result = requests.post(f"{self._ENDPOINT}{self.API}datasets/{safe_dataset_id}/datablocks",
                                    data=d.model_dump_json(exclude_none=True), headers=headers)
             # returns none if status_code is 200
             result.raise_for_status()
@@ -126,8 +134,9 @@ class SciCat():
     @log
     def get_origdatablocks(self, dataset_id: str, token: SecretStr) -> List[OrigDataBlock]:
         headers = self._headers(token)
+        safe_dataset_id = self._safe_dataset_id(dataset_id)
         result = requests.get(
-            f"{self._ENDPOINT}{self.API}datasets/{dataset_id}/origdatablocks", headers=headers)
+            f"{self._ENDPOINT}{self.API}datasets/{safe_dataset_id}/origdatablocks", headers=headers)
         # returns none if status_code is 200
         result.raise_for_status()
 
@@ -153,8 +162,9 @@ class SciCat():
     @log
     def get_datablocks(self, dataset_id: str, token: SecretStr) -> List[DataBlock]:
         headers = self._headers(token)
+        safe_dataset_id = self._safe_dataset_id(dataset_id)
         result = requests.get(
-            f"{self._ENDPOINT}{self.API}datasets/{dataset_id}/datablocks", headers=headers)
+            f"{self._ENDPOINT}{self.API}datasets/{safe_dataset_id}/datablocks", headers=headers)
         # returns none if status_code is 200
         result.raise_for_status()
 
