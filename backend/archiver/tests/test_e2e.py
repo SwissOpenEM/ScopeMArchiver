@@ -227,7 +227,7 @@ async def test_end_to_end(scicat_token_setup, set_env, minio_client):
 
     # Verify datablocks in MINIO
     orig_datablocks = list(map(lambda idx: minio_client.stat_object(bucket_name="landingzone",
-                           object_name=f"openem-network/datasets/{dataset_pid}/origdatablocks/{dataset_pid}_{idx}.tar.gz"), range(9)))
+                           object_name=f"openem-network/datasets/{dataset_pid}/raw_files/file_{idx}.bin"), range(9)))
     assert len(orig_datablocks) == 9
 
     # trigger archive job in scicat
@@ -288,6 +288,7 @@ async def test_end_to_end(scicat_token_setup, set_env, minio_client):
     retrieved_datablock = minio_client.stat_object(
         bucket_name="retrieval", object_name=f"openem-network/datasets/{dataset_pid}/datablocks/{dataset_pid}_0.tar.gz")
     assert retrieved_datablock is not None
+    assert retrieved_datablock.size > 80 * 1024 * 1024
 
     # Verify Scicat datasetlifecycle
     dataset = await get_scicat_dataset(dataset_pid=dataset_pid, token=scicat_token_setup)
