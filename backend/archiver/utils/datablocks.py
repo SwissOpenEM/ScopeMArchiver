@@ -50,8 +50,9 @@ def create_tarballs(dataset_id: str, src_folder: Path, dst_folder: Path,
 
     # TODO: corner case: target size < file size
     tarballs: List[Path] = []
+    tar_name = dataset_id.replace("/", "--")
 
-    current_tar_file_path: Path = dst_folder / Path(f"{dataset_id}_{len(tarballs)}.tar.gz")
+    current_tar_file_path: Path = dst_folder / Path(f"{tar_name}_{len(tarballs)}.tar.gz")
 
     current_tarfile: tarfile.TarFile = tarfile.open(current_tar_file_path, 'x:gz', compresslevel=4)
 
@@ -64,7 +65,7 @@ def create_tarballs(dataset_id: str, src_folder: Path, dst_folder: Path,
         if current_tar_file_path.stat().st_size + file.stat().st_size > target_size:
             current_tarfile.close()
             tarballs.append(current_tar_file_path)
-            current_tar_file_path = dst_folder / Path(f"{dataset_id}_{len(tarballs)}.tar.gz")
+            current_tar_file_path = dst_folder / Path(f"{tar_name}_{len(tarballs)}.tar.gz")
             current_tarfile = tarfile.open(current_tar_file_path, 'w')
 
         current_tarfile.add(name=file, arcname=file.name, recursive=False)
@@ -140,7 +141,8 @@ def download_objects_from_s3(prefix: Path, bucket: Bucket, destination_folder: P
     files: List[Path] = []
 
     for item in S3Storage().list_objects(bucket, str(prefix)):
-        local_filepath = destination_folder / Path(item.object_name or "")
+        item_name = Path(item.object_name or "").name
+        local_filepath = destination_folder / item_name
         local_filepath.parent.mkdir(parents=True, exist_ok=True)
         S3Storage().fget_object(bucket=bucket, folder=str(prefix),
                                 object_name=item.object_name or "", target_path=local_filepath)
@@ -364,24 +366,19 @@ def create_datablocks(dataset_id: str, origDataBlocks: List[OrigDataBlock]) -> L
     if len(origDataBlocks) == 0:
         return []
 
-    if all(False for _ in list_s3_objects(StoragePaths.relative_origdatablocks_folder(dataset_id), Bucket.landingzone_bucket())):
+    if all(False for _ in list_s3_objects(StoragePaths.relative_raw_files_folder(dataset_id), Bucket.landingzone_bucket())):
         raise Exception(
-            f"No objects found in landing zone at {StoragePaths.relative_datablocks_folder(dataset_id)} for dataset {dataset_id}. Storage endpoint: {S3Storage().url}")
+            f"No objects found in landing zone at {StoragePaths.relative_raw_files_folder(dataset_id)} for dataset {dataset_id}. Storage endpoint: {S3Storage().url}")
+
+    raw_files_scratch_folder = StoragePaths.scratch_archival_raw_files_folder(dataset_id)
+    raw_files_scratch_folder.mkdir(parents=True, exist_ok=True)
 
     # files with full path are downloaded to scratch root
-    file_paths = download_objects_from_s3(prefix=StoragePaths.relative_origdatablocks_folder(
-        dataset_id), bucket=Bucket.landingzone_bucket(), destination_folder=StoragePaths.scratch_archival_root())
+    file_paths = download_objects_from_s3(prefix=StoragePaths.relative_raw_files_folder(
+        dataset_id), bucket=Bucket.landingzone_bucket(), destination_folder=raw_files_scratch_folder)
 
     getLogger().info(
         f"Downloaded {len(file_paths)} objects from {Bucket.landingzone_bucket()}")
-
-    origdatablocks_scratch_folder = StoragePaths.scratch_archival_origdatablocks_folder(dataset_id)
-    origdatablocks_scratch_folder.mkdir(parents=True, exist_ok=True)
-
-    raw_files_scratch_folder = StoragePaths.scratch_archival_files_folder(dataset_id)
-    raw_files_scratch_folder.mkdir(parents=True, exist_ok=True)
-
-    unpack_tarballs(origdatablocks_scratch_folder, raw_files_scratch_folder)
 
     datablocks_scratch_folder = StoragePaths.scratch_archival_datablocks_folder(dataset_id)
     datablocks_scratch_folder.mkdir(parents=True, exist_ok=True)
@@ -438,7 +435,7 @@ def cleanup_s3_retrieval(dataset_id: str) -> None:
 
 @log
 def cleanup_s3_landingzone(dataset_id: str) -> None:
-    delete_objects_from_s3(prefix=StoragePaths.relative_origdatablocks_folder(dataset_id),
+    delete_objects_from_s3(prefix=StoragePaths.relative_raw_files_folder(dataset_id),
                            bucket=Bucket.landingzone_bucket())
 
 
@@ -499,7 +496,6 @@ async def wait_for_free_space():
 async def wait_for_file_accessible(file: Path, timeout_s=360):
     """
     Returns:
-        boolean: Returns True once there is enough free space
     """
     total_time_waited_s = 0
     while not os.access(path=file, mode=os.R_OK):

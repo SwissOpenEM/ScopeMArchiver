@@ -22,18 +22,11 @@ def create_dummy_dataset(dataset_id: str, file_size_MB: int, num_files: int, dat
     if not raw_files_folder.exists():
         raw_files_folder.mkdir(parents=True)
 
-    datablocks_folder = dataset_root / "datablocks"
-    if not datablocks_folder.exists():
-        datablocks_folder.mkdir(parents=True)
-
     for i in range(num_files):
         os.system(f"dd if=/dev/urandom of={raw_files_folder}/file_{i}.bin bs={file_size_MB}M count=1 iflag=fullblock")
 
-    orig_data_blocks = create_tarballs(dataset_id=dataset_id, src_folder=raw_files_folder,
-                                       dst_folder=datablocks_folder, target_size=datablock_size_MB * (1024**2))
-
-    files = upload_objects_to_s3(prefix=Path(StoragePaths.relative_origdatablocks_folder(dataset_id)),
-                                 bucket=Bucket.landingzone_bucket(), source_folder=datablocks_folder, ext=".gz")
+    files = upload_objects_to_s3(prefix=Path(StoragePaths.relative_raw_files_folder(dataset_id)),
+                                 bucket=Bucket.landingzone_bucket(), source_folder=raw_files_folder)
 
     checksums = []
     for f in files:
@@ -70,35 +63,41 @@ def create_dummy_dataset(dataset_id: str, file_size_MB: int, num_files: int, dat
                          data=j, headers=headers)
     resp.raise_for_status()
 
-    import tarfile
+    orig_data_blocks = []
 
-    for orig in orig_data_blocks:
-        with tarfile.open(orig, 'r') as file:
-            files_in_tar = file.getnames()
-            datafiles = [DataFile(
-                path=str(raw_files_folder / f),
-                chk="1234",
-                size=Path(raw_files_folder / f).stat().st_size,
-                time=str(datetime.datetime.now(datetime.UTC).isoformat())) for f in files_in_tar]
+    current_origdatablock = OrigDataBlock(
+        datasetId=dataset_id,
+        size=0,
+        ownerGroup="ingestor",
+        dataFileList=[]
+    )
 
-            origdatablock = OrigDataBlock(
+    for file in raw_files_folder.iterdir():
+
+        current_origdatablock.dataFileList.append(DataFile(  # type: ignore
+            path=str(file.absolute()),
+            chk="1234",
+            size=file.stat().st_size,
+            time=str(datetime.datetime.now(datetime.UTC).isoformat())))
+        current_origdatablock.size = current_origdatablock.size + file.stat().st_size
+
+        if current_origdatablock.size > datablock_size_MB * 1024 * 1024:
+            orig_data_blocks.append(current_origdatablock)
+            current_origdatablock = OrigDataBlock(
                 datasetId=dataset_id,
-                size=2 * file_size_MB,
+                size=0,
                 ownerGroup="ingestor",
-                dataFileList=datafiles
-                # dataFileList=[DataFile(
-                #     path=str(p),
-                #     chk=c,
-                #     size=1111,
-                #     time=str(datetime.datetime.now(datetime.UTC).isoformat())) for p, c in zip(files, checksums)]
+                dataFileList=[]
             )
 
-            j = origdatablock.model_dump_json(exclude_none=True)
+    for origdatablock in orig_data_blocks:
 
-            print(f"Register datablock {orig}")
-            resp = requests.post(f"{Variables().SCICAT_ENDPOINT}{Variables().SCICAT_API_PREFIX}origdatablocks",
-                                 data=j, headers=headers)
-            resp.raise_for_status()
+        j = origdatablock.model_dump_json(exclude_none=True)
+
+        print(f"Register datablock {origdatablock}")
+        resp = requests.post(f"{Variables().SCICAT_ENDPOINT}{Variables().SCICAT_API_PREFIX}origdatablocks",
+                             data=j, headers=headers)
+        resp.raise_for_status()
 
     shutil.rmtree(dataset_root)
 

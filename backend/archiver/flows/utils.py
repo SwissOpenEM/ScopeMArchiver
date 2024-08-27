@@ -81,32 +81,23 @@ class StoragePaths:
         return Path("openem-network") / "datasets" / dataset_id
 
     _relative_datablocks_folder: Path = Path("datablocks")
-    _relative_origdatablocks_folder: Path = Path("origdatablocks")
-    _relative_files_folder: Path = Path("raw_files")
+    _relative_raw_files_folder: Path = Path("raw_files")
 
     @staticmethod
     def relative_datablocks_folder(dataset_id: str):
         return StoragePaths._relative_dataset_folder(dataset_id) / StoragePaths._relative_datablocks_folder
 
     @staticmethod
-    def relative_origdatablocks_folder(dataset_id: str):
-        return StoragePaths._relative_dataset_folder(dataset_id) / StoragePaths._relative_origdatablocks_folder
-
-    @staticmethod
-    def relative_files_folder(dataset_id: str):
-        return StoragePaths._relative_dataset_folder(dataset_id) / StoragePaths._relative_files_folder
+    def relative_raw_files_folder(dataset_id: str):
+        return StoragePaths._relative_dataset_folder(dataset_id) / StoragePaths._relative_raw_files_folder
 
     @staticmethod
     def scratch_archival_datablocks_folder(dataset_id: str) -> Path:
         return StoragePaths.scratch_archival_root() / StoragePaths.relative_datablocks_folder(dataset_id)
 
     @staticmethod
-    def scratch_archival_origdatablocks_folder(dataset_id: str) -> Path:
-        return StoragePaths.scratch_archival_root() / StoragePaths.relative_origdatablocks_folder(dataset_id)
-
-    @staticmethod
-    def scratch_archival_files_folder(dataset_id: str) -> Path:
-        return StoragePaths.scratch_archival_root() / StoragePaths.relative_files_folder(dataset_id)
+    def scratch_archival_raw_files_folder(dataset_id: str) -> Path:
+        return StoragePaths.scratch_archival_root() / StoragePaths.relative_raw_files_folder(dataset_id)
 
     @staticmethod
     def lts_datablocks_folder(dataset_id: str) -> Path:
