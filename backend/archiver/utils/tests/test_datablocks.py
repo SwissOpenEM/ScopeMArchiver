@@ -12,7 +12,7 @@ from archiver.utils.model import OrigDataBlock, DataBlock, DataFile
 from archiver.flows.utils import StoragePaths, SystemError
 
 
-test_id = 1234
+test_id = "1234"
 num_raw_files = 10
 file_size_in_bytes = 1024 * 1024
 
@@ -41,7 +41,7 @@ def test_create_tarballs(create_raw_files: Path, dst_folder: Path):
     target_size = int(2.5 * file_size_in_bytes)
 
     tarballs = create_tarballs(
-        test_id, create_raw_files, dst_folder, target_size=target_size)
+        str(test_id), create_raw_files, dst_folder, target_size=target_size)
 
     tars = [t for t in dst_folder.iterdir()]
     assert len(tars) == expected_num_compressed_files
@@ -120,7 +120,7 @@ def datablock() -> DataBlock:
     return DataBlock(
         id=str(uuid.uuid4()),
         archiveId=str(
-            Path(StoragePaths.relative_datablocks_folder(1)) / "test_file.tar.gz"),
+            Path(StoragePaths.relative_datablocks_folder(str(1))) / "test_file.tar.gz"),
         size=1,
         packedSize=1,
         chkAlg="md5",
@@ -131,7 +131,7 @@ def datablock() -> DataBlock:
         # # createdBy=
         # # updatedBy=
         # # updatedAt=datetime.datetime.isoformat(),
-        # datasetId=str(dataset_id),
+        # datasetId=dataset_id,
         # dataFileList=data_file_list,
         # rawDatasetId=o.rawdatasetId,
         # derivedDatasetId=o.derivedDatasetId
@@ -167,7 +167,7 @@ def storage_paths_fixture():
         shutil.rmtree(scratch_root)
 
 
-def create_file_in_lts(dataset: int):
+def create_file_in_lts(dataset: str):
     StoragePaths.lts_datablocks_folder(
         dataset).mkdir(parents=True, exist_ok=True)
     file_size_in_bytes = 1024 * 10
@@ -178,7 +178,7 @@ def create_file_in_lts(dataset: int):
     return file_in_lts
 
 
-def create_origdatablock_in_scratch(dataset: int):
+def create_origdatablock_in_scratch(dataset: str):
     StoragePaths.scratch_archival_origdatablocks_folder(
         dataset).mkdir(parents=True, exist_ok=True)
     file = tempfile.NamedTemporaryFile(
@@ -189,7 +189,7 @@ def create_origdatablock_in_scratch(dataset: int):
     return file
 
 
-def create_datablock_in_scratch(dataset: int):
+def create_datablock_in_scratch(dataset: str):
     StoragePaths.scratch_archival_datablocks_folder(
         dataset).mkdir(parents=True, exist_ok=True)
     file = tempfile.NamedTemporaryFile(
@@ -200,7 +200,7 @@ def create_datablock_in_scratch(dataset: int):
     return file
 
 
-def create_files_in_scratch(dataset: int):
+def create_files_in_scratch(dataset: str):
     files = []
     StoragePaths.scratch_archival_datablocks_folder(
         dataset).mkdir(parents=True, exist_ok=True)
@@ -251,7 +251,7 @@ def test_copy_file():
 def test_verify_data_in_LTS(storage_paths_fixture, datablock):
 
     # create file in fake LTS
-    dataset = 1
+    dataset = "1"
     file_in_lts = create_file_in_lts(dataset)
 
     expected_checksum = datablock_operations.calculate_checksum(
@@ -275,7 +275,7 @@ def test_verify_data_in_LTS(storage_paths_fixture, datablock):
 
 
 def test_cleanup_lts(storage_paths_fixture):
-    dataset = 1
+    dataset = "1"
     file_in_lts = create_file_in_lts(dataset)
 
     assert Path(file_in_lts.name).exists()
@@ -286,7 +286,7 @@ def test_cleanup_lts(storage_paths_fixture):
 
 
 def test_cleanup_scratch(storage_paths_fixture):
-    dataset = 1
+    dataset = "1"
     files_in_scratch = create_files_in_scratch(dataset)
 
     assert all([Path(f.name).exists() for f in files_in_scratch])
@@ -308,7 +308,7 @@ def mock_download_objects_from_s3(*args, **kwargs):
 @patch("archiver.utils.datablocks.download_object_from_s3", mock_download_objects_from_s3)
 def test_move_data_to_LTS(storage_paths_fixture, datablock):
 
-    dataset_id = 1
+    dataset_id = "1"
     file = create_origdatablock_in_scratch(dataset_id)
 
     import shutil
@@ -351,7 +351,7 @@ def mock_verify_objects(*args, **kwargs):
 @patch("archiver.utils.datablocks.upload_objects_to_s3", mock_upload_objects_to_s3)
 @patch("archiver.utils.datablocks.verify_objects", mock_verify_objects)
 def test_create_datablocks(tarfiles, storage_paths_fixture, origDataBlocks: List[OrigDataBlock]):
-    dataset_id = 1
+    dataset_id = "1"
 
     import shutil
     for t in tarfiles:

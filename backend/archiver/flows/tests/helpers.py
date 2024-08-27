@@ -1,8 +1,8 @@
 from typing import List, Dict, Any
 from archiver.utils.model import DataFile, OrigDataBlock, DataBlock
-from archiver.utils.model import Job, Dataset, DatasetLifecycle
+from archiver.utils.model import Job, Dataset, DatasetLifecycle, JobResultObject, JobResultEntry
 from archiver.scicat.scicat_interface import SciCat
-from uuid import UUID
+from pathlib import Path
 
 
 def create_orig_datablocks(num_blocks: int = 10, num_files_per_block: int = 10) -> List[OrigDataBlock]:
@@ -33,7 +33,6 @@ def create_datablocks(num_blocks: int = 10, num_files_per_block: int = 10) -> Li
             id=f"Block_{k}",
             archiveId="path/to/block",
             size=size_per_file * num_files_per_block,
-            ownerGroup="me",
             dataFileList=[],
             version="1"
         )
@@ -60,7 +59,7 @@ def expected_job_status(job_type: str, status: SciCat.JOBSTATUS) -> Dict[str, An
 
 
 def expected_archival_dataset_lifecycle(
-        datasets_id: int, status: SciCat.ARCHIVESTATUSMESSAGE, archivable: bool | None = None, retrievable: bool | None = None) -> Dict[
+        status: SciCat.ARCHIVESTATUSMESSAGE, archivable: bool | None = None, retrievable: bool | None = None) -> Dict[
         str, Any]:
     return Dataset(datasetlifecycle=DatasetLifecycle(
         archiveStatusMessage=str(status),
@@ -70,7 +69,7 @@ def expected_archival_dataset_lifecycle(
 
 
 def expected_retrieval_dataset_lifecycle(
-        datasets_id: int, status: SciCat.RETRIEVESTATUSMESSAGE, archivable: bool | None = None, retrievable: bool | None = None) -> Dict[
+        status: SciCat.RETRIEVESTATUSMESSAGE, archivable: bool | None = None, retrievable: bool | None = None) -> Dict[
         str, Any]:
     return Dataset(datasetlifecycle=DatasetLifecycle(
         archivable=archivable,
@@ -79,7 +78,7 @@ def expected_retrieval_dataset_lifecycle(
     )).model_dump(exclude_none=True)
 
 
-def expected_datablocks(dataset_id: int, idx: int):
+def expected_datablocks(dataset_id: str, idx: int):
     size_per_file = 1024 * 1024 * 100
 
     return DataBlock(
@@ -87,12 +86,25 @@ def expected_datablocks(dataset_id: int, idx: int):
         archiveId=f"/path/to/archived/Block_{idx}.tar.gz",
         size=size_per_file * 10,
         packedSize=size_per_file * 10,
-        version=str(1),
-        ownerGroup="me"
+        version=str(1)
     ).model_dump(exclude_none=True)
 
 
-def mock_create_datablocks(dataset_id: int, origDataBlocks: List[OrigDataBlock]) -> List[DataBlock]:
+def expected_jobresultsobject(dataset_id: str, datablocks: List[DataBlock]):
+    results: List[JobResultEntry] = []
+    for datablock in datablocks:
+        results.append(JobResultEntry(
+            datasetId=dataset_id,
+            name=Path(datablock.archiveId).name,
+            size=datablock.size,
+            archiveId=datablock.archiveId,
+            url=""
+        ))
+
+    return JobResultObject(result=results).model_dump(exclude_none=True)
+
+
+def mock_create_datablocks(dataset_id: str, origDataBlocks: List[OrigDataBlock]) -> List[DataBlock]:
     datablocks: List[DataBlock] = []
     for o in origDataBlocks:
         d = DataBlock(
@@ -101,7 +113,6 @@ def mock_create_datablocks(dataset_id: int, origDataBlocks: List[OrigDataBlock])
             size=o.size,
             packedSize=o.size,
             version=str(1),
-            ownerGroup="me"
         )
         datablocks.append(d)
     return datablocks

@@ -20,12 +20,12 @@ class SystemError(Exception):
     pass
 
 
-def report_archival_error(dataset_id: int, state: State, task_run: TaskRun, token: SecretStr):
+def report_archival_error(dataset_id: str, state: State, task_run: TaskRun, token: SecretStr):
     """Report an error of an archival job of a dataset. Differntiates betwen "DatasetError" (User error, e.g. missing files)
     and SystemError (transient error).
 
     Args:
-        dataset_id (int): dataset id
+        dataset_id (str): dataset id
         state (State): task run state
         task_run (TaskRun): task run
     """
@@ -41,12 +41,12 @@ def report_archival_error(dataset_id: int, state: State, task_run: TaskRun, toke
         report_dataset_system_error(dataset_id=dataset_id, token=token)
 
 
-def report_retrieval_error(dataset_id: int, state: State, task_run: TaskRun, token: SecretStr):
+def report_retrieval_error(dataset_id: str, state: State, task_run: TaskRun, token: SecretStr):
     """Report a retrieval error of a job of a dataset. Differntiates betwen "DatasetError" (User error, e.g. missing files)
     and SystemError (transient error).
 
     Args:
-        dataset_id (int): dataset id
+        dataset_id (str): dataset id
         state (State): task run state
         task_run (TaskRun): task run
     """
@@ -69,7 +69,7 @@ class StoragePaths:
     """
 
     @staticmethod
-    def scratch_folder(dataset_id: int) -> Path:
+    def scratch_folder(dataset_id: str) -> Path:
         return StoragePaths.scratch_archival_root() / StoragePaths._relative_dataset_folder(dataset_id)
 
     @staticmethod
@@ -77,37 +77,37 @@ class StoragePaths:
         return Variables().ARCHIVER_SCRATCH_FOLDER / "archival"
 
     @staticmethod
-    def _relative_dataset_folder(dataset_id):
-        return Path("openem-network") / "datasets" / str(dataset_id)
+    def _relative_dataset_folder(dataset_id: str) -> Path:
+        return Path("openem-network") / "datasets" / dataset_id
 
     _relative_datablocks_folder: Path = Path("datablocks")
     _relative_origdatablocks_folder: Path = Path("origdatablocks")
     _relative_files_folder: Path = Path("raw_files")
 
     @staticmethod
-    def relative_datablocks_folder(dataset_id: int):
+    def relative_datablocks_folder(dataset_id: str):
         return StoragePaths._relative_dataset_folder(dataset_id) / StoragePaths._relative_datablocks_folder
 
     @staticmethod
-    def relative_origdatablocks_folder(dataset_id: int):
+    def relative_origdatablocks_folder(dataset_id: str):
         return StoragePaths._relative_dataset_folder(dataset_id) / StoragePaths._relative_origdatablocks_folder
 
     @staticmethod
-    def relative_files_folder(dataset_id: int):
+    def relative_files_folder(dataset_id: str):
         return StoragePaths._relative_dataset_folder(dataset_id) / StoragePaths._relative_files_folder
 
     @staticmethod
-    def scratch_archival_datablocks_folder(dataset_id: int) -> Path:
+    def scratch_archival_datablocks_folder(dataset_id: str) -> Path:
         return StoragePaths.scratch_archival_root() / StoragePaths.relative_datablocks_folder(dataset_id)
 
     @staticmethod
-    def scratch_archival_origdatablocks_folder(dataset_id: int) -> Path:
+    def scratch_archival_origdatablocks_folder(dataset_id: str) -> Path:
         return StoragePaths.scratch_archival_root() / StoragePaths.relative_origdatablocks_folder(dataset_id)
 
     @staticmethod
-    def scratch_archival_files_folder(dataset_id: int) -> Path:
+    def scratch_archival_files_folder(dataset_id: str) -> Path:
         return StoragePaths.scratch_archival_root() / StoragePaths.relative_files_folder(dataset_id)
 
     @staticmethod
-    def lts_datablocks_folder(dataset_id: int) -> Path:
+    def lts_datablocks_folder(dataset_id: str) -> Path:
         return Variables().LTS_STORAGE_ROOT / StoragePaths.relative_datablocks_folder(dataset_id)

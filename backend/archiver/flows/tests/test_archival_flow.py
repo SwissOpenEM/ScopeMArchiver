@@ -31,7 +31,7 @@ def mock_scicat_get_token() -> str:
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("job_id,dataset_id", [
-    (uuid4(), 456),
+    (uuid4(), "somePrefix/456"),
 ])
 @patch("archiver.scicat.scicat_tasks.scicat._ENDPOINT", ScicatMock.ENDPOINT)
 @patch("archiver.scicat.scicat_tasks.scicat.get_token", mock_scicat_get_token)
@@ -49,7 +49,7 @@ async def test_scicat_api_archiving(
         mock_cleanup_s3_staging: MagicMock,
         mock_cleanup_scratch: MagicMock,
         mock_cleanup_lts: MagicMock,
-        job_id: UUID, dataset_id: int):
+        job_id: UUID, dataset_id: str):
 
     num_orig_datablocks = 10
     num_files_per_block = 10
@@ -73,14 +73,14 @@ async def test_scicat_api_archiving(
             "archive", SciCat.JOBSTATUS.IN_PROGRESS)
 
         assert m.datasets_matcher.request_history[0].json() == expected_archival_dataset_lifecycle(
-            dataset_id, SciCat.ARCHIVESTATUSMESSAGE.STARTED)
+            SciCat.ARCHIVESTATUSMESSAGE.STARTED)
 
         for i in range(num_expected_datablocks):
             assert m.datablocks_post_matcher.request_history[i].json(
             ) == expected_datablocks(dataset_id, i)
 
         assert m.datasets_matcher.request_history[1].json() == expected_archival_dataset_lifecycle(
-            dataset_id, SciCat.ARCHIVESTATUSMESSAGE.DATASET_ON_ARCHIVEDISK, archivable=False, retrievable=True)
+            SciCat.ARCHIVESTATUSMESSAGE.DATASET_ON_ARCHIVEDISK, archivable=False, retrievable=True)
 
         assert m.jobs_matcher.request_history[1].json() == expected_job_status(
             "archive", SciCat.JOBSTATUS.FINISHED_SUCCESSFULLY)
@@ -94,7 +94,7 @@ async def test_scicat_api_archiving(
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("job_id,dataset_id", [
-    (uuid4(), 456),
+    (uuid4(), "somePrefix/456"),
 ])
 @patch("archiver.scicat.scicat_tasks.scicat._ENDPOINT", ScicatMock.ENDPOINT)
 @patch("archiver.scicat.scicat_tasks.scicat.get_token", mock_scicat_get_token)
@@ -110,7 +110,7 @@ async def test_create_datablocks_user_error(
         mock_cleanup_s3_staging: MagicMock,
         mock_cleanup_scratch: MagicMock,
         mock_cleanup_lts: MagicMock,
-        job_id: UUID, dataset_id: int):
+        job_id: UUID, dataset_id: str):
 
     num_orig_datablocks = 10
     num_files_per_block = 10
@@ -133,13 +133,13 @@ async def test_create_datablocks_user_error(
             "archive", SciCat.JOBSTATUS.IN_PROGRESS)
 
         assert m.datasets_matcher.request_history[0].json() == expected_archival_dataset_lifecycle(
-            dataset_id, SciCat.ARCHIVESTATUSMESSAGE.STARTED)
+            SciCat.ARCHIVESTATUSMESSAGE.STARTED)
 
         assert m.jobs_matcher.request_history[1].json() == expected_job_status(
             "archive", SciCat.JOBSTATUS.FINISHED_UNSUCCESSFULLY)
 
         assert m.datasets_matcher.request_history[1].json() == expected_archival_dataset_lifecycle(
-            dataset_id, SciCat.ARCHIVESTATUSMESSAGE.MISSING_FILES)
+            SciCat.ARCHIVESTATUSMESSAGE.MISSING_FILES)
 
         mock_cleanup_s3_retrieval.assert_not_called()
         mock_cleanup_s3_landingzone.assert_not_called()
@@ -150,7 +150,7 @@ async def test_create_datablocks_user_error(
 
 @pytest.mark.asyncio
 @ pytest.mark.parametrize("job_id,dataset_id", [
-    (uuid4(), 456),
+    (uuid4(), "somePrefix/456"),
 ])
 @patch("archiver.scicat.scicat_tasks.scicat._ENDPOINT", ScicatMock.ENDPOINT)
 @patch("archiver.scicat.scicat_tasks.scicat.get_token", mock_scicat_get_token)
@@ -167,7 +167,7 @@ async def test_move_to_LTS_failure(
         mock_cleanup_s3_staging: MagicMock,
         mock_cleanup_scratch: MagicMock,
         mock_cleanup_lts: MagicMock,
-        job_id: UUID, dataset_id: int):
+        job_id: UUID, dataset_id: str):
 
     num_orig_datablocks = 10
     num_files_per_block = 10
@@ -189,7 +189,7 @@ async def test_move_to_LTS_failure(
             "archive", SciCat.JOBSTATUS.IN_PROGRESS)
 
         assert m.datasets_matcher.request_history[0].json() == expected_archival_dataset_lifecycle(
-            dataset_id, SciCat.ARCHIVESTATUSMESSAGE.STARTED)
+            SciCat.ARCHIVESTATUSMESSAGE.STARTED)
 
         for i in range(num_expected_datablocks):
             assert m.datablocks_post_matcher.request_history[i].json(
@@ -199,7 +199,7 @@ async def test_move_to_LTS_failure(
             "archive", SciCat.JOBSTATUS.FINISHED_UNSUCCESSFULLY)
 
         assert m.datasets_matcher.request_history[1].json() == expected_archival_dataset_lifecycle(
-            dataset_id, SciCat.ARCHIVESTATUSMESSAGE.SCHEDULE_ARCHIVE_JOB_FAILED)
+            SciCat.ARCHIVESTATUSMESSAGE.SCHEDULE_ARCHIVE_JOB_FAILED)
 
         # 6: cleanup LTS
         mock_cleanup_s3_retrieval.assert_not_called()
@@ -211,7 +211,7 @@ async def test_move_to_LTS_failure(
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("job_id,dataset_id", [
-    (uuid4(), 456),
+    (uuid4(), "somePrefix/456"),
 ])
 @patch("archiver.scicat.scicat_tasks.scicat._ENDPOINT", ScicatMock.ENDPOINT)
 @patch("archiver.scicat.scicat_tasks.scicat.get_token", mock_scicat_get_token)
@@ -229,7 +229,7 @@ async def test_LTS_validation_failure(
         mock_cleanup_s3_staging: MagicMock,
         mock_cleanup_scratch: MagicMock,
         mock_cleanup_lts: MagicMock,
-        job_id: UUID, dataset_id: int):
+        job_id: UUID, dataset_id: str):
 
     num_orig_datablocks = 10
     num_files_per_block = 10
@@ -252,7 +252,7 @@ async def test_LTS_validation_failure(
             "archive", SciCat.JOBSTATUS.IN_PROGRESS)
 
         assert m.datasets_matcher.request_history[0].json() == expected_archival_dataset_lifecycle(
-            dataset_id, SciCat.ARCHIVESTATUSMESSAGE.STARTED)
+            SciCat.ARCHIVESTATUSMESSAGE.STARTED)
 
         for i in range(num_expected_datablocks):
             assert m.datablocks_post_matcher.request_history[i].json(
@@ -263,7 +263,7 @@ async def test_LTS_validation_failure(
             "archive", SciCat.JOBSTATUS.FINISHED_UNSUCCESSFULLY)
 
         assert m.datasets_matcher.request_history[1].json() == expected_archival_dataset_lifecycle(
-            dataset_id, SciCat.ARCHIVESTATUSMESSAGE.SCHEDULE_ARCHIVE_JOB_FAILED)
+            SciCat.ARCHIVESTATUSMESSAGE.SCHEDULE_ARCHIVE_JOB_FAILED)
 
         mock_cleanup_s3_retrieval.assert_not_called()
         mock_cleanup_s3_landingzone.assert_not_called()

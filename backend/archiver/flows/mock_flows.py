@@ -1,26 +1,22 @@
 import random
 from prefect import flow, task
-from prefect.deployments.deployments import run_deployment
 import os
 import datetime
 import shutil
 import requests
 from pathlib import Path
 from archiver.config.variables import Variables
-from archiver.config.blocks import Blocks
 from archiver.utils.datablocks import upload_objects_to_s3, create_tarballs
 from archiver.utils.working_storage_interface import Bucket
-from archiver.utils.model import OrigDataBlock, DataFile, Dataset, DatasetLifecycle, Job, DatasetListEntry
+from archiver.utils.model import OrigDataBlock, DataFile, Dataset, DatasetLifecycle
 from archiver.flows.utils import StoragePaths
 from archiver.scicat.scicat_tasks import get_scicat_access_token
 from .task_utils import generate_task_name_dataset
-from archiver.flows.utils import StoragePaths
-from uuid import UUID
 
 
 @task(task_run_name=generate_task_name_dataset, persist_result=True, log_prints=True)
-def create_dummy_dataset(dataset_id: int, file_size_MB: int, num_files: int, datablock_size_MB: int, create_job: bool = False):
-    dataset_root = Variables().ARCHIVER_SCRATCH_FOLDER / str(dataset_id)
+def create_dummy_dataset(dataset_id: str, file_size_MB: int, num_files: int, datablock_size_MB: int, create_job: bool = False):
+    dataset_root = Variables().ARCHIVER_SCRATCH_FOLDER / dataset_id
 
     raw_files_folder = dataset_root / "raw_files"
     if not raw_files_folder.exists():
@@ -44,7 +40,7 @@ def create_dummy_dataset(dataset_id: int, file_size_MB: int, num_files: int, dat
         checksums.append("1234")
 
     dataset = Dataset(
-        pid=str(dataset_id),
+        pid=dataset_id,
         # createdAt=datetime.datetime.now(datetime.UTC).isoformat(),
         principalInvestigator="testPI",
         ownerGroup="ingestor",
@@ -57,7 +53,7 @@ def create_dummy_dataset(dataset_id: int, file_size_MB: int, num_files: int, dat
         type="raw",
         creationLocation="ETHZ",
         datasetlifecycle=DatasetLifecycle(
-            id=str(dataset_id),
+            id=dataset_id,
             archivable=True,
             isOnCentralDisk=True
         )
@@ -86,7 +82,7 @@ def create_dummy_dataset(dataset_id: int, file_size_MB: int, num_files: int, dat
                 time=str(datetime.datetime.now(datetime.UTC).isoformat())) for f in files_in_tar]
 
             origdatablock = OrigDataBlock(
-                datasetId=str(dataset_id),
+                datasetId=dataset_id,
                 size=2 * file_size_MB,
                 ownerGroup="ingestor",
                 dataFileList=datafiles
@@ -107,12 +103,11 @@ def create_dummy_dataset(dataset_id: int, file_size_MB: int, num_files: int, dat
     shutil.rmtree(dataset_root)
 
 
-
 @ flow(name="create_test_dataset", persist_result=True)
-def create_test_dataset_flow(dataset_id:int|None, file_size_MB: int = 10, num_files: int = 10, datablock_size_MB: int = 20):
-    dataset_id = dataset_id or random.randint(0, 10000)
+def create_test_dataset_flow(dataset_id: str | None, file_size_MB: int = 10, num_files: int = 10, datablock_size_MB: int = 20):
+    dataset_id = dataset_id or str(random.randint(0, 10000))
     job = create_dummy_dataset(dataset_id=dataset_id,
                                file_size_MB=file_size_MB,
-                               num_files=num_files, 
+                               num_files=num_files,
                                datablock_size_MB=datablock_size_MB)
     return dataset_id

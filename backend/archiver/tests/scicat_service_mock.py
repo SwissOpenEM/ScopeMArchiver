@@ -1,9 +1,8 @@
 from archiver.utils.model import Job, Dataset, DataBlock, OrigDataBlock
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi import FastAPI, Body
+from fastapi import FastAPI
 import logging
 from typing import List, Dict
-import os
 
 
 app = FastAPI(root_path="")
