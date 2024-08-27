@@ -111,10 +111,8 @@ async def scicat_create_retrieval_job(dataset: str, token: SecretStr) -> UUID:
         jobParams={"username": "ingestor",
                    "datasetList": [DatasetListEntry(pid=str(dataset), files=[])],
                    },
-        emailJobInitiator="testuser@testfacility.com",
         type="retrieve",
         ownerGroup="ingestor",
-        accessGroups=["ingestor"]
     )
     # TODO: this entry point needs alignment with SciCat
     response = requests.post(url=f"http://{SCICAT_BACKEND_ENDPOINT}{SCICAT_BACKEND_API_PREFIX}{SCICAT_JOB_PATH}",
@@ -132,12 +130,9 @@ async def scicat_create_archival_job(dataset: str, token: SecretStr) -> UUID:
         jobParams={"username": "ingestor",
                    "datasetList": [DatasetListEntry(pid=str(dataset), files=[])],
                    },
-        emailJobInitiator="testuser@testfacility.com",
         type="archive",
         ownerGroup="ingestor",
-        accessGroups=["ingestor"]
     )
-    # TODO: this entry point needs alignment with SciCat
 
     j = job.model_dump_json(exclude_none=True)
     response = requests.post(url=f"http://{SCICAT_BACKEND_ENDPOINT}{SCICAT_BACKEND_API_PREFIX}{SCICAT_JOB_PATH}",
