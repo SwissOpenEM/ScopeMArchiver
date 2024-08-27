@@ -51,15 +51,15 @@ def test_create_tarballs(create_raw_files: Path, dst_folder: Path):
     verify_tar_content(create_raw_files, dst_folder, tars)
 
 
-def verify_tar_content(raw_file_folder, tars_folder, tars):
+def verify_tar_content(raw_file_folder, datablock_folder, tars):
     expected_files = set(
-        [t.name for t in raw_file_folder.iterdir() if not tarfile.is_tarfile(t)])
+        [t.name for t in raw_file_folder.iterdir()])
 
     num_expected_files = len(expected_files)
 
     num_packed_files = 0
     for t in tars:
-        tar: tarfile.TarFile = tarfile.open(Path(tars_folder) / t)
+        tar: tarfile.TarFile = tarfile.open(Path(datablock_folder) / t)
         for f in tar.getnames():
             num_packed_files = num_packed_files + 1
             expected_files.discard(f)
@@ -178,11 +178,11 @@ def create_file_in_lts(dataset: str):
     return file_in_lts
 
 
-def create_origdatablock_in_scratch(dataset: str):
-    StoragePaths.scratch_archival_origdatablocks_folder(
+def create_raw_files_in_scratch(dataset: str):
+    StoragePaths.scratch_archival_raw_files_folder(
         dataset).mkdir(parents=True, exist_ok=True)
     file = tempfile.NamedTemporaryFile(
-        dir=StoragePaths.scratch_archival_origdatablocks_folder(dataset), delete=False)
+        dir=StoragePaths.scratch_archival_raw_files_folder(dataset), delete=False)
     file_size_in_bytes = 1024 * 10
     with open(file.name, "wb") as f:
         f.write(os.urandom(file_size_in_bytes))
@@ -207,15 +207,10 @@ def create_files_in_scratch(dataset: str):
     files.append(tempfile.NamedTemporaryFile(
         dir=StoragePaths.scratch_archival_datablocks_folder(dataset), delete=False))
 
-    StoragePaths.scratch_archival_origdatablocks_folder(
+    StoragePaths.scratch_archival_raw_files_folder(
         dataset).mkdir(parents=True, exist_ok=True)
     files.append(tempfile.NamedTemporaryFile(
-        dir=StoragePaths.scratch_archival_origdatablocks_folder(dataset), delete=False))
-
-    StoragePaths.scratch_archival_files_folder(
-        dataset).mkdir(parents=True, exist_ok=True)
-    files.append(tempfile.NamedTemporaryFile(
-        dir=StoragePaths.scratch_archival_files_folder(dataset), delete=False))
+        dir=StoragePaths.scratch_archival_raw_files_folder(dataset), delete=False))
 
     for f in files:
         file_size_in_bytes = 1024 * 10
@@ -309,7 +304,7 @@ def mock_download_objects_from_s3(*args, **kwargs):
 def test_move_data_to_LTS(storage_paths_fixture, datablock):
 
     dataset_id = "1"
-    file = create_origdatablock_in_scratch(dataset_id)
+    file = create_raw_files_in_scratch(dataset_id)
 
     import shutil
     StoragePaths.scratch_archival_datablocks_folder(
@@ -350,15 +345,15 @@ def mock_verify_objects(*args, **kwargs):
 @patch("archiver.utils.datablocks.download_objects_from_s3", mock_download_objects_from_s3)
 @patch("archiver.utils.datablocks.upload_objects_to_s3", mock_upload_objects_to_s3)
 @patch("archiver.utils.datablocks.verify_objects", mock_verify_objects)
-def test_create_datablocks(tarfiles, storage_paths_fixture, origDataBlocks: List[OrigDataBlock]):
+def test_create_datablocks(create_raw_files, storage_paths_fixture, origDataBlocks: List[OrigDataBlock]):
     dataset_id = "1"
 
     import shutil
-    for t in tarfiles:
-        StoragePaths.scratch_archival_origdatablocks_folder(
+    for raw_file in create_raw_files.iterdir():
+        StoragePaths.scratch_archival_raw_files_folder(
             dataset_id).mkdir(parents=True, exist_ok=True)
-        shutil.copy(t, StoragePaths.scratch_archival_origdatablocks_folder(
-            dataset_id) / Path(t).name)
+        shutil.copy(raw_file, StoragePaths.scratch_archival_raw_files_folder(
+            dataset_id) / Path(raw_file).name)
 
     # Act
     datablocks = datablock_operations.create_datablocks(
@@ -372,5 +367,5 @@ def test_create_datablocks(tarfiles, storage_paths_fixture, origDataBlocks: List
     created_tars = [(StoragePaths.scratch_archival_root() / d.archiveId)
                     for d in datablocks]
 
-    verify_tar_content(tarfiles[0].parent, StoragePaths.scratch_archival_datablocks_folder(
+    verify_tar_content(create_raw_files, StoragePaths.scratch_archival_datablocks_folder(
         dataset_id), created_tars)

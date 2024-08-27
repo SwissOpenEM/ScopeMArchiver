@@ -65,7 +65,11 @@ class SciCat():
     @ log
     def update_job_status(
             self, job_id: UUID, type: JOBTYPE, status: JOBSTATUS, jobResultObject: JobResultObject | None, token: SecretStr) -> None:
-        job = Job(statusCode="1", statusMessage=str(status), jobResultObject=jobResultObject)
+
+        # TODO: add jobResultObject once scicat is ready
+        # https://github.com/SwissOpenEM/ScopeMArchiver/issues/87
+
+        job = Job(statusCode="1", statusMessage=str(status))
 
         headers = self._headers(token)
 
@@ -118,18 +122,6 @@ class SciCat():
                                    data=d.model_dump_json(exclude_none=True), headers=headers)
             # returns none if status_code is 200
             result.raise_for_status()
-
-    @log
-    def patch_jobresult(self, job_id: UUID, job_result_object: JobResultObject, token: SecretStr) -> None:
-
-        headers = self._headers(token)
-
-        job = Job(jobResultObject=job_result_object)
-
-        result = requests.patch(f"{self._ENDPOINT}{self.API}jobs/{job_id}",
-                                data=job.model_dump_json(exclude_none=True), headers=headers)
-        # returns none if status_code is 200
-        result.raise_for_status()
 
     @log
     def get_origdatablocks(self, dataset_id: str, token: SecretStr) -> List[OrigDataBlock]:
