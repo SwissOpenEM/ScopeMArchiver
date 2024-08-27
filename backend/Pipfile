@@ -17,6 +17,7 @@ pydantic = "==2.7"
 pydantic-settings = "==2.2.1"
 prefect-docker = "*"
 prefect-github = "*"
+griffe = "==0.49.0"
 
 [dev-packages]
 pep8 = "*"
