@@ -259,7 +259,7 @@ def find_object_in_s3(dataset_id, datablock_name):
 
 
 @ log
-def move_data_to_LTS(dataset_id: str, datablock: DataBlock) -> str:
+def move_data_to_LTS(dataset_id: str, datablock: DataBlock):
 
     # mount target dir and check access
     if not Variables().LTS_STORAGE_ROOT.exists():
@@ -315,8 +315,6 @@ def move_data_to_LTS(dataset_id: str, datablock: DataBlock) -> str:
 
     if checksum_destination != checksum_source:
         raise SystemError("Datablock verification failed")
-
-    return checksum_source
 
 
 @ log

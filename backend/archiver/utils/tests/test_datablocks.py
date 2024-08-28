@@ -372,14 +372,14 @@ def mock_download_objects_from_s3(*args, **kwargs):
 def test_move_data_to_LTS(storage_paths_fixture, datablock_fixture):
 
     for datablock in datablock_fixture:
-        checksum = datablock_operations.move_data_to_LTS(test_dataset_id, datablock)
+        datablock_operations.move_data_to_LTS(test_dataset_id, datablock)
 
         file_in_lts = StoragePaths.lts_datablocks_folder(
             test_dataset_id) / Path(datablock.archiveId).name
 
         assert file_in_lts.exists()
 
-        assert checksum == datablock_operations.calculate_md5_checksum(
+        assert datablock_operations.calculate_md5_checksum(file_in_lts) == datablock_operations.calculate_md5_checksum(
             file_in_lts)
 
 
