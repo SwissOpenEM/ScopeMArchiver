@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 import subprocess
 import tarfile
 import os
@@ -5,8 +6,9 @@ import shutil
 import asyncio
 import time
 import datetime
+import hashlib
 
-from typing import Iterator, List
+from typing import Dict, Iterator, List
 from pathlib import Path
 
 from archiver.utils.working_storage_interface import S3Storage, Bucket
@@ -33,9 +35,16 @@ def unpack_tarballs(src_folder: Path, dst_folder: Path):
         getLogger().info(f"Done extracting {file} to {dst_folder}")
 
 
+@dataclass
+class TarInfo():
+    unpackedSize: int
+    packedSize: int
+    path: Path
+
+
 @log
 def create_tarballs(dataset_id: str, src_folder: Path, dst_folder: Path,
-                    target_size: int = 300 * (1024**2)) -> List[Path]:
+                    target_size: int = 300 * (1024**2)) -> List[TarInfo]:
     """ Create datablocks, i.e. .tar.gz files, from files in a folder. The files will be named according to
     the dataset they belong to. The target size of the created files is 300 MB by default
 
@@ -49,12 +58,15 @@ def create_tarballs(dataset_id: str, src_folder: Path, dst_folder: Path,
     """
 
     # TODO: corner case: target size < file size
-    tarballs: List[Path] = []
+    tarballs: List[TarInfo] = []
     tar_name = dataset_id.replace("/", "--")
 
-    current_tar_file_path: Path = dst_folder / Path(f"{tar_name}_{len(tarballs)}.tar.gz")
+    current_tar_info = TarInfo(
+        unpackedSize=0,
+        packedSize=0,
+        path=Path(dst_folder / Path(f"{tar_name}_{len(tarballs)}.tar.gz")))
 
-    current_tarfile: tarfile.TarFile = tarfile.open(current_tar_file_path, 'x:gz', compresslevel=4)
+    current_tarfile: tarfile.TarFile = tarfile.open(current_tar_info.path, 'w')
 
     if not any(Path(src_folder).iterdir()):
         raise SystemError(f"Empty folder {src_folder} found.")
@@ -62,22 +74,29 @@ def create_tarballs(dataset_id: str, src_folder: Path, dst_folder: Path,
     for file in src_folder.iterdir():
         if file.stat().st_size > target_size:
             raise SystemError(f"Size of {file} is larger than target size {target_size}. Increase target_size.")
-        if current_tar_file_path.stat().st_size + file.stat().st_size > target_size:
+        if current_tar_info.path.stat().st_size + file.stat().st_size > target_size:
+            current_tar_info.packedSize = current_tar_info.path.stat().st_size
             current_tarfile.close()
-            tarballs.append(current_tar_file_path)
-            current_tar_file_path = dst_folder / Path(f"{tar_name}_{len(tarballs)}.tar.gz")
-            current_tarfile = tarfile.open(current_tar_file_path, 'w')
+            tarballs.append(current_tar_info)
 
+            current_tar_info = TarInfo(
+                unpackedSize=0,
+                packedSize=0,
+                path=Path(dst_folder / Path(f"{tar_name}_{len(tarballs)}.tar.gz")))
+            current_tarfile = tarfile.open(current_tar_info.path, 'w')
+
+        current_tar_info.unpackedSize += file.stat().st_size
         current_tarfile.add(name=file, arcname=file.name, recursive=False)
 
+    current_tar_info.packedSize = current_tar_info.path.stat().st_size
     current_tarfile.close()
-    tarballs.append(current_tar_file_path)
+    tarballs.append(current_tar_info)
 
     return tarballs
 
 
-@log
-def calculate_checksum(filename: Path, chunksize: int = 1024 * 1025) -> str:
+@ log
+def calculate_md5_checksum(filename: Path, chunksize: int = 1024 * 1025) -> str:
     """Calculate an md5 hash of a file
 
     Args:
@@ -95,7 +114,7 @@ def calculate_checksum(filename: Path, chunksize: int = 1024 * 1025) -> str:
     return m.hexdigest()
 
 
-@log
+@ log
 def download_object_from_s3(bucket: Bucket, folder: Path, object_name: str, target_path: Path):
     """Download an object from S3 storage.
 
@@ -109,7 +128,7 @@ def download_object_from_s3(bucket: Bucket, folder: Path, object_name: str, targ
                             object_name=object_name, target_path=target_path)
 
 
-@log
+@ log
 def list_s3_objects(prefix: Path, bucket: Bucket) -> Iterator[object]:
     """List all objects in s3 bucket and path
 
@@ -124,7 +143,7 @@ def list_s3_objects(prefix: Path, bucket: Bucket) -> Iterator[object]:
     return S3Storage().list_objects(bucket, str(prefix))
 
 
-@log
+@ log
 def download_objects_from_s3(prefix: Path, bucket: Bucket, destination_folder: Path) -> List[Path]:
     """Download objects form s3 storage to folder
 
@@ -154,7 +173,7 @@ def download_objects_from_s3(prefix: Path, bucket: Bucket, destination_folder: P
     return files
 
 
-@log
+@ log
 def upload_objects_to_s3(prefix: Path, bucket: Bucket, source_folder: Path, ext: str | None = None) -> List[Path]:
     uploaded_files: List[Path] = []
     for filepath in (f for f in source_folder.iterdir() if not ext or f.suffix == ext):
@@ -164,16 +183,16 @@ def upload_objects_to_s3(prefix: Path, bucket: Bucket, source_folder: Path, ext:
     return uploaded_files
 
 
-@log
+@ log
 def delete_objects_from_s3(prefix: Path, bucket: Bucket):
     getLogger().info(f"Cleaning up objects in {bucket.name}/{prefix}")
     S3Storage().delete_object(minio_prefix=prefix, bucket=bucket)
 
 
-@log
+@ log
 def create_datablock_entries(
         dataset_id: str, folder: Path, origDataBlocks: List[OrigDataBlock],
-        tarballs: List[Path]) -> List[DataBlock]:
+        tar_infos: List[TarInfo]) -> List[DataBlock]:
     """Create datablock entries compliant with schema provided by scicat
 
     Args:
@@ -185,23 +204,27 @@ def create_datablock_entries(
     Returns:
         List[DataBlock]: _description_
     """
+
+    version = 1.0
+
     datablocks: List[DataBlock] = []
-    for tar in tarballs:
+    for tar in tar_infos:
         o = origDataBlocks[0]
 
         data_file_list: List[DataFile] = []
 
-        tar_path = folder / tar
-
-        md5_hash = calculate_checksum(tar_path)
+        tar_path = folder / tar.path
 
         tarball = tarfile.open(tar_path)
 
         for tar_info in tarball.getmembers():
+            checksum = calculate_md5_checksum(StoragePaths.scratch_archival_raw_files_folder(
+                dataset_id) / tar_info.path)
+
             data_file_list.append(DataFile(
                 path=tar_info.path,
                 size=tar_info.size,
-                chk=str(md5_hash),
+                chk=checksum,
                 uid=str(tar_info.uid),
                 gid=str(tar_info.gid),
                 perm=str(tar_info.mode),
@@ -211,10 +234,10 @@ def create_datablock_entries(
         datablocks.append(DataBlock(
             archiveId=str(StoragePaths.relative_datablocks_folder(
                 dataset_id) / tar_path.name),
-            size=1,
-            packedSize=1,
+            size=tar.unpackedSize,
+            packedSize=tar.packedSize,
             chkAlg="md5",
-            version=str(1),
+            version=str(version),
             dataFileList=data_file_list,
             rawDatasetId=o.rawdatasetId,
             derivedDatasetId=o.derivedDatasetId
@@ -223,7 +246,7 @@ def create_datablock_entries(
     return datablocks
 
 
-@log
+@ log
 def find_object_in_s3(dataset_id, datablock_name):
     object_found = next((x
                          for x in list_s3_objects(
@@ -235,7 +258,7 @@ def find_object_in_s3(dataset_id, datablock_name):
     return object_found
 
 
-@log
+@ log
 def move_data_to_LTS(dataset_id: str, datablock: DataBlock) -> str:
 
     # mount target dir and check access
@@ -266,9 +289,7 @@ def move_data_to_LTS(dataset_id: str, datablock: DataBlock) -> str:
         dataset_id), object_name=str(StoragePaths.relative_datablocks_folder(dataset_id) / datablock_name), target_path=datablock_full_path)
 
     getLogger().info("Calculating Checksum.")
-    checksum_hash_source = calculate_checksum(datablock_full_path)
-
-    # TODO: Compare checksum against entry in datablock
+    checksum_source = calculate_md5_checksum(datablock_full_path)
 
     lts_target_dir = StoragePaths.lts_datablocks_folder(dataset_id)
     lts_target_dir.mkdir(parents=True, exist_ok=True)
@@ -285,20 +306,20 @@ def move_data_to_LTS(dataset_id: str, datablock: DataBlock) -> str:
     destination = lts_target_dir / datablock_name
 
     getLogger().info("Verifying checksum")
+
     # Copy back from LTS to scratch
-    # TODO: can this run in parallel like this? Or is this also limited by the LTS?
     verification_path = StoragePaths.scratch_archival_datablocks_folder(dataset_id) / "verification"
     verification_path.mkdir(exist_ok=True)
     copy_file_to_folder(src_file=destination, dst_folder=verification_path)
-    checksum_destination = calculate_checksum(verification_path / datablock_name)
+    checksum_destination = calculate_md5_checksum(verification_path / datablock_name)
 
-    if checksum_destination != checksum_hash_source:
+    if checksum_destination != checksum_source:
         raise SystemError("Datablock verification failed")
 
-    return checksum_hash_source
+    return checksum_source
 
 
-@log
+@ log
 def copy_file_to_folder(src_file: Path, dst_folder: Path):
     """Copies a file to a destination folder (does not need to exist)
 
@@ -335,31 +356,54 @@ def copy_file_to_folder(src_file: Path, dst_folder: Path):
         raise SystemError(f"Copying did not produce file {expected_dst_file}")
 
 
-@log
-def verify_data_in_LTS(dataset_id: str, datablock: DataBlock, expected_checksum: str) -> None:
+@ log
+def verify_data_in_LTS(dataset_id: str, datablock: DataBlock) -> None:
 
-    dst_folder = StoragePaths.scratch_archival_datablocks_folder(
+    datablocks_scratch_folder = StoragePaths.scratch_archival_datablocks_folder(
         dataset_id) / "verification"
-    dst_folder.mkdir(parents=True, exist_ok=True)
-    local_datablock_path = dst_folder / Path(datablock.archiveId).name
+    datablocks_scratch_folder.mkdir(parents=True, exist_ok=True)
+
+    datablock_folder = datablocks_scratch_folder / Path(datablock.archiveId).name
 
     lts_datablock_path = StoragePaths.lts_datablocks_folder(
         dataset_id) / Path(datablock.archiveId).name
 
     asyncio.run(wait_for_file_accessible(lts_datablock_path.absolute(), Variables().ARCHIVER_LTS_FILE_TIMEOUT_S))
 
-    copy_file_to_folder(src_file=lts_datablock_path.absolute(), dst_folder=dst_folder.absolute())
+    copy_file_to_folder(src_file=lts_datablock_path.absolute(), dst_folder=datablocks_scratch_folder.absolute())
 
-    checksum = calculate_checksum(local_datablock_path)
+    verify_datablock(datablock, datablock_folder)
 
-    if checksum != expected_checksum:
-        raise SystemError(
-            f"Datablock verification failed: expected checksum {expected_checksum} but got actual {checksum}")
-
-    os.remove(local_datablock_path)
+    os.remove(datablock_folder)
 
 
 @log
+def verify_datablock(datablock: DataBlock, datablock_path: Path):
+
+    expected_checksums: Dict[str, str] = {datafile.path: datafile.chk or "" for datafile in datablock.dataFileList or []}
+
+    try:
+        tar: tarfile.TarFile = tarfile.open(datablock_path, 'r')
+    except Exception as e:
+        raise SystemError(f"Failed to read datablock {datablock.archiveId}: {e}")
+
+    for file in tar.getmembers():
+        extracted = tar.extractfile(file)
+        if extracted is None:
+            raise SystemError(f"Member {file} not found in {tar}")
+
+        # TODO: add other algorithms
+        assert datablock.chkAlg == "md5"
+
+        checksum = hashlib.file_digest(extracted, "md5").hexdigest()  # type: ignore
+        expected_checksum = expected_checksums.get(file.path, "")
+
+        if expected_checksum != checksum:
+            raise SystemError(
+                f"Datablock verification failed: expected checksum {expected_checksum} but got actual {checksum} for {file}")
+
+
+@ log
 def create_datablocks(dataset_id: str, origDataBlocks: List[OrigDataBlock]) -> List[DataBlock]:
     getLogger().info(f"Creating datablocks for {dataset_id}")
 
@@ -367,8 +411,8 @@ def create_datablocks(dataset_id: str, origDataBlocks: List[OrigDataBlock]) -> L
         return []
 
     if all(False for _ in list_s3_objects(StoragePaths.relative_raw_files_folder(dataset_id), Bucket.landingzone_bucket())):
-        raise Exception(
-            f"No objects found in landing zone at {StoragePaths.relative_raw_files_folder(dataset_id)} for dataset {dataset_id}. Storage endpoint: {S3Storage().url}")
+        raise Exception(f"""No objects found in landing zone at {StoragePaths.relative_raw_files_folder(dataset_id)} for dataset {
+            dataset_id}. Storage endpoint: {S3Storage().url}""")
 
     raw_files_scratch_folder = StoragePaths.scratch_archival_raw_files_folder(dataset_id)
     raw_files_scratch_folder.mkdir(parents=True, exist_ok=True)
@@ -383,7 +427,7 @@ def create_datablocks(dataset_id: str, origDataBlocks: List[OrigDataBlock]) -> L
     datablocks_scratch_folder = StoragePaths.scratch_archival_datablocks_folder(dataset_id)
     datablocks_scratch_folder.mkdir(parents=True, exist_ok=True)
 
-    tarballs = create_tarballs(
+    tar_infos = create_tarballs(
         dataset_id=dataset_id,
         src_folder=raw_files_scratch_folder,
         dst_folder=datablocks_scratch_folder,
@@ -391,10 +435,10 @@ def create_datablocks(dataset_id: str, origDataBlocks: List[OrigDataBlock]) -> L
     )
 
     getLogger().info(
-        f"Created {len(tarballs)} datablocks from {len(file_paths)} objects")
+        f"Created {len(tar_infos)} datablocks from {len(file_paths)} objects")
 
     datablocks = create_datablock_entries(
-        dataset_id, StoragePaths.scratch_archival_datablocks_folder(dataset_id), origDataBlocks, tarballs)
+        dataset_id, StoragePaths.scratch_archival_datablocks_folder(dataset_id), origDataBlocks, tar_infos)
 
     uploaded_objects = upload_objects_to_s3(prefix=StoragePaths.relative_datablocks_folder(
         dataset_id), bucket=Bucket.staging_bucket(), source_folder=datablocks_scratch_folder, ext=".gz")
@@ -408,7 +452,7 @@ def create_datablocks(dataset_id: str, origDataBlocks: List[OrigDataBlock]) -> L
     return datablocks
 
 
-@log
+@ log
 def cleanup_lts_folder(dataset_id: str) -> None:
     # TODO: is deletion possible?
     lts_folder = StoragePaths.lts_datablocks_folder(dataset_id)
@@ -421,25 +465,25 @@ def cleanup_lts_folder(dataset_id: str) -> None:
     getLogger().info(f"Move LTS folder from {lts_folder} to {lts_folder_new}")
 
 
-@log
+@ log
 def cleanup_s3_staging(dataset_id: str) -> None:
     delete_objects_from_s3(prefix=StoragePaths.relative_datablocks_folder(dataset_id),
                            bucket=Bucket.staging_bucket())
 
 
-@log
+@ log
 def cleanup_s3_retrieval(dataset_id: str) -> None:
     delete_objects_from_s3(prefix=StoragePaths.relative_datablocks_folder(dataset_id),
                            bucket=Bucket.retrieval_bucket())
 
 
-@log
+@ log
 def cleanup_s3_landingzone(dataset_id: str) -> None:
     delete_objects_from_s3(prefix=StoragePaths.relative_raw_files_folder(dataset_id),
                            bucket=Bucket.landingzone_bucket())
 
 
-@log
+@ log
 def verify_objects(uploaded_objects: List[Path],
                    minio_prefix: Path, bucket: Bucket, source_folder: Path) -> List[Path]:
     missing_files: List[Path] = []
@@ -450,7 +494,7 @@ def verify_objects(uploaded_objects: List[Path],
     return missing_files
 
 
-@log
+@ log
 def cleanup_scratch(dataset_id: str):
     getLogger().debug(
         f"Cleaning up objects in scratch folder: {StoragePaths.scratch_folder(dataset_id)}")
@@ -460,7 +504,7 @@ def cleanup_scratch(dataset_id: str):
         f"Cleaning up objects in scratch folder: {StoragePaths.scratch_folder(dataset_id)}")
 
 
-@log
+@ log
 def sufficient_free_space_on_lts():
     """ Checks for free space on configured LTS storage with respect to configured free space percentage.
 
@@ -475,7 +519,7 @@ def sufficient_free_space_on_lts():
     return free_percentage >= Variables().LTS_FREE_SPACE_PERCENTAGE
 
 
-@log
+@ log
 async def wait_for_free_space():
     """ Asynchronous wait until there is enough free space. Waits in linear intervals to check for free space
 
@@ -492,7 +536,7 @@ async def wait_for_free_space():
     return True
 
 
-@log
+@ log
 async def wait_for_file_accessible(file: Path, timeout_s=360):
     """
     Returns:
@@ -509,7 +553,7 @@ async def wait_for_file_accessible(file: Path, timeout_s=360):
     return True
 
 
-@log
+@ log
 def get_datablock_path_in_LTS(datablock: DataBlock) -> Path:
     datablock_in_lts = Variables().LTS_STORAGE_ROOT / datablock.archiveId
 
@@ -519,7 +563,7 @@ def get_datablock_path_in_LTS(datablock: DataBlock) -> Path:
     return datablock_in_lts
 
 
-@log
+@ log
 def upload_datablock(file: Path, datablock: DataBlock):
     # upload to s3 retrieval bucket
     S3Storage().fput_object(source_file=file,
@@ -527,7 +571,7 @@ def upload_datablock(file: Path, datablock: DataBlock):
                             bucket=Bucket.retrieval_bucket())
 
 
-@log
+@ log
 def copy_from_LTS_to_retrieval(dataset_id: str, datablock: DataBlock):
 
     datablock_in_lts = get_datablock_path_in_LTS(datablock)
