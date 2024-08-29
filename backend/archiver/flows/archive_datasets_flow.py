@@ -82,7 +82,7 @@ async def move_datablock_to_lts_flow(dataset_id: str, datablock: DataBlock):
 
     wait = check_free_space_in_LTS.submit()
 
-    move_data_to_LTS.submit(
+    move_data = move_data_to_LTS.submit(
         dataset_id=dataset_id,
         datablock=datablock,
         wait_for=[wait]
@@ -91,6 +91,7 @@ async def move_datablock_to_lts_flow(dataset_id: str, datablock: DataBlock):
     verify_data_in_LTS.submit(
         dataset_id=dataset_id,
         datablock=datablock,
+        wait_for=[move_data]
     )
 
 
