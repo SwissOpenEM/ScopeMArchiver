@@ -54,7 +54,7 @@ def check_free_space_in_LTS():
 
 
 @task(task_run_name=generate_task_name_dataset, tags=[ConcurrencyLimits.MOVE_TO_LTS_TAG])
-def move_data_to_LTS(dataset_id: str, datablock: DataBlock) -> str:
+def move_data_to_LTS(dataset_id: str, datablock: DataBlock):
     """ Prefect task to move a datablock (.tar.gz file) to the LTS. Concurrency of this task is limited to 2 instances
     at the same time.
     """
@@ -62,12 +62,12 @@ def move_data_to_LTS(dataset_id: str, datablock: DataBlock) -> str:
 
 
 @task(task_run_name=generate_task_name_dataset, tags=[ConcurrencyLimits.VERIFY_LTS_TAG])
-def verify_data_in_LTS(dataset_id: str, datablock: DataBlock, checksum: str) -> None:
+def verify_data_in_LTS(dataset_id: str, datablock: DataBlock) -> None:
     """ Prefect Task to verify a datablock in the LTS against a checksum. Task of this type run with no concurrency since the LTS
     does only allow limited concurrent access.
     """
     datablocks_operations.verify_data_in_LTS(
-        dataset_id, datablock, checksum)
+        dataset_id, datablock)
 
 
 # Flows
@@ -82,7 +82,7 @@ async def move_datablock_to_lts_flow(dataset_id: str, datablock: DataBlock):
 
     wait = check_free_space_in_LTS.submit()
 
-    datablock_checksum = move_data_to_LTS.submit(
+    move_data = move_data_to_LTS.submit(
         dataset_id=dataset_id,
         datablock=datablock,
         wait_for=[wait]
@@ -91,7 +91,7 @@ async def move_datablock_to_lts_flow(dataset_id: str, datablock: DataBlock):
     verify_data_in_LTS.submit(
         dataset_id=dataset_id,
         datablock=datablock,
-        checksum=datablock_checksum
+        wait_for=[move_data]
     )
 
 
