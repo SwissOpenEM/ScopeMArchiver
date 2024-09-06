@@ -66,10 +66,7 @@ class SciCat():
     def update_job_status(
             self, job_id: UUID, type: JOBTYPE, status: JOBSTATUS, jobResultObject: JobResultObject | None, token: SecretStr) -> None:
 
-        # TODO: add jobResultObject once scicat is ready
-        # https://github.com/SwissOpenEM/ScopeMArchiver/issues/87
-
-        job = Job(statusCode="1", statusMessage=str(status))
+        job = Job(statusCode="1", statusMessage=str(status), jobResultObject=jobResultObject)
 
         headers = self._headers(token)
 
