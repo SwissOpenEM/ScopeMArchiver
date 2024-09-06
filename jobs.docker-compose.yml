@@ -73,6 +73,8 @@ services:
     environment:
       - PREFECT_LOGGING_LEVEL=DEBUG
       - PREFECT_API_URL=http://prefect-server:4200/api
+      - SCICAT_ENDPOINT=http://${HOST}:89
+      - MINIO_EXTERNAL_ENDPOINT=${HOST}:9000
       # Secrets are stored as blocks, removing _FILE suffix
       - MINIO_USER_FILE=/run/secrets/minio_user
       - MINIO_PASSWORD_FILE=/run/secrets/minio_pass
@@ -136,20 +138,7 @@ services:
     deploy:
       mode: replicated
       replicas: 1
-    command:
-      [
-        "prefect",
-        "worker",
-        "start",
-        "--pool",
-        "${PREFECT_ARCHIVAL_WORKPOOL_NAME}",
-        "--type",
-        "docker",
-        "--install-policy",
-        "if-not-present",
-        "--base-job-template",
-        "/var/local/prefect-jobtemplate.json"
-      ]
+    command: [ "prefect", "worker", "start", "--pool", "${PREFECT_ARCHIVAL_WORKPOOL_NAME}", "--type", "docker", "--install-policy", "if-not-present", "--base-job-template", "/var/local/prefect-jobtemplate.json" ]
     # ports:
     #   - "8081:8081" # if you want healthchecks, otherwise not necessary
     networks:
@@ -172,20 +161,7 @@ services:
     deploy:
       mode: replicated
       replicas: 1
-    command:
-      [
-        "prefect",
-        "worker",
-        "start",
-        "--pool",
-        "${PREFECT_RETRIEVAL_WORKPOOL_NAME}",
-        "--type",
-        "docker",
-        "--install-policy",
-        "if-not-present",
-        "--base-job-template",
-        "/var/local/prefect-jobtemplate.json"
-      ]
+    command: [ "prefect", "worker", "start", "--pool", "${PREFECT_RETRIEVAL_WORKPOOL_NAME}", "--type", "docker", "--install-policy", "if-not-present", "--base-job-template", "/var/local/prefect-jobtemplate.json" ]
     # ports:
     #   - "8081:8081" # if you want healthchecks, otherwise not necessary
     networks:
