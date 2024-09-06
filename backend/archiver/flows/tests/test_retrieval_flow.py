@@ -82,11 +82,9 @@ async def test_scicat_api_retrieval(
         expected_job = expected_job_status(
             SciCat.JOBTYPE.RETRIEVE, SciCat.JOBSTATUS.FINISHED_SUCCESSFULLY)
 
-        # TODO: add jobResultObject once scicat is ready
-        # https://github.com/SwissOpenEM/ScopeMArchiver/issues/87
-        # expected_job["jobResultObject"] = expected_jobresultsobject(
-        #     dataset_id=dataset_id,
-        #     datablocks=datablocks)
+        expected_job["jobResultObject"] = expected_jobresultsobject(
+            dataset_id=dataset_id,
+            datablocks=datablocks)
 
         assert m.jobs_matcher.request_history[1].json() == expected_job
 

@@ -1,3 +1,6 @@
+import tempfile
+import urllib.request
+from pathlib import Path
 import logging
 import pytest
 import requests
@@ -278,6 +281,19 @@ async def test_end_to_end(scicat_token_setup, set_env, minio_client):
     assert scicat_retrieval_job_status is not None
     assert scicat_retrieval_job_status.get("type") == "retrieve"
     assert scicat_retrieval_job_status.get("statusMessage") == "finishedSuccessful"
+    assert scicat_retrieval_job_status.get("jobResultObject") is not None
+    jobResult = scicat_retrieval_job_status.get("jobResultObject").get("result")
+    assert len(jobResult) == 1
+    assert jobResult[0].get("datasetId") == dataset_pid
+    assert jobResult[0].get("url") is not None
+    datablock_url = jobResult[0].get("url")
+    datablock_name = jobResult[0].get("name")
+
+    # verify file can be downloaded from MINIO via url in jobresult
+    with tempfile.TemporaryDirectory() as temp_dir:
+        dest_file: Path = Path(temp_dir) / datablock_name
+        urllib.request.urlretrieve(datablock_url, dest_file)
+        assert dest_file.exists()
 
     # Verify retrieved datablock in MINIO
     retrieved_datablock = minio_client.stat_object(
