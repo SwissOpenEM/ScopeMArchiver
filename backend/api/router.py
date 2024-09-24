@@ -73,11 +73,11 @@ def get_retrievable_objects() -> list[StorageObject]:
 
 
 @ router.post("/new_dataset/")
-async def create_new_dataset():
+async def create_new_dataset(file_size_MB: int = 10, num_files: int = 10, datablock_size_MB: int = 20):
     try:
         import random
         dataset_id = str(random.randint(0, 10000))
-        m = await run_create_dataset_deployment(file_size_MB=10, num_files=10, datablock_size_MB=20, dataset_id=dataset_id)
+        m = await run_create_dataset_deployment(file_size_MB=file_size_MB, num_files=num_files, datablock_size_MB=datablock_size_MB, dataset_id=dataset_id)
         return JSONResponse(content={"name": m.name, "uuid": str(m.id), "dataset_id": dataset_id}, status_code=200)
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)
