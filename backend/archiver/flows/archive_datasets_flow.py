@@ -44,7 +44,7 @@ def create_datablocks(dataset_id: str, origDataBlocks: List[OrigDataBlock]) -> L
     return datablocks_operations.create_datablocks(dataset_id, origDataBlocks)
 
 
-@task(tags=[ConcurrencyLimits.LTS_FREE_TAG])
+@task(tags=[ConcurrencyLimits().LTS_FREE_TAG])
 def check_free_space_in_LTS():
     """ Prefect task to wait for free space in the LTS. Checks periodically if the condition for enough
     free space is fulfilled. Only one of these task runs at time; the others are only scheduled once this task
@@ -53,7 +53,7 @@ def check_free_space_in_LTS():
     asyncio.run(wait_for_free_space())
 
 
-@task(task_run_name=generate_task_name_dataset, tags=[ConcurrencyLimits.MOVE_TO_LTS_TAG])
+@task(task_run_name=generate_task_name_dataset, tags=[ConcurrencyLimits().MOVE_TO_LTS_TAG])
 def move_data_to_LTS(dataset_id: str, datablock: DataBlock):
     """ Prefect task to move a datablock (.tar.gz file) to the LTS. Concurrency of this task is limited to 2 instances
     at the same time.
@@ -61,7 +61,7 @@ def move_data_to_LTS(dataset_id: str, datablock: DataBlock):
     return datablocks_operations.move_data_to_LTS(dataset_id, datablock)
 
 
-@task(task_run_name=generate_task_name_dataset, tags=[ConcurrencyLimits.VERIFY_LTS_TAG])
+@task(task_run_name=generate_task_name_dataset, tags=[ConcurrencyLimits().VERIFY_LTS_TAG])
 def verify_data_in_LTS(dataset_id: str, datablock: DataBlock) -> None:
     """ Prefect Task to verify a datablock in the LTS against a checksum. Task of this type run with no concurrency since the LTS
     does only allow limited concurrent access.

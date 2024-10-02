@@ -22,7 +22,7 @@ def on_get_datablocks_error(dataset_id: str, task: Task, task_run: TaskRun, stat
     report_dataset_user_error(dataset_id, token=scicat_token)
 
 
-@task(task_run_name=generate_task_name_dataset, tags=[ConcurrencyLimits.LTS_TO_RETRIEVAL_TAG], retries=3, retry_delay_seconds=30)
+@task(task_run_name=generate_task_name_dataset, tags=[ConcurrencyLimits().LTS_TO_RETRIEVAL_TAG], retries=3, retry_delay_seconds=30)
 def copy_datablock_from_LTS_to_S3(dataset_id: str, datablock: DataBlock):
     datablocks_operations.copy_from_LTS_to_retrieval(dataset_id, datablock)
 
