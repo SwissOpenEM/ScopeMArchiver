@@ -65,7 +65,7 @@ def get_origdatablocks(dataset_id: str, token: SecretStr) -> List[OrigDataBlock]
 
 
 @task
-def get_job_datasetlist(job_id: UUID, token: SecretStr) -> List[int]:
+def get_job_datasetlist(job_id: UUID, token: SecretStr) -> List[str]:
     return scicat.get_job_datasetlist(job_id=job_id, token=token)
 
 
