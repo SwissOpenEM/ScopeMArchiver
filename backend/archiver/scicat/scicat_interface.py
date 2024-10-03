@@ -11,7 +11,7 @@ from archiver.utils.log import log
 from archiver.config.blocks import Blocks
 
 
-class SciCat():
+class SciCatClient():
     class JOBSTATUS(StrEnum):
         IN_PROGRESS = "inProgress"
         FINISHED_SUCCESSFULLY = "finishedSuccessful"

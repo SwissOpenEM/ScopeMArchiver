@@ -13,7 +13,7 @@ from prefect.client.schemas.objects import TaskRun, FlowRun
 
 from .utils import report_archival_error
 from .task_utils import generate_task_name_dataset, generate_flow_name_job_id, generate_subflow_run_name_job_id_dataset_id
-from archiver.scicat.scicat_interface import SciCat
+from archiver.scicat.scicat_interface import SciCatClient
 from archiver.scicat.scicat_tasks import update_scicat_archival_job_status, update_scicat_archival_dataset_lifecycle, get_origdatablocks, register_datablocks, get_scicat_access_token, get_job_datasetlist
 from archiver.scicat.scicat_tasks import report_job_failure_system_error, report_dataset_user_error
 from archiver.utils.datablocks import wait_for_free_space
@@ -108,7 +108,7 @@ async def create_datablocks_flow(dataset_id: str, scicat_token: SecretStr) -> Li
 
     dataset_update = update_scicat_archival_dataset_lifecycle.submit(
         dataset_id=dataset_id,
-        status=SciCat.ARCHIVESTATUSMESSAGE.STARTED,
+        status=SciCatClient.ARCHIVESTATUSMESSAGE.STARTED,
         token=scicat_token
     )
     # dataset_update.result()
@@ -170,7 +170,7 @@ async def archive_single_dataset_flow(dataset_id: str, scicat_token: SecretStr):
         raise e
 
     update_scicat_archival_dataset_lifecycle.submit(dataset_id=dataset_id,
-                                                    status=SciCat.ARCHIVESTATUSMESSAGE.DATASET_ON_ARCHIVEDISK,
+                                                    status=SciCatClient.ARCHIVESTATUSMESSAGE.DATASET_ON_ARCHIVEDISK,
                                                     archivable=False,
                                                     retrievable=True,
                                                     token=scicat_token).result()
@@ -180,7 +180,7 @@ def on_job_flow_failure(flow: Flow, flow_run: FlowRun, state: State):
     # Getting the token here should just fetch it from the cache
     token = get_scicat_access_token()
     # TODO: differrentiate user error
-    report_job_failure_system_error(job_id=flow_run.parameters['job_id'], type=SciCat.JOBTYPE.ARCHIVE, token=token)
+    report_job_failure_system_error(job_id=flow_run.parameters['job_id'], type=SciCatClient.JOBTYPE.ARCHIVE, token=token)
 
 
 def on_job_flow_cancellation(flow: Flow, flow_run: FlowRun, state: State):
@@ -195,7 +195,7 @@ def on_job_flow_cancellation(flow: Flow, flow_run: FlowRun, state: State):
     # Getting the token here should just fetch it from the cache
     token = get_scicat_access_token()
 
-    report_job_failure_system_error(job_id=flow_run.parameters['job_id'], type=SciCat.JOBTYPE.ARCHIVE, token=token)
+    report_job_failure_system_error(job_id=flow_run.parameters['job_id'], type=SciCatClient.JOBTYPE.ARCHIVE, token=token)
 
 
 @flow(
@@ -218,7 +218,7 @@ async def archive_datasets_flow(job_id: UUID, dataset_ids: List[str] | None = No
     access_token = get_scicat_access_token()
 
     job_update = update_scicat_archival_job_status.submit(
-        job_id=job_id, status=SciCat.JOBSTATUS.IN_PROGRESS, token=access_token)
+        job_id=job_id, status=SciCatClient.JOBSTATUS.IN_PROGRESS, token=access_token)
     job_update.result()
 
     if len(dataset_ids) == 0:
@@ -232,4 +232,4 @@ async def archive_datasets_flow(job_id: UUID, dataset_ids: List[str] | None = No
         raise e
 
     update_scicat_archival_job_status.submit(
-        job_id=job_id, status=SciCat.JOBSTATUS.FINISHED_SUCCESSFULLY, token=access_token).result()
+        job_id=job_id, status=SciCatClient.JOBSTATUS.FINISHED_SUCCESSFULLY, token=access_token).result()

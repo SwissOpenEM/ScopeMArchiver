@@ -9,7 +9,7 @@ from prefect.client.schemas.objects import TaskRun, FlowRun
 
 from .task_utils import generate_flow_name_job_id, generate_task_name_dataset
 from .utils import report_retrieval_error
-from archiver.scicat.scicat_interface import SciCat
+from archiver.scicat.scicat_interface import SciCatClient
 from archiver.utils.model import DataBlock, JobResultObject
 from archiver.scicat.scicat_tasks import update_scicat_retrieval_job_status, update_scicat_retrieval_dataset_lifecycle, get_scicat_access_token, get_job_datasetlist, create_job_result_object_task
 from archiver.scicat.scicat_tasks import report_job_failure_system_error, report_dataset_user_error, get_datablocks
@@ -22,9 +22,8 @@ def on_get_datablocks_error(dataset_id: str, task: Task, task_run: TaskRun, stat
     report_dataset_user_error(dataset_id, token=scicat_token)
 
 
-@task(task_run_name=generate_task_name_dataset, tags=[ConcurrencyLimits().LTS_TO_RETRIEVAL_TAG], retries=3, retry_delay_seconds=30)
+@task(task_run_name=generate_task_name_dataset, tags=[ConcurrencyLimits().LTS_TO_RETRIEVAL_TAG])
 def copy_datablock_from_LTS_to_S3(dataset_id: str, datablock: DataBlock):
-    raise Exception(")")
     datablocks_operations.copy_from_LTS_to_retrieval(dataset_id, datablock)
 
 
@@ -46,7 +45,7 @@ def cleanup_dataset(flow: Flow, flow_run: FlowRun, state: State):
 async def retrieve_single_dataset_flow(dataset_id: str, job_id: UUID, scicat_token: SecretStr):
     dataset_update = update_scicat_retrieval_dataset_lifecycle.submit(
         dataset_id=dataset_id,
-        status=SciCat.RETRIEVESTATUSMESSAGE.STARTED,
+        status=SciCatClient.RETRIEVESTATUSMESSAGE.STARTED,
         token=scicat_token
     )
 
@@ -67,14 +66,14 @@ async def retrieve_single_dataset_flow(dataset_id: str, job_id: UUID, scicat_tok
         retrieval_tasks.append(copy_datablock_from_LTS_to_S3.submit(dataset_id=dataset_id, datablock=d))
 
     update_scicat_retrieval_dataset_lifecycle.submit(dataset_id=dataset_id,
-                                                     status=SciCat.RETRIEVESTATUSMESSAGE.DATASET_RETRIEVED,
+                                                     status=SciCatClient.RETRIEVESTATUSMESSAGE.DATASET_RETRIEVED,
                                                      token=scicat_token, wait_for=retrieval_tasks).result()
 
 
 def on_job_flow_failure(flow: Flow, flow_run: FlowRun, state: State):
     scicat_token = get_scicat_access_token()
     # TODO: differrentiate user error
-    report_job_failure_system_error(job_id=flow_run.parameters['job_id'], type=SciCat.JOBTYPE.RETRIEVE, token=scicat_token)
+    report_job_failure_system_error(job_id=flow_run.parameters['job_id'], type=SciCatClient.JOBTYPE.RETRIEVE, token=scicat_token)
 
 
 @ flow(name="retrieve_datasetlist", log_prints=True, flow_run_name=generate_flow_name_job_id, on_failure=[on_job_flow_failure])
@@ -85,7 +84,7 @@ async def retrieve_datasets_flow(job_id: UUID, dataset_ids: List[str] | None = N
     access_token = access_token_future.result()
 
     job_update = update_scicat_retrieval_job_status.submit(
-        job_id=job_id, status=SciCat.JOBSTATUS.IN_PROGRESS, jobResultObject=None, token=access_token)
+        job_id=job_id, status=SciCatClient.JOBSTATUS.IN_PROGRESS, jobResultObject=None, token=access_token)
     job_update.result()
 
     if len(dataset_ids) == 0:
@@ -106,6 +105,6 @@ async def retrieve_datasets_flow(job_id: UUID, dataset_ids: List[str] | None = N
 
     update_scicat_retrieval_job_status.submit(
         job_id=job_id,
-        status=SciCat.JOBSTATUS.FINISHED_SUCCESSFULLY,
+        status=SciCatClient.JOBSTATUS.FINISHED_SUCCESSFULLY,
         jobResultObject=job_results_object,
         token=access_token).result()
