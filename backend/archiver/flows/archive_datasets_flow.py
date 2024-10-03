@@ -92,11 +92,11 @@ async def move_datablock_to_lts_flow(dataset_id: str, datablock: DataBlock):
         dataset_id=dataset_id,
         datablock=datablock,
         wait_for=[move_data]
-    )
+    ).result()
 
 
 @flow(name="create_datablocks", flow_run_name=generate_subflow_run_name_job_id_dataset_id)
-async def create_datablocks_flow(dataset_id: str, scicat_token: SecretStr) -> PrefectFuture[List[DataBlock], Async]:
+async def create_datablocks_flow(dataset_id: str, scicat_token: SecretStr) -> List[DataBlock]:
     """Prefect (sub-)flow to create datablocks (.tar.gz files) for files of a dataset and register them in Scicat.
 
     Args:
@@ -111,6 +111,7 @@ async def create_datablocks_flow(dataset_id: str, scicat_token: SecretStr) -> Pr
         status=SciCat.ARCHIVESTATUSMESSAGE.STARTED,
         token=scicat_token
     )
+    # dataset_update.result()
 
     orig_datablocks = get_origdatablocks.with_options(
         on_failure=[partial(on_get_origdatablocks_error, dataset_id)]
@@ -120,18 +121,18 @@ async def create_datablocks_flow(dataset_id: str, scicat_token: SecretStr) -> Pr
         wait_for=[dataset_update]
     )
 
-    datablocks = create_datablocks.submit(
+    datablocks_future = create_datablocks.submit(
         dataset_id=dataset_id,
-        origDataBlocks=orig_datablocks,
+        origDataBlocks=orig_datablocks
     )
 
     register_datablocks.submit(
-        datablocks=datablocks,
+        datablocks=datablocks_future,
         dataset_id=dataset_id,
         token=scicat_token
-    )
+    ).wait()
 
-    return datablocks
+    return datablocks_future.result()
 
 
 def on_dataset_flow_failure(flow: Flow, flow_run: FlowRun, state: State):
@@ -163,7 +164,7 @@ async def archive_single_dataset_flow(dataset_id: str, scicat_token: SecretStr):
         raise e
 
     try:
-        for datablock in await datablocks.result(fetch=True):
+        for datablock in datablocks:
             await move_datablock_to_lts_flow(dataset_id=dataset_id, datablock=datablock)
     except Exception as e:
         raise e
@@ -172,7 +173,7 @@ async def archive_single_dataset_flow(dataset_id: str, scicat_token: SecretStr):
                                                     status=SciCat.ARCHIVESTATUSMESSAGE.DATASET_ON_ARCHIVEDISK,
                                                     archivable=False,
                                                     retrievable=True,
-                                                    token=scicat_token)
+                                                    token=scicat_token).result()
 
 
 def on_job_flow_failure(flow: Flow, flow_run: FlowRun, state: State):
@@ -214,16 +215,14 @@ async def archive_datasets_flow(job_id: UUID, dataset_ids: List[str] | None = No
         e: _description_
     """
     dataset_ids: List[str] = dataset_ids or []
-    access_token = get_scicat_access_token.submit()
-    access_token.wait()
+    access_token = get_scicat_access_token()
 
     job_update = update_scicat_archival_job_status.submit(
         job_id=job_id, status=SciCat.JOBSTATUS.IN_PROGRESS, token=access_token)
-    job_update.wait()
+    job_update.result()
 
     if len(dataset_ids) == 0:
         dataset_ids_future = get_job_datasetlist.submit(job_id=job_id, token=access_token)
-        dataset_ids_future.wait()
         dataset_ids = dataset_ids_future.result()
 
     try:
@@ -233,4 +232,4 @@ async def archive_datasets_flow(job_id: UUID, dataset_ids: List[str] | None = No
         raise e
 
     update_scicat_archival_job_status.submit(
-        job_id=job_id, status=SciCat.JOBSTATUS.FINISHED_SUCCESSFULLY, token=access_token)
+        job_id=job_id, status=SciCat.JOBSTATUS.FINISHED_SUCCESSFULLY, token=access_token).result()

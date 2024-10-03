@@ -1,6 +1,6 @@
 services:
   prefect-server:
-    image: prefecthq/prefect:2.19.9-python3.11
+    image: prefecthq/prefect:3.0.4-python3.11
     container_name: prefect-server
     restart: always
     profiles:
@@ -130,7 +130,7 @@ services:
       prefect-server:
         condition: service_healthy
   prefect-archival-worker:
-    image: prefecthq/prefect:2.19.9-python3.11
+    image: prefecthq/prefect:3.0.4-python3.11
     profiles:
       - config
       - full
@@ -153,7 +153,7 @@ services:
       - PREFECT_LOGGING_LEVEL=DEBUG
       - PREFECT_API_URL=http://prefect-server:4200/api
   prefect-retrieval-worker:
-    image: prefecthq/prefect:2.19.9-python3.11
+    image: prefecthq/prefect:3.0.4-python3.11
     profiles:
       - config
       - full

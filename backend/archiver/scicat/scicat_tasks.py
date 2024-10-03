@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Sequence
 from prefect import task
 from uuid import UUID
 from pydantic import SecretStr
@@ -32,6 +32,7 @@ def update_scicat_archival_job_status(job_id: UUID, status: SciCat.JOBSTATUS, to
 @task(task_run_name=generate_task_name_job)
 def update_scicat_retrieval_job_status(
         job_id: UUID, status: SciCat.JOBSTATUS, jobResultObject: JobResultObject | None, token: SecretStr) -> None:
+
     scicat.update_job_status(job_id=job_id, type=SciCat.JOBTYPE.RETRIEVE, status=status, jobResultObject=jobResultObject, token=token)
 
 

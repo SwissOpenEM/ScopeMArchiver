@@ -1,4 +1,4 @@
-FROM prefecthq/prefect:2.19.9-python3.11
+FROM prefecthq/prefect:3.0.4-python3.11
 
 # Keeps Python from generating .pyc files in the container
 ENV PYTHONDONTWRITEBYTECODE=1

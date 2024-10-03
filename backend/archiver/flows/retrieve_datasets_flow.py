@@ -24,6 +24,7 @@ def on_get_datablocks_error(dataset_id: str, task: Task, task_run: TaskRun, stat
 
 @task(task_run_name=generate_task_name_dataset, tags=[ConcurrencyLimits().LTS_TO_RETRIEVAL_TAG], retries=3, retry_delay_seconds=30)
 def copy_datablock_from_LTS_to_S3(dataset_id: str, datablock: DataBlock):
+    raise Exception(")")
     datablocks_operations.copy_from_LTS_to_retrieval(dataset_id, datablock)
 
 
@@ -57,8 +58,6 @@ async def retrieve_single_dataset_flow(dataset_id: str, job_id: UUID, scicat_tok
         wait_for=[dataset_update]
     )
 
-    datablocks.wait()
-
     # TODO: check if on retrieval bucket
     datablocks_not_in_retrieval_bucket = datablocks.result()
 
@@ -69,7 +68,7 @@ async def retrieve_single_dataset_flow(dataset_id: str, job_id: UUID, scicat_tok
 
     update_scicat_retrieval_dataset_lifecycle.submit(dataset_id=dataset_id,
                                                      status=SciCat.RETRIEVESTATUSMESSAGE.DATASET_RETRIEVED,
-                                                     token=scicat_token, wait_for=retrieval_tasks)
+                                                     token=scicat_token, wait_for=retrieval_tasks).result()
 
 
 def on_job_flow_failure(flow: Flow, flow_run: FlowRun, state: State):
@@ -82,27 +81,26 @@ def on_job_flow_failure(flow: Flow, flow_run: FlowRun, state: State):
 async def retrieve_datasets_flow(job_id: UUID, dataset_ids: List[str] | None = None):
     dataset_ids = dataset_ids or []
 
-    access_token = get_scicat_access_token.submit()
-    access_token.wait()
+    access_token_future = get_scicat_access_token.submit()
+    access_token = access_token_future.result()
 
     job_update = update_scicat_retrieval_job_status.submit(
         job_id=job_id, status=SciCat.JOBSTATUS.IN_PROGRESS, jobResultObject=None, token=access_token)
-    job_update.wait()
+    job_update.result()
 
     if len(dataset_ids) == 0:
         dataset_ids_future = get_job_datasetlist.submit(job_id=job_id, token=access_token)
-        dataset_ids_future.wait()
         dataset_ids = dataset_ids_future.result()
 
     try:
         for id in dataset_ids:
-            await retrieve_single_dataset_flow(dataset_id=id, job_id=job_id, scicat_token=access_token)
+            f = await retrieve_single_dataset_flow(dataset_id=id, job_id=job_id, scicat_token=access_token)
+            print(f)
     except Exception as e:
         raise e
 
     job_results_future = create_job_result_object_task.submit(
         dataset_ids=dataset_ids)
-    job_results_future.wait()
     job_results = job_results_future.result()
     job_results_object = JobResultObject(result=job_results)
 
@@ -110,4 +108,4 @@ async def retrieve_datasets_flow(job_id: UUID, dataset_ids: List[str] | None = N
         job_id=job_id,
         status=SciCat.JOBSTATUS.FINISHED_SUCCESSFULLY,
         jobResultObject=job_results_object,
-        token=access_token)
+        token=access_token).result()
