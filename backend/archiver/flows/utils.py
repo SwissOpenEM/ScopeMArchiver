@@ -39,15 +39,6 @@ def report_archival_error(dataset_id: str, state: State, task_run: TaskRun, toke
         # TODO: add some info about unknown errors
         report_dataset_system_error(dataset_id=dataset_id, token=token)
 
-    # match (state.result().result):
-    #     case DatasetError():
-    #         report_dataset_user_error(dataset_id=dataset_id, token=token)
-    #     case SystemError():
-    #         report_dataset_system_error(dataset_id=dataset_id, token=token)
-    #     case _:
-    #         # TODO: add some info about unknown errors
-    #         report_dataset_system_error(dataset_id=dataset_id, token=token)
-
 
 def report_retrieval_error(dataset_id: str, state: State, task_run: TaskRun, token: SecretStr):
     """Report a retrieval error of a job of a dataset. Differntiates betwen "DatasetError" (User error, e.g. missing files)
@@ -60,16 +51,6 @@ def report_retrieval_error(dataset_id: str, state: State, task_run: TaskRun, tok
     """
 
     report_dataset_retrieval_error(dataset_id=dataset_id, token=token)
-
-    # try:
-    #     state.result()
-    # except DatasetError:
-    #     report_dataset_user_error(dataset_id)
-    # except SystemError:
-    #     report_dataset_system_error(dataset_id)
-    # except Exception:
-    #     # TODO: add some info about unknown errors
-    #     report_dataset_system_error(dataset_id)
 
 
 class StoragePaths:
