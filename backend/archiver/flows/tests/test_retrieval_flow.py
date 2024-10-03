@@ -35,7 +35,6 @@ async def mock_wait_for_file_accessible(file, timeout_s=360) -> bool:
     return True
 
 
-@ pytest.mark.asyncio
 @ pytest.mark.parametrize("job_id,dataset_id", [
     (uuid4(), "somePrefix/456"),
 ])
@@ -50,7 +49,7 @@ async def mock_wait_for_file_accessible(file, timeout_s=360) -> bool:
 @patch("archiver.utils.datablocks.cleanup_s3_staging")
 @patch("archiver.utils.datablocks.cleanup_s3_landingzone")
 @patch("archiver.utils.datablocks.cleanup_s3_retrieval")
-async def test_scicat_api_retrieval(
+def test_scicat_api_retrieval(
         mock_cleanup_s3_retrieval: MagicMock,
         mock_cleanup_s3_landingzone: MagicMock,
         mock_cleanup_s3_staging: MagicMock,
@@ -70,7 +69,7 @@ async def test_scicat_api_retrieval(
 
     with ScicatMock(job_id=job_id, dataset_id=dataset_id, origDataBlocks=origDataBlocks, datablocks=datablocks) as m, prefect_test_harness():
         try:
-            await retrieve_datasets_flow(job_id=job_id, dataset_ids=[dataset_id])
+            retrieve_datasets_flow(job_id=job_id, dataset_ids=[dataset_id])
         except Exception as e:
             pass
 
@@ -115,7 +114,6 @@ async def test_scicat_api_retrieval(
         mock_copy_file_to_folder.assert_has_calls(calls, any_order=True)
 
 
-@ pytest.mark.asyncio
 @ pytest.mark.parametrize("job_id,dataset_id", [
     (uuid4(), "somePrefix/456"),
 ])
@@ -130,7 +128,7 @@ async def test_scicat_api_retrieval(
 @ patch("archiver.utils.datablocks.cleanup_s3_staging")
 @ patch("archiver.utils.datablocks.cleanup_s3_landingzone")
 @ patch("archiver.utils.datablocks.cleanup_s3_retrieval")
-async def test_datablock_not_found(
+def test_datablock_not_found(
         mock_cleanup_s3_retrieval: MagicMock,
         mock_cleanup_s3_landingzone: MagicMock,
         mock_cleanup_s3_staging: MagicMock,
@@ -148,7 +146,7 @@ async def test_datablock_not_found(
 
     with ScicatMock(job_id=job_id, dataset_id=dataset_id, origDataBlocks=origDataBlocks, datablocks=datablocks) as m, prefect_test_harness():
         try:
-            await retrieve_datasets_flow(job_id=job_id, dataset_ids=[dataset_id])
+            retrieve_datasets_flow(job_id=job_id, dataset_ids=[dataset_id])
         except Exception as e:
             pass
 

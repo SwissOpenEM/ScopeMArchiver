@@ -29,15 +29,24 @@ def report_archival_error(dataset_id: str, state: State, task_run: TaskRun, toke
         state (State): task run state
         task_run (TaskRun): task run
     """
+    try:
+        state.result()
+    except DatasetError:
+        report_dataset_user_error(dataset_id=dataset_id, token=token)
+    except SystemError:
+        report_dataset_system_error(dataset_id=dataset_id, token=token)
+    except Exception:
+        # TODO: add some info about unknown errors
+        report_dataset_system_error(dataset_id=dataset_id, token=token)
 
-    match (state.result().result):
-        case DatasetError():
-            report_dataset_user_error(dataset_id=dataset_id, token=token)
-        case SystemError():
-            report_dataset_system_error(dataset_id=dataset_id, token=token)
-        case _:
-            # TODO: add some info about unknown errors
-            report_dataset_system_error(dataset_id=dataset_id, token=token)
+    # match (state.result().result):
+    #     case DatasetError():
+    #         report_dataset_user_error(dataset_id=dataset_id, token=token)
+    #     case SystemError():
+    #         report_dataset_system_error(dataset_id=dataset_id, token=token)
+    #     case _:
+    #         # TODO: add some info about unknown errors
+    #         report_dataset_system_error(dataset_id=dataset_id, token=token)
 
 
 def report_retrieval_error(dataset_id: str, state: State, task_run: TaskRun, token: SecretStr):

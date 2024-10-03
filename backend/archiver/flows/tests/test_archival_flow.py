@@ -25,7 +25,6 @@ def mock_void_function(*args, **kwargs):
     pass
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize("job_id,dataset_id", [
     (uuid4(), "somePrefix/456"),
 ])
@@ -38,7 +37,7 @@ def mock_void_function(*args, **kwargs):
 @patch("archiver.utils.datablocks.cleanup_s3_staging")
 @patch("archiver.utils.datablocks.cleanup_s3_landingzone")
 @patch("archiver.utils.datablocks.cleanup_s3_retrieval")
-async def test_scicat_api_archiving(
+def test_scicat_api_archiving(
         mock_cleanup_s3_retrieval: MagicMock,
         mock_cleanup_s3_landingzone: MagicMock,
         mock_cleanup_s3_staging: MagicMock,
@@ -56,7 +55,7 @@ async def test_scicat_api_archiving(
 
     with ScicatMock(job_id=job_id, dataset_id=dataset_id, origDataBlocks=origDataBlocks, datablocks=datablocks) as m, prefect_test_harness():
         try:
-            await archive_datasets_flow(job_id=job_id, dataset_ids=[dataset_id])
+            archive_datasets_flow(job_id=job_id, dataset_ids=[dataset_id])
         except Exception as e:
             pass
 
@@ -87,7 +86,6 @@ async def test_scicat_api_archiving(
         mock_cleanup_lts.assert_not_called()
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize("job_id,dataset_id", [
     (uuid4(), "somePrefix/456"),
 ])
@@ -98,7 +96,7 @@ async def test_scicat_api_archiving(
 @patch("archiver.utils.datablocks.cleanup_s3_staging")
 @patch("archiver.utils.datablocks.cleanup_s3_landingzone")
 @patch("archiver.utils.datablocks.cleanup_s3_retrieval")
-async def test_create_datablocks_user_error(
+def test_create_datablocks_user_error(
         mock_cleanup_s3_retrieval: MagicMock,
         mock_cleanup_s3_landingzone: MagicMock,
         mock_cleanup_s3_staging: MagicMock,
@@ -117,7 +115,7 @@ async def test_create_datablocks_user_error(
     datablocks = create_datablocks(num_blocks=num_datablocks, num_files_per_block=num_files_per_block)
     with ScicatMock(job_id=job_id, dataset_id=dataset_id, origDataBlocks=origDataBlocks, datablocks=datablocks) as m, prefect_test_harness():
         with pytest.raises(Exception):
-            await archive_datasets_flow(job_id=job_id, dataset_ids=[dataset_id])
+            archive_datasets_flow(job_id=job_id, dataset_ids=[dataset_id])
 
         assert m.jobs_matcher.call_count == 2
         assert m.datasets_matcher.call_count == 2
@@ -142,7 +140,6 @@ async def test_create_datablocks_user_error(
         mock_cleanup_lts.assert_called_once_with(dataset_id)
 
 
-@pytest.mark.asyncio
 @ pytest.mark.parametrize("job_id,dataset_id", [
     (uuid4(), "somePrefix/456"),
 ])
@@ -154,7 +151,7 @@ async def test_create_datablocks_user_error(
 @patch("archiver.utils.datablocks.cleanup_s3_staging")
 @patch("archiver.utils.datablocks.cleanup_s3_landingzone")
 @patch("archiver.utils.datablocks.cleanup_s3_retrieval")
-async def test_move_to_LTS_failure(
+def test_move_to_LTS_failure(
         mock_cleanup_s3_retrieval: MagicMock,
         mock_cleanup_s3_landingzone: MagicMock,
         mock_cleanup_s3_staging: MagicMock,
@@ -172,7 +169,7 @@ async def test_move_to_LTS_failure(
     datablocks = create_datablocks(num_blocks=num_datablocks, num_files_per_block=num_files_per_block)
     with ScicatMock(job_id=job_id, dataset_id=dataset_id, origDataBlocks=origDataBlocks, datablocks=datablocks) as m, prefect_test_harness():
         with pytest.raises(Exception):
-            await archive_datasets_flow(job_id=job_id, dataset_ids=[dataset_id])
+            archive_datasets_flow(job_id=job_id, dataset_ids=[dataset_id])
 
         assert m.jobs_matcher.call_count == 2
         assert m.datasets_matcher.call_count == 2
@@ -202,7 +199,6 @@ async def test_move_to_LTS_failure(
         mock_cleanup_lts.assert_called_once_with(dataset_id)
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize("job_id,dataset_id", [
     (uuid4(), "somePrefix/456"),
 ])
@@ -215,7 +211,7 @@ async def test_move_to_LTS_failure(
 @patch("archiver.utils.datablocks.cleanup_s3_staging")
 @patch("archiver.utils.datablocks.cleanup_s3_landingzone")
 @patch("archiver.utils.datablocks.cleanup_s3_retrieval")
-async def test_LTS_validation_failure(
+def test_LTS_validation_failure(
         mock_cleanup_s3_retrieval: MagicMock,
         mock_cleanup_s3_landingzone: MagicMock,
         mock_cleanup_s3_staging: MagicMock,
@@ -234,7 +230,7 @@ async def test_LTS_validation_failure(
 
     with ScicatMock(job_id=job_id, dataset_id=dataset_id, origDataBlocks=origDataBlocks, datablocks=datablocks) as m, prefect_test_harness():
         with pytest.raises(Exception):
-            await archive_datasets_flow(job_id=job_id, dataset_ids=[dataset_id])
+            archive_datasets_flow(job_id=job_id, dataset_ids=[dataset_id])
 
         assert m.jobs_matcher.call_count == 2
         assert m.datasets_matcher.call_count == 2

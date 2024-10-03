@@ -42,7 +42,7 @@ def cleanup_dataset(flow: Flow, flow_run: FlowRun, state: State):
 
 
 @flow(name="retrieve_dataset", log_prints=True, on_failure=[on_dataset_flow_failure], on_completion=[cleanup_dataset])
-async def retrieve_single_dataset_flow(dataset_id: str, job_id: UUID, scicat_token: SecretStr):
+def retrieve_single_dataset_flow(dataset_id: str, job_id: UUID, scicat_token: SecretStr):
     dataset_update = update_scicat_retrieval_dataset_lifecycle.submit(
         dataset_id=dataset_id,
         status=SciCatClient.RETRIEVESTATUSMESSAGE.STARTED,
@@ -77,7 +77,7 @@ def on_job_flow_failure(flow: Flow, flow_run: FlowRun, state: State):
 
 
 @ flow(name="retrieve_datasetlist", log_prints=True, flow_run_name=generate_flow_name_job_id, on_failure=[on_job_flow_failure])
-async def retrieve_datasets_flow(job_id: UUID, dataset_ids: List[str] | None = None):
+def retrieve_datasets_flow(job_id: UUID, dataset_ids: List[str] | None = None):
     dataset_ids = dataset_ids or []
 
     access_token_future = get_scicat_access_token.submit()
@@ -93,7 +93,7 @@ async def retrieve_datasets_flow(job_id: UUID, dataset_ids: List[str] | None = N
 
     try:
         for id in dataset_ids:
-            f = await retrieve_single_dataset_flow(dataset_id=id, job_id=job_id, scicat_token=access_token)
+            f = retrieve_single_dataset_flow(dataset_id=id, job_id=job_id, scicat_token=access_token)
             print(f)
     except Exception as e:
         raise e

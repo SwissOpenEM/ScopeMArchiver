@@ -7,9 +7,9 @@ from pydantic import SecretStr
 
 
 from prefect import flow, task, State, Task, Flow
-from prefect.futures import PrefectFuture
-from prefect.utilities.asyncutils import Async
 from prefect.client.schemas.objects import TaskRun, FlowRun
+
+from archiver.config.variables import Variables
 
 from .utils import report_archival_error
 from .task_utils import generate_task_name_dataset, generate_flow_name_job_id, generate_subflow_run_name_job_id_dataset_id
@@ -72,7 +72,7 @@ def verify_data_in_LTS(dataset_id: str, datablock: DataBlock) -> None:
 
 # Flows
 @flow(name="move_datablocks_to_lts", log_prints=True, flow_run_name=generate_subflow_run_name_job_id_dataset_id)
-async def move_datablock_to_lts_flow(dataset_id: str, datablock: DataBlock):
+def move_datablock_to_lts_flow(dataset_id: str, datablock: DataBlock):
     """Prefect (sub-)flow to move a datablock to the LTS. Implements the copying of data and verification via checksum.
 
     Args:
@@ -96,7 +96,7 @@ async def move_datablock_to_lts_flow(dataset_id: str, datablock: DataBlock):
 
 
 @flow(name="create_datablocks", flow_run_name=generate_subflow_run_name_job_id_dataset_id)
-async def create_datablocks_flow(dataset_id: str, scicat_token: SecretStr) -> List[DataBlock]:
+def create_datablocks_flow(dataset_id: str, scicat_token: SecretStr) -> List[DataBlock]:
     """Prefect (sub-)flow to create datablocks (.tar.gz files) for files of a dataset and register them in Scicat.
 
     Args:
@@ -111,7 +111,6 @@ async def create_datablocks_flow(dataset_id: str, scicat_token: SecretStr) -> Li
         status=SciCatClient.ARCHIVESTATUSMESSAGE.STARTED,
         token=scicat_token
     )
-    # dataset_update.result()
 
     orig_datablocks = get_origdatablocks.with_options(
         on_failure=[partial(on_get_origdatablocks_error, dataset_id)]
@@ -156,16 +155,19 @@ def cleanup_dataset(flow: Flow, flow_run: FlowRun, state: State):
        on_completion=[cleanup_dataset],
        on_cancellation=[on_dataset_flow_failure]
        )
-async def archive_single_dataset_flow(dataset_id: str, scicat_token: SecretStr):
+def archive_single_dataset_flow(dataset_id: str, scicat_token: SecretStr):
 
     try:
-        datablocks = await create_datablocks_flow(dataset_id, scicat_token=scicat_token)
+        datablocks = create_datablocks_flow(dataset_id, scicat_token=scicat_token)
     except Exception as e:
         raise e
 
+    if Variables().SCICAT_API_PREFIX.endswith("/"):
+        print("f")
+
     try:
         for datablock in datablocks:
-            await move_datablock_to_lts_flow(dataset_id=dataset_id, datablock=datablock)
+            move_datablock_to_lts_flow(dataset_id=dataset_id, datablock=datablock)
     except Exception as e:
         raise e
 
@@ -203,7 +205,7 @@ def on_job_flow_cancellation(flow: Flow, flow_run: FlowRun, state: State):
     flow_run_name=generate_flow_name_job_id,
     on_failure=[on_job_flow_failure],
     on_cancellation=[on_job_flow_cancellation])
-async def archive_datasets_flow(job_id: UUID, dataset_ids: List[str] | None = None):
+def archive_datasets_flow(job_id: UUID, dataset_ids: List[str] | None = None):
     """Prefect flow to archive a list of datasets. Corresponds to a "Job" in Scicat. Runs the individual archivals of the single datasets as subflows and reports
     the overall job status to Scicat.
 
@@ -227,7 +229,7 @@ async def archive_datasets_flow(job_id: UUID, dataset_ids: List[str] | None = No
 
     try:
         for id in dataset_ids:
-            await archive_single_dataset_flow(dataset_id=id, scicat_token=access_token)
+            archive_single_dataset_flow(dataset_id=id, scicat_token=access_token)
     except Exception as e:
         raise e
 
