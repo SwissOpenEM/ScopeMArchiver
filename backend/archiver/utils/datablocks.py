@@ -21,7 +21,8 @@ from archiver.flows.utils import DatasetError, SystemError, StoragePaths
 @log
 def unpack_tarballs(src_folder: Path, dst_folder: Path):
     if not any(Path(src_folder).iterdir()):
-        raise SystemError(f"Empty folder {src_folder} found. No files to unpack.")
+        raise SystemError(
+            f"Empty folder {src_folder} found. No files to unpack.")
 
     for file in src_folder.iterdir():
         if not tarfile.is_tarfile(file):
@@ -73,7 +74,8 @@ def create_tarballs(dataset_id: str, src_folder: Path, dst_folder: Path,
 
     for file in src_folder.iterdir():
         if file.stat().st_size > target_size:
-            raise SystemError(f"Size of {file} is larger than target size {target_size}. Increase target_size.")
+            raise SystemError(
+                f"Size of {file} is larger than target size {target_size}. Increase target_size.")
         if current_tar_info.path.stat().st_size + file.stat().st_size > target_size:
             current_tar_info.packedSize = current_tar_info.path.stat().st_size
             current_tarfile.close()
@@ -308,10 +310,12 @@ def move_data_to_LTS(dataset_id: str, datablock: DataBlock):
     getLogger().info("Verifying checksum")
 
     # Copy back from LTS to scratch
-    verification_path = StoragePaths.scratch_archival_datablocks_folder(dataset_id) / "verification"
+    verification_path = StoragePaths.scratch_archival_datablocks_folder(
+        dataset_id) / "verification"
     verification_path.mkdir(exist_ok=True)
     copy_file_to_folder(src_file=destination, dst_folder=verification_path)
-    checksum_destination = calculate_md5_checksum(verification_path / datablock_name)
+    checksum_destination = calculate_md5_checksum(
+        verification_path / datablock_name)
 
     if checksum_destination != checksum_source:
         raise SystemError("Datablock verification failed")
@@ -329,7 +333,8 @@ def copy_file_to_folder(src_file: Path, dst_folder: Path):
         SystemError: raises if operation fails
     """
     if not src_file.exists() or not src_file.is_file():
-        raise SystemError(f"Source file {src_file} is not a file or does not exist")
+        raise SystemError(
+            f"Source file {src_file} is not a file or does not exist")
     if dst_folder.is_file():
         raise SystemError(f"Destination folder {dst_folder} is not a folder")
 
@@ -361,14 +366,17 @@ def verify_data_in_LTS(dataset_id: str, datablock: DataBlock) -> None:
         dataset_id) / "verification"
     datablocks_scratch_folder.mkdir(parents=True, exist_ok=True)
 
-    datablock_folder = datablocks_scratch_folder / Path(datablock.archiveId).name
+    datablock_folder = datablocks_scratch_folder / \
+        Path(datablock.archiveId).name
 
     lts_datablock_path = StoragePaths.lts_datablocks_folder(
         dataset_id) / Path(datablock.archiveId).name
 
-    asyncio.run(wait_for_file_accessible(lts_datablock_path.absolute(), Variables().ARCHIVER_LTS_FILE_TIMEOUT_S))
+    asyncio.run(wait_for_file_accessible(
+        lts_datablock_path.absolute(), Variables().ARCHIVER_LTS_FILE_TIMEOUT_S))
 
-    copy_file_to_folder(src_file=lts_datablock_path.absolute(), dst_folder=datablocks_scratch_folder.absolute())
+    copy_file_to_folder(src_file=lts_datablock_path.absolute(),
+                        dst_folder=datablocks_scratch_folder.absolute())
 
     verify_datablock(datablock, datablock_folder)
 
@@ -378,12 +386,14 @@ def verify_data_in_LTS(dataset_id: str, datablock: DataBlock) -> None:
 @log
 def verify_datablock(datablock: DataBlock, datablock_path: Path):
 
-    expected_checksums: Dict[str, str] = {datafile.path: datafile.chk or "" for datafile in datablock.dataFileList or []}
+    expected_checksums: Dict[str, str] = {
+        datafile.path: datafile.chk or "" for datafile in datablock.dataFileList or []}
 
     try:
         tar: tarfile.TarFile = tarfile.open(datablock_path, 'r')
     except Exception as e:
-        raise SystemError(f"Failed to read datablock {datablock.archiveId}: {e}")
+        raise SystemError(
+            f"Failed to read datablock {datablock.archiveId}: {e}")
 
     for file in tar.getmembers():
         extracted = tar.extractfile(file)
@@ -393,7 +403,8 @@ def verify_datablock(datablock: DataBlock, datablock_path: Path):
         # TODO: add other algorithms
         assert datablock.chkAlg == "md5"
 
-        checksum = hashlib.file_digest(extracted, "md5").hexdigest()  # type: ignore
+        checksum = hashlib.file_digest(
+            extracted, "md5").hexdigest()  # type: ignore
         expected_checksum = expected_checksums.get(file.path, "")
 
         if expected_checksum != checksum:
@@ -412,7 +423,8 @@ def create_datablocks(dataset_id: str, origDataBlocks: List[OrigDataBlock]) -> L
         raise Exception(f"""No objects found in landing zone at {StoragePaths.relative_raw_files_folder(dataset_id)} for dataset {
             dataset_id}. Storage endpoint: {S3Storage().url}""")
 
-    raw_files_scratch_folder = StoragePaths.scratch_archival_raw_files_folder(dataset_id)
+    raw_files_scratch_folder = StoragePaths.scratch_archival_raw_files_folder(
+        dataset_id)
     raw_files_scratch_folder.mkdir(parents=True, exist_ok=True)
 
     # files with full path are downloaded to scratch root
@@ -422,7 +434,8 @@ def create_datablocks(dataset_id: str, origDataBlocks: List[OrigDataBlock]) -> L
     getLogger().info(
         f"Downloaded {len(file_paths)} objects from {Bucket.landingzone_bucket()}")
 
-    datablocks_scratch_folder = StoragePaths.scratch_archival_datablocks_folder(dataset_id)
+    datablocks_scratch_folder = StoragePaths.scratch_archival_datablocks_folder(
+        dataset_id)
     datablocks_scratch_folder.mkdir(parents=True, exist_ok=True)
 
     tar_infos = create_tarballs(
@@ -513,7 +526,8 @@ def sufficient_free_space_on_lts():
     path = Variables().LTS_STORAGE_ROOT
     stat = shutil.disk_usage(path)
     free_percentage = 100.0 * stat.free / stat.total
-    getLogger().info(f"LTS free space:{free_percentage:.2}%, expected: {Variables().LTS_FREE_SPACE_PERCENTAGE:.2}%")
+    getLogger().info(
+        f"LTS free space:{free_percentage:.2}%, expected: {Variables().LTS_FREE_SPACE_PERCENTAGE:.2}%")
     return free_percentage >= Variables().LTS_FREE_SPACE_PERCENTAGE
 
 
@@ -528,7 +542,8 @@ async def wait_for_free_space():
     """
     while not sufficient_free_space_on_lts():
         seconds_to_wait = 30
-        getLogger().info(f"Not enough free space. Waiting for {seconds_to_wait}s")
+        getLogger().info(
+            f"Not enough free space. Waiting for {seconds_to_wait}s")
         await asyncio.sleep(seconds_to_wait)
 
     return True
@@ -542,11 +557,13 @@ async def wait_for_file_accessible(file: Path, timeout_s=360):
     total_time_waited_s = 0
     while not os.access(path=file, mode=os.R_OK):
         seconds_to_wait = 30
-        getLogger().info(f"File {file} currently not available. Try again in {seconds_to_wait} seconds.")
+        getLogger().info(
+            f"File {file} currently not available. Try again in {seconds_to_wait} seconds.")
         await asyncio.sleep(seconds_to_wait)
         total_time_waited_s += seconds_to_wait
         if total_time_waited_s > timeout_s:
-            raise SystemError(f"File f{file} was not accessible within {timeout_s} seconds")
+            raise SystemError(
+                f"File f{file} was not accessible within {timeout_s} seconds")
 
     return True
 
@@ -556,7 +573,8 @@ def get_datablock_path_in_LTS(datablock: DataBlock) -> Path:
     datablock_in_lts = Variables().LTS_STORAGE_ROOT / datablock.archiveId
 
     if not datablock_in_lts.exists():
-        raise SystemError(f"Datablock {datablock.id} does not exist at {datablock.archiveId} in LTS")
+        raise SystemError(
+            f"Datablock {datablock.id} does not exist at {datablock.archiveId} in LTS")
 
     return datablock_in_lts
 
@@ -575,15 +593,19 @@ def copy_from_LTS_to_retrieval(dataset_id: str, datablock: DataBlock):
     datablock_in_lts = get_datablock_path_in_LTS(datablock)
 
     # copy to local folder
-    scratch_destination_folder = StoragePaths.scratch_archival_datablocks_folder(dataset_id)
+    scratch_destination_folder = StoragePaths.scratch_archival_datablocks_folder(
+        dataset_id)
     scratch_destination_folder.mkdir(exist_ok=True, parents=True)
 
-    asyncio.run(wait_for_file_accessible(datablock_in_lts.absolute(), Variables().ARCHIVER_LTS_FILE_TIMEOUT_S))
+    asyncio.run(wait_for_file_accessible(
+        datablock_in_lts.absolute(), Variables().ARCHIVER_LTS_FILE_TIMEOUT_S))
 
-    copy_file_to_folder(src_file=datablock_in_lts, dst_folder=scratch_destination_folder)
+    copy_file_to_folder(src_file=datablock_in_lts,
+                        dst_folder=scratch_destination_folder)
 
     # TODO: verify checksum
     # for each single file?
     getLogger().warning("Checksum verification missing!")
-    file_on_scratch = scratch_destination_folder / Path(datablock.archiveId).name
+    file_on_scratch = scratch_destination_folder / \
+        Path(datablock.archiveId).name
     upload_datablock(file=file_on_scratch, datablock=datablock)

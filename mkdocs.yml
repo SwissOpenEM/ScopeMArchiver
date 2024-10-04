@@ -15,8 +15,12 @@ plugins:
       - ./docs/scripts/gen_ref_pages.py  
   - literate-nav:
       nav_file: referece/Summary.md
+  - drawio
+  - mermaid2
+  - panzoom
 nav:
   - Introduction: index.md
+  - Architecture: architecture.md
   - Flows: 
       - Archiving: flows.md
   - Code Reference: reference/
@@ -25,9 +29,9 @@ site_dir: ./.site
 repo_url: https://github.com/SwissOpenEM/ScopeMArchiver
 repo_name: SwissOpenEM/ScopeMArchiver
 
-markdown_extensions:
-  - pymdownx.superfences:
-      custom_fences:
-        - name: mermaid
-          class: mermaid
-          format: !!python/name:pymdownx.superfences.fence_code_format
+# markdown_extensions:
+#   - pymdownx.superfences:
+#       custom_fences:
+#         - name: mermaid
+#           class: mermaid
+#           format: !!python/name:pymdownx.superfences.fence_code_format

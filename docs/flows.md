@@ -43,6 +43,8 @@ Archival is split into two subflows, `Create Datablocks` and  `Move Datablocks t
 | User Error   | Dataset is incomplete, not found, ...         |
 | System Error | unrecoverable (transient) error in the system |
 
+<!-- ![archival_flow](archival_flow.drawio) -->
+
 
 ```mermaid
 sequenceDiagram
@@ -288,3 +290,13 @@ graph LR
   Verify23 --> Verify24(Datablock 2)
   end
 ```
+
+- High level concepts
+  - Flow
+  - Task
+  - error handling
+  - storage (buckets, scratch, LTS) 
+- Configuration
+- Checksum Verification
+- Concurrency
+- interaction with LTS (timeouts, wait, wait for free storage)
