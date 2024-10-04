@@ -4,23 +4,24 @@ A ingester and archiver service that allows uploading data and registering it wi
 
 ## Archiver
 
-[Prefect.io](prefect.io) is used to orchestrate the asynchronous jobs (flows) to archive (and retrieve) datasets. The detail sequence of steps can be found [here](./backend/archiver/readMe.md)
+[Prefect.io](prefect.io) is used to orchestrate the asynchronous jobs (flows) to archive (and retrieve) datasets. The detailed sequence of steps can be found [here](./backend/archiver/readMe.md)
 
 ## Services
 
-There are services that are running and serving the archiver and other services that are just run to configure the archiver:
+There are services that are running and serving the archiver and other containers that are just run to configure services:
 
 ### Runtime Services
 
-| Name           | Description                                   | Endpoint                              |
-| -------------- | --------------------------------------------- | ------------------------------------- |
-| traefik        | Reverse Proxy                                 | http://localhost/traefik/dashboard/#/ |
-| backend        | Endpoint for client applications and Scicat   | http://localhost/api/v1/docs          |
-| prefect-server | Workflow orchestration https://www.prefect.io | http://localhost/prefect-ui/dashboard |
-| prefect-worker | Worker that spawns new flows                  |                                       |
-| postgres       | Database for Prefect                          |                                       |
-| minio          | S3 Storage                                    | http://localhost/minio/               |
-| scicatmock     | Mock implementation of SciCat API             |                                       |
+| Name           | Description                                     | Endpoint                                |
+| -------------- | ----------------------------------------------- | --------------------------------------- |
+| traefik        | Reverse Proxy                                   | <http://localhost/traefik/dashboard/#/> |
+| backend        | Endpoint for client applications and Scicat     | <http://localhost/api/v1/docs>          |
+| prefect-server | Workflow orchestration <https://www.prefect.io> | <http://localhost/prefect-ui/dashboard> |
+| prefect-worker | Worker that spawns new flows                    |                                         |
+| postgres       | Database for Prefect                            |                                         |
+| minio          | S3 Storage                                      | <http://localhost/minio/>               |
+
+> 'localhost' needs to be replaced with the value in the `HOST` variable, see [Step by step](#step-by-step)
 
 ### Configuration Containers
 
@@ -44,7 +45,7 @@ In addition to the services, several docker containers are started that configur
 | flows    | deploys the prefect flows                                                        |
 | full     | deploys all the above                                                            |
 
-### Step by step
+### Step by Step
 
 1. Startup services
     Using docker compose allows starting up all services.
