@@ -102,7 +102,7 @@ jobs:
           python -m pip install pipenv
           pipenv install
           pipenv install pytest-cov
-          pipenv run pytest archiver --doctest-modules --junitxml=junit/test-results.xml --cov=com --cov-report=xml --cov-report=html -m "not endtoend"
+          pipenv run pytest archiver --junitxml=junit/test-results.xml --cov=. --cov-report=xml --cov-report=html -m "not endtoend"
       - name: Upload pytest test results
         uses: actions/upload-artifact@v4
         with:

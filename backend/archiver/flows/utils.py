@@ -29,7 +29,6 @@ def report_archival_error(dataset_id: str, state: State, task_run: TaskRun, toke
         state (State): task run state
         task_run (TaskRun): task run
     """
-
     try:
         state.result()
     except DatasetError:
@@ -53,52 +52,42 @@ def report_retrieval_error(dataset_id: str, state: State, task_run: TaskRun, tok
 
     report_dataset_retrieval_error(dataset_id=dataset_id, token=token)
 
-    # try:
-    #     state.result()
-    # except DatasetError:
-    #     report_dataset_user_error(dataset_id)
-    # except SystemError:
-    #     report_dataset_system_error(dataset_id)
-    # except Exception:
-    #     # TODO: add some info about unknown errors
-    #     report_dataset_system_error(dataset_id)
-
 
 class StoragePaths:
     """Helper class to create paths in scratch and LTS folder
     """
 
-    @staticmethod
+    @ staticmethod
     def scratch_folder(dataset_id: str) -> Path:
         return StoragePaths.scratch_archival_root() / StoragePaths._relative_dataset_folder(dataset_id)
 
-    @staticmethod
+    @ staticmethod
     def scratch_archival_root() -> Path:
         return Variables().ARCHIVER_SCRATCH_FOLDER / "archival"
 
-    @staticmethod
+    @ staticmethod
     def _relative_dataset_folder(dataset_id: str) -> Path:
         return Path("openem-network") / "datasets" / dataset_id
 
     _relative_datablocks_folder: Path = Path("datablocks")
     _relative_raw_files_folder: Path = Path("raw_files")
 
-    @staticmethod
+    @ staticmethod
     def relative_datablocks_folder(dataset_id: str):
         return StoragePaths._relative_dataset_folder(dataset_id) / StoragePaths._relative_datablocks_folder
 
-    @staticmethod
+    @ staticmethod
     def relative_raw_files_folder(dataset_id: str):
         return StoragePaths._relative_dataset_folder(dataset_id) / StoragePaths._relative_raw_files_folder
 
-    @staticmethod
+    @ staticmethod
     def scratch_archival_datablocks_folder(dataset_id: str) -> Path:
         return StoragePaths.scratch_archival_root() / StoragePaths.relative_datablocks_folder(dataset_id)
 
-    @staticmethod
+    @ staticmethod
     def scratch_archival_raw_files_folder(dataset_id: str) -> Path:
         return StoragePaths.scratch_archival_root() / StoragePaths.relative_raw_files_folder(dataset_id)
 
-    @staticmethod
+    @ staticmethod
     def lts_datablocks_folder(dataset_id: str) -> Path:
         return Variables().LTS_STORAGE_ROOT / StoragePaths.relative_datablocks_folder(dataset_id)

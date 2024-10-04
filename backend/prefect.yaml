@@ -4,11 +4,11 @@
 
 # Generic metadata about this project
 name: ScopeMArchiver
-prefect-version: 2.19.2
+prefect-version: 3.0.4
 
 deployments:
 - name: dataset_creation
-  version: 1.0
+  version: 1.0.0
   tags: []
   description:
   entrypoint: archiver/flows/mock_flows.py:create_test_dataset_flow
@@ -33,7 +33,7 @@ deployments:
         directory: /home/dev
 
 - name: datasets_archival 
-  version: 1.0
+  version: 1.0.0
   tags: []
   description:
   entrypoint: archiver/flows/archive_datasets_flow.py:archive_datasets_flow
@@ -60,7 +60,7 @@ deployments:
         directory: /home/dev
 
 - name: datasets_retrieval
-  version: 1.0
+  version: 1.0.0
   tags: []
   description:
   entrypoint: archiver/flows/retrieve_datasets_flow.py:retrieve_datasets_flow
@@ -81,6 +81,10 @@ deployments:
         - "{{ $PREFECT_WORKER_LTS_VOLUME_NAME }}:/tmp/LTS"
       networks:
         - "{{ $PREFECT_NETWORK }}"
+    # There is a bug and this does not work as described
+    concurrency_limit:
+      limit: 2
+      collision_strategy: ENQUEUE
   schedules: []
   build: null
   pull:

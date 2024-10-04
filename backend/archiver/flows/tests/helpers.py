@@ -1,7 +1,7 @@
 from typing import List, Dict, Any
 from archiver.utils.model import DataFile, OrigDataBlock, DataBlock
 from archiver.utils.model import Job, Dataset, DatasetLifecycle, JobResultObject, JobResultEntry
-from archiver.scicat.scicat_interface import SciCat
+from archiver.scicat.scicat_interface import SciCatClient
 from pathlib import Path
 
 
@@ -46,20 +46,20 @@ def create_datablocks(num_blocks: int = 10, num_files_per_block: int = 10) -> Li
     return blocks
 
 
-def expected_job_status(job_type: str, status: SciCat.JOBSTATUS) -> Dict[str, Any]:
+def expected_job_status(job_type: str, status: SciCatClient.JOBSTATUS) -> Dict[str, Any]:
     match status:
-        case SciCat.JOBSTATUS.IN_PROGRESS:
+        case SciCatClient.JOBSTATUS.IN_PROGRESS:
             return Job(statusCode="1", statusMessage="inProgress").model_dump(exclude_none=True)
-        case SciCat.JOBSTATUS.FINISHED_SUCCESSFULLY:
+        case SciCatClient.JOBSTATUS.FINISHED_SUCCESSFULLY:
             return Job(statusCode="1", statusMessage="finishedSuccessful").model_dump(exclude_none=True)
-        case SciCat.JOBSTATUS.FINISHED_UNSUCCESSFULLY:
+        case SciCatClient.JOBSTATUS.FINISHED_UNSUCCESSFULLY:
             return Job(statusCode="1", statusMessage="finishedUnsuccessful").model_dump(exclude_none=True)
-        case SciCat.JOBSTATUS.FINISHED_WITHDATASET_ERRORS:
+        case SciCatClient.JOBSTATUS.FINISHED_WITHDATASET_ERRORS:
             return Job(statusCode="1", statusMessage="finishedWithDatasetErrors").model_dump(exclude_none=True)
 
 
 def expected_archival_dataset_lifecycle(
-        status: SciCat.ARCHIVESTATUSMESSAGE, archivable: bool | None = None, retrievable: bool | None = None) -> Dict[
+        status: SciCatClient.ARCHIVESTATUSMESSAGE, archivable: bool | None = None, retrievable: bool | None = None) -> Dict[
         str, Any]:
     return Dataset(datasetlifecycle=DatasetLifecycle(
         archiveStatusMessage=str(status),
@@ -69,7 +69,7 @@ def expected_archival_dataset_lifecycle(
 
 
 def expected_retrieval_dataset_lifecycle(
-        status: SciCat.RETRIEVESTATUSMESSAGE, archivable: bool | None = None, retrievable: bool | None = None) -> Dict[
+        status: SciCatClient.RETRIEVESTATUSMESSAGE, archivable: bool | None = None, retrievable: bool | None = None) -> Dict[
         str, Any]:
     return Dataset(datasetlifecycle=DatasetLifecycle(
         archivable=archivable,

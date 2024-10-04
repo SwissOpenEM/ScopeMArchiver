@@ -6,10 +6,10 @@ from uuid import UUID, uuid4
 from prefect.testing.utilities import prefect_test_harness
 
 from archiver.flows.retrieve_datasets_flow import retrieve_datasets_flow
-from archiver.flows.tests.scicat_unittest_mock import ScicatMock
+from archiver.flows.tests.scicat_unittest_mock import ScicatMock, mock_scicat_client
 from archiver.flows.tests.helpers import create_datablocks, create_orig_datablocks
 from archiver.flows.tests.helpers import expected_retrieval_dataset_lifecycle, expected_job_status, expected_jobresultsobject
-from archiver.scicat.scicat_interface import SciCat
+from archiver.scicat.scicat_interface import SciCatClient
 from archiver.flows.utils import StoragePaths
 from archiver.utils.model import DataBlock
 from archiver.config.variables import Variables
@@ -35,12 +35,10 @@ async def mock_wait_for_file_accessible(file, timeout_s=360) -> bool:
     return True
 
 
-@ pytest.mark.asyncio
 @ pytest.mark.parametrize("job_id,dataset_id", [
     (uuid4(), "somePrefix/456"),
 ])
-@patch("archiver.scicat.scicat_tasks.scicat._ENDPOINT", ScicatMock.ENDPOINT)
-@patch("archiver.scicat.scicat_tasks.scicat.get_token", mock_scicat_get_token)
+@patch("archiver.scicat.scicat_tasks.scicat_client", mock_scicat_client)
 @patch("archiver.utils.datablocks.get_datablock_path_in_LTS", mock_get_datablock_path_in_LTS)
 @patch("archiver.utils.datablocks.wait_for_file_accessible", mock_wait_for_file_accessible)
 @patch("archiver.utils.datablocks.copy_file_to_folder")
@@ -51,7 +49,7 @@ async def mock_wait_for_file_accessible(file, timeout_s=360) -> bool:
 @patch("archiver.utils.datablocks.cleanup_s3_staging")
 @patch("archiver.utils.datablocks.cleanup_s3_landingzone")
 @patch("archiver.utils.datablocks.cleanup_s3_retrieval")
-async def test_scicat_api_retrieval(
+def test_scicat_api_retrieval(
         mock_cleanup_s3_retrieval: MagicMock,
         mock_cleanup_s3_landingzone: MagicMock,
         mock_cleanup_s3_staging: MagicMock,
@@ -71,16 +69,16 @@ async def test_scicat_api_retrieval(
 
     with ScicatMock(job_id=job_id, dataset_id=dataset_id, origDataBlocks=origDataBlocks, datablocks=datablocks) as m, prefect_test_harness():
         try:
-            await retrieve_datasets_flow(job_id=job_id, dataset_ids=[dataset_id])
+            retrieve_datasets_flow(job_id=job_id, dataset_ids=[dataset_id])
         except Exception as e:
             pass
 
         assert m.jobs_matcher.call_count == 2
         assert m.jobs_matcher.request_history[0].json() == expected_job_status(
-            SciCat.JOBTYPE.RETRIEVE, SciCat.JOBSTATUS.IN_PROGRESS)
+            SciCatClient.JOBTYPE.RETRIEVE, SciCatClient.JOBSTATUS.IN_PROGRESS)
 
         expected_job = expected_job_status(
-            SciCat.JOBTYPE.RETRIEVE, SciCat.JOBSTATUS.FINISHED_SUCCESSFULLY)
+            SciCatClient.JOBTYPE.RETRIEVE, SciCatClient.JOBSTATUS.FINISHED_SUCCESSFULLY)
 
         expected_job["jobResultObject"] = expected_jobresultsobject(
             dataset_id=dataset_id,
@@ -91,13 +89,13 @@ async def test_scicat_api_retrieval(
         assert m.datasets_matcher.call_count == 2
 
         assert m.datasets_matcher.request_history[0].json() == expected_retrieval_dataset_lifecycle(
-            status=SciCat.RETRIEVESTATUSMESSAGE.STARTED,
+            status=SciCatClient.RETRIEVESTATUSMESSAGE.STARTED,
             archivable=False,
             retrievable=True
         )
 
         assert m.datasets_matcher.request_history[1].json() == expected_retrieval_dataset_lifecycle(
-            status=SciCat.RETRIEVESTATUSMESSAGE.DATASET_RETRIEVED,
+            status=SciCatClient.RETRIEVESTATUSMESSAGE.DATASET_RETRIEVED,
             archivable=False,
             retrievable=True
         )
@@ -116,12 +114,10 @@ async def test_scicat_api_retrieval(
         mock_copy_file_to_folder.assert_has_calls(calls, any_order=True)
 
 
-@ pytest.mark.asyncio
 @ pytest.mark.parametrize("job_id,dataset_id", [
     (uuid4(), "somePrefix/456"),
 ])
-@ patch("archiver.scicat.scicat_tasks.scicat._ENDPOINT", ScicatMock.ENDPOINT)
-@ patch("archiver.scicat.scicat_tasks.scicat.get_token", mock_scicat_get_token)
+@patch("archiver.scicat.scicat_tasks.scicat_client", mock_scicat_client)
 @ patch("archiver.utils.datablocks.get_datablock_path_in_LTS", mock_raise_system_error)
 @ patch("archiver.utils.datablocks.wait_for_file_accessible", mock_wait_for_file_accessible)
 @ patch("archiver.utils.datablocks.copy_file_to_folder")
@@ -132,7 +128,7 @@ async def test_scicat_api_retrieval(
 @ patch("archiver.utils.datablocks.cleanup_s3_staging")
 @ patch("archiver.utils.datablocks.cleanup_s3_landingzone")
 @ patch("archiver.utils.datablocks.cleanup_s3_retrieval")
-async def test_datablock_not_found(
+def test_datablock_not_found(
         mock_cleanup_s3_retrieval: MagicMock,
         mock_cleanup_s3_landingzone: MagicMock,
         mock_cleanup_s3_staging: MagicMock,
@@ -150,26 +146,26 @@ async def test_datablock_not_found(
 
     with ScicatMock(job_id=job_id, dataset_id=dataset_id, origDataBlocks=origDataBlocks, datablocks=datablocks) as m, prefect_test_harness():
         try:
-            await retrieve_datasets_flow(job_id=job_id, dataset_ids=[dataset_id])
+            retrieve_datasets_flow(job_id=job_id, dataset_ids=[dataset_id])
         except Exception as e:
             pass
 
         assert m.jobs_matcher.call_count == 2
         assert m.jobs_matcher.request_history[0].json() == expected_job_status(
-            SciCat.JOBTYPE.RETRIEVE, SciCat.JOBSTATUS.IN_PROGRESS)
+            SciCatClient.JOBTYPE.RETRIEVE, SciCatClient.JOBSTATUS.IN_PROGRESS)
 
         assert m.jobs_matcher.request_history[1].json() == expected_job_status(
-            SciCat.JOBTYPE.RETRIEVE, SciCat.JOBSTATUS.FINISHED_UNSUCCESSFULLY)
+            SciCatClient.JOBTYPE.RETRIEVE, SciCatClient.JOBSTATUS.FINISHED_UNSUCCESSFULLY)
 
         assert m.datasets_matcher.call_count == 2
         assert m.datasets_matcher.request_history[0].json() == expected_retrieval_dataset_lifecycle(
-            status=SciCat.RETRIEVESTATUSMESSAGE.STARTED,
+            status=SciCatClient.RETRIEVESTATUSMESSAGE.STARTED,
             archivable=False,
             retrievable=True
         )
 
         assert m.datasets_matcher.request_history[1].json() == expected_retrieval_dataset_lifecycle(
-            status=SciCat.RETRIEVESTATUSMESSAGE.DATASET_RETRIEVAL_FAILED,
+            status=SciCatClient.RETRIEVESTATUSMESSAGE.DATASET_RETRIEVAL_FAILED,
             archivable=False,
             retrievable=True
         )
