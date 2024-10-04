@@ -104,25 +104,6 @@ services:
       - minio_user
       - minio_pass
 
-  frontend:
-    image: ${WEBUPLOADER_IMAGE_NAME}:${OPENEM_IMAGE_TAG}
-    container_name: frontend
-    profiles:
-      - disabled
-    pull_policy: if_not_present
-    build:
-      context: ./webuploader
-      dockerfile: Dockerfile
-    environment:
-      - COMPANION_URL=${HOST}/companion
-    expose:
-      - 3000
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.webuploader.rule=Host(`${HOST}`)"
-      - "traefik.http.routers.webuploader.entrypoints=web"
-      - "traefik.http.services.webuploader.loadbalancer.server.port=3000"
-
   archiver-backend:
     image: ${OPENEM_BACKEND_IMAGE_NAME}:${OPENEM_IMAGE_TAG}
     container_name: backend
