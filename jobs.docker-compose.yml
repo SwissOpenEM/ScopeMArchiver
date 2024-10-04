@@ -73,7 +73,7 @@ services:
     environment:
       - PREFECT_LOGGING_LEVEL=DEBUG
       - PREFECT_API_URL=http://prefect-server:4200/api
-      - SCICAT_ENDPOINT=http://${HOST}:89
+      - SCICAT_ENDPOINT=${SCICAT_ENDPOINT}
       - MINIO_EXTERNAL_ENDPOINT=${HOST}:9000
       # Secrets are stored as blocks, removing _FILE suffix
       - MINIO_USER_FILE=/run/secrets/minio_user
