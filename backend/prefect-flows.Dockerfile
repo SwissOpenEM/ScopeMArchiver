@@ -1,4 +1,5 @@
-FROM prefecthq/prefect:3.0.4-python3.11
+ARG PREFECT_VERSION
+FROM prefecthq/prefect:${PREFECT_VERSION}
 
 # Keeps Python from generating .pyc files in the container
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -8,10 +9,6 @@ ENV PYTHONUNBUFFERED=1
 
 RUN apt-get update -y && apt-get upgrade -y
 
-# Configure for NFS mounts; rpcbind.service required for nfsv3 remote locking
-RUN apt-get install -y nfs-common systemctl rsync
-RUN systemctl --system enable rpcbind.service
-
 RUN pip3 install pipenv --upgrade pip
 
 ARG USER=dev
@@ -19,19 +16,17 @@ ARG GROUP=dev
 
 RUN groupadd -r ${GROUP} && useradd --no-log-init -d /home/${USER} -r -g ${USER} ${GROUP}
 
-USER ${USER}
-
-WORKDIR /home/${USER}
-
-# LTS mount folder
-RUN mkdir /tmp/LTS
+WORKDIR /home/${USER}/backend
 
 COPY . ./
+
+RUN pipenv install prefect-docker==0.6.1
 
 RUN echo 'export PATH="${HOME}/.local/bin:$PATH"' >> ~/.bashrc
 RUN PATH="${HOME}/.local/bin:$PATH"
 
 RUN PIPENV_VENV_IN_PROJECT=1 pipenv install --system --deploy
 
-ENV PYTHONPATH=/home/dev
+ENV PYTHONPATH=/home/${USER}
+USER ${USER}
 CMD ["python", "archiver/mock_flows.py"]

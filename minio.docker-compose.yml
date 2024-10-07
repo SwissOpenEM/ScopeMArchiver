@@ -1,0 +1,85 @@
+services:
+  minio:
+    image: minio/minio
+    container_name: minio
+    profiles:
+      - services
+      - full
+    # S3 specs for presigned urls require minio to be directly exposed, with path?
+    ports:
+      - 9000:9000
+      - 9001:9001
+    volumes:
+      - minio-volume:/data
+    networks:
+      - scopemarchiver_network
+    environment:
+      MINIO_ROOT_USER_FILE: /run/secrets/minio_user
+      MINIO_ROOT_PASSWORD_FILE: /run/secrets/minio_pass
+      MINIO_PROMETHEUS_AUTH_TYPE: "public"
+      MINIO_PROMETHEUS_URL: "http://prometheus:9090"
+      MINIO_BROWSER_REDIRECT_URL: "http://${HOST}/minio/"
+    secrets:
+      - minio_user
+      - minio_pass
+    command: server --console-address ":9001" /data
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.minio.rule=Host(`${HOST}`) && PathPrefix(`/minio`)"
+      - "traefik.http.middlewares.minio-stripprefix.stripprefix.prefixes=/minio"
+      - "traefik.http.routers.minio.entrypoints=web"
+      - "traefik.http.routers.minio.service=minio-web"
+      - "traefik.http.services.minio-web.loadbalancer.server.port=9001"
+      - "traefik.http.middlewares.minio-cors.headers.accesscontrolallowmethods=*"
+      - "traefik.http.middlewares.minio-cors.headers.accesscontrolallowheaders=*"
+      - "traefik.http.middlewares.minio-cors.headers.accessControlExposeHeaders=ETag,Location,Authorization,Origin,X-Requested-With,X-Request-ID,X-HTTP-Method-Override,Content-Type,Upload-Length,Upload-Offset,Tus-Resumable,Upload-Metadata,Upload-Defer-Length,Upload-Concat,Upload-Complete,Upload-Draft-Interop-Version,x-token"
+      - "traefik.http.middlewares.minio-cors.headers.accessControlAllowOriginList=*"
+      - "traefik.http.middlewares.minio-cors.headers.accesscontrolmaxage=100"
+      - "traefik.http.middlewares.minio-cors.headers.addvaryheader=true"
+      - "traefik.http.middlewares.minio-headers.headers.customrequestheaders.X-Forwarded-Proto=http"
+      - "traefik.http.middlewares.minio-headers.headers.customrequestheaders.X-Forwarded-Host=${HOST}/minio"
+      - "traefik.http.routers.minio.middlewares=minio-stripprefix,minio-headers,minio-cors"
+
+      - "traefik.http.routers.minio-api.rule=Host(`${HOST}/minio-api`) && PathPrefix(`/minio-api`)"
+      - "traefik.http.middlewares.minio-api-stripprefix.stripprefix.prefixes=/minio-api"
+      - "traefik.http.routers.minio-api.entrypoints=web"
+      - "traefik.http.routers.minio-api.service=minio-api"
+      - "traefik.http.routers.minio-api.middlewares=minio-api-stripprefix,minio-headers,minio-cors"
+      - "traefik.http.services.minio-api.loadbalancer.server.port=9000"
+  minio-create-bucket:
+    image: minio/mc
+    depends_on:
+      - minio
+    profiles:
+      - config
+      - full
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        export MINIO_USER=$$(cat /var/run/secrets/minio_user)
+        export MINIO_PASS=$$(cat /var/run/secrets/minio_pass)
+        /usr/bin/mc alias set local-minio http://minio:9000 $$MINIO_USER $$MINIO_PASS
+        /usr/bin/mc mb -p local-minio/${MINIO_RETRIEVAL_BUCKET}
+        /usr/bin/mc mb -p local-minio/${MINIO_LANDINGZONE_BUCKET}
+        /usr/bin/mc mb -p local-minio/${MINIO_STAGING_BUCKET}
+    networks:
+      - scopemarchiver_network
+    secrets:
+      - minio_user
+      - minio_pass
+
+volumes:
+  minio-volume:
+    driver: local
+
+networks:
+  scopemarchiver_network:
+    name: scopemarchiver_network
+    driver: bridge
+
+secrets:
+  minio_user:
+    file: ./.secrets/miniouser.txt
+  minio_pass:
+    file: ./.secrets/miniopass.txt
