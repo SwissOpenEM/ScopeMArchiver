@@ -1,9 +1,9 @@
 services:
   prefect-archival-worker:
     image: prefecthq/prefect:${PREFECT_VERSION}
-    profiles:
-      - config
-      - full
+    # profiles:
+    #   - config
+    #   - full
     restart: always
     deploy:
       mode: replicated
@@ -24,9 +24,9 @@ services:
       - PREFECT_API_URL=http://prefect-server:4200/api
   prefect-retrieval-worker:
     image: prefecthq/prefect:${PREFECT_VERSION}
-    profiles:
-      - config
-      - full
+    # profiles:
+    #   - config
+    #   - full
     restart: always
     deploy:
       mode: replicated
