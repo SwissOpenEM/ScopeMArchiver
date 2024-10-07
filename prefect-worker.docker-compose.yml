@@ -1,0 +1,47 @@
+services:
+  prefect-archival-worker:
+    image: prefecthq/prefect:${PREFECT_VERSION}
+    profiles:
+      - config
+      - full
+    restart: always
+    deploy:
+      mode: replicated
+      replicas: 1
+    command: [ "prefect", "worker", "start", "--pool", "${PREFECT_ARCHIVAL_WORKPOOL_NAME}", "--type", "docker", "--install-policy", "if-not-present", "--base-job-template", "/var/local/prefect-jobtemplate.json" ]
+    # ports:
+    #   - "8081:8081" # if you want healthchecks, otherwise not necessary
+    networks:
+      - scopemarchiver_network
+    volumes:
+      - ./${PREFECT_JOB_TEMPLATE}:/var/local/prefect-jobtemplate.json
+      - /usr/bin/docker:/usr/bin/docker
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      # Fixes bug in docker/requests package
+      - EXTRA_PIP_PACKAGES=requests==2.31.0
+      - PREFECT_LOGGING_LEVEL=DEBUG
+      - PREFECT_API_URL=http://prefect-server:4200/api
+  prefect-retrieval-worker:
+    image: prefecthq/prefect:${PREFECT_VERSION}
+    profiles:
+      - config
+      - full
+    restart: always
+    deploy:
+      mode: replicated
+      replicas: 1
+    command: [ "prefect", "worker", "start", "--pool", "${PREFECT_RETRIEVAL_WORKPOOL_NAME}", "--type", "docker", "--install-policy", "if-not-present", "--base-job-template", "/var/local/prefect-jobtemplate.json" ]
+    # ports:
+    #   - "8081:8081" # if you want healthchecks, otherwise not necessary
+    networks:
+      - scopemarchiver_network
+    volumes:
+      - ./${PREFECT_JOB_TEMPLATE}:/var/local/prefect-jobtemplate.json
+      - /usr/bin/docker:/usr/bin/docker
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      # Fixes bug in docker/requests package
+      - EXTRA_PIP_PACKAGES=requests==2.31.0
+      - PREFECT_LOGGING_LEVEL=DEBUG
+      - PREFECT_API_URL=http://prefect-server:4200/api

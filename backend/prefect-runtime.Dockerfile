@@ -1,4 +1,5 @@
-FROM prefecthq/prefect:3.0.4-python3.11
+ARG PREFECT_VERSION
+FROM prefecthq/prefect:${PREFECT_VERSION}
 
 # Keeps Python from generating .pyc files in the container
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -14,25 +15,14 @@ RUN systemctl --system enable rpcbind.service
 
 RUN pip3 install pipenv --upgrade pip
 
-ARG USER=dev
-ARG GROUP=dev
-
-RUN groupadd -r ${GROUP} && useradd --no-log-init -d /home/${USER} -r -g ${USER} ${GROUP}
-
-USER ${USER}
-
-WORKDIR /home/${USER}
-
 # LTS mount folder
-RUN mkdir /tmp/LTS
+ARG LTS_ROOT_FOLDER
+RUN mkdir ${LTS_ROOT_FOLDER}
 
-COPY ./Pipfile ./
-COPY ./Pipfile.lock ./
+RUN mkdir /opt/prefect/backend
+WORKDIR /opt/prefect/backend
 
-
-RUN echo 'export PATH="${HOME}/.local/bin:$PATH"' >> ~/.bashrc
-RUN PATH="${HOME}/.local/bin:$PATH"
+COPY ./backend ./
 
 RUN PIPENV_VENV_IN_PROJECT=1 pipenv install --system --deploy
-
 CMD ["/bin/bash"]

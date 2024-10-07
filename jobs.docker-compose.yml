@@ -1,64 +1,4 @@
 services:
-  prefect-server:
-    image: prefecthq/prefect:3.0.4-python3.11
-    container_name: prefect-server
-    restart: always
-    profiles:
-      - services
-      - deploy
-      - full
-    volumes:
-      - prefect-volume:/root/.prefect
-    entrypoint:
-      - /bin/sh
-      - -c
-      - |
-        export PREFECT_API_DATABASE_PASSWORD=$$(cat /var/run/secrets/postgres_pass)
-        export PREFECT_API_DATABASE_USER=$$(cat /var/run/secrets/postgres_user)
-        export PREFECT_API_DATABASE_CONNECTION_URL=postgresql+asyncpg://$$PREFECT_API_DATABASE_USER:$$PREFECT_API_DATABASE_PASSWORD@postgres:5432/prefect
-        /opt/prefect/entrypoint.sh prefect server start
-
-    secrets:
-      - postgres_pass
-      - postgres_user
-    healthcheck:
-      test: [ "CMD", "prefect", "version" ]
-      interval: 5s
-      timeout: 15s
-      retries: 5
-      start_period: 5s
-    environment:
-      - PREFECT_LOGGING_LEVEL=DEBUG
-      - PREFECT_HOME=/opt/prefect
-      - PREFECT_API_DATABASE_ECHO=False
-      - PREFECT_API_DATABASE_MIGRATE_ON_START=True
-      - PREFECT_UI_SERVE_BASE=/prefect-ui
-      - PREFECT_TASK_DEFAULT_RETRIES=2
-      - PREFECT_TASK_DEFAULT_RETRY_DELAY_SECONDS=[1,10,100]
-      # working; PREFECT has some issues with api prefixes...
-      - PREFECT_UI_URL=http://prefect-server:4200/api
-      - PREFECT_API_URL=http://localhost/api
-      - PREFECT_SERVER_API_HOST=0.0.0.0
-    ports:
-      - 4200:4200
-    depends_on:
-      - postgres
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.services.prefect-server.loadbalancer.server.port=4200"
-      # UI
-      - "traefik.http.routers.prefect-server.rule=Host(`${HOST}`) && PathPrefix(`/prefect-ui`)"
-      - "traefik.http.routers.prefect-server.entrypoints=web"
-      # TODO: this is workaround; prefect cannot serve the api behind a prefix so this is on root
-      - "traefik.http.routers.prefect-api-server.rule=Host(`${HOST}`) && PathPrefix(`/api`)"
-      - "traefik.http.routers.prefect-api-server.entrypoints=web"
-
-      - "traefik.http.routers.prefect-api-strip-server.rule=Host(`${HOST}`) && PathPrefix(`/prefect`)"
-      - "traefik.http.middlewares.prefect-api-strip-server.stripprefix.prefixes=/prefect`"
-      - "traefik.http.routers.prefect-api-strip-server.entrypoints=web"
-      - "traefik.http.routers.prefect-server.middlewares=prefect-api-strip-server"
-    networks:
-      - scopemarchiver_network
   prefect-config:
     image: ${PREFECT_CONFIG_IMAGE_NAME}:${OPENEM_IMAGE_TAG}
     container_name: prefect-config
@@ -68,10 +8,12 @@ services:
     build:
       context: ./backend/
       dockerfile: ./prefect-config.Dockerfile
+      args:
+        PREFECT_VERSION: ${PREFECT_VERSION}
     networks:
       - scopemarchiver_network
     environment:
-      - PREFECT_LOGGING_LEVEL=DEBUG
+      - PREFECT_LOGGING_LEVEL=${PREFECT_LOGGING_LEVEL}
       - PREFECT_API_URL=http://prefect-server:4200/api
       - SCICAT_ENDPOINT=${SCICAT_ENDPOINT}
       - MINIO_EXTERNAL_ENDPOINT=${HOST}:9000
@@ -100,149 +42,39 @@ services:
       - github_pass
       - scicat_user
       - scicat_pass
-  prefect-deploy:
-    image: ${PREFECT_FLOWS_IMAGE_NAME}:${OPENEM_IMAGE_TAG}
-    container_name: prefect-deploy
+  prefect-flows-deployment:
+    image: prefecthq/prefect:${PREFECT_VERSION}
+    container_name: prefect-flows-deployment
     profiles:
       - full
       - config
       - deploy
-    build:
-      context: ./backend/
-      dockerfile: ./prefect-flows.Dockerfile
     networks:
       - scopemarchiver_network
     environment:
-      - PREFECT_LOGGING_LEVEL=DEBUG
+      ### Prefect specific values
+      - PREFECT_LOGGING_LEVEL=${PREFECT_LOGGING_LEVEL}
       - PREFECT_API_URL=http://prefect-server:4200/api
-      ### values in prefect.yaml
+      - EXTRA_PIP_PACKAGES=prefect-docker==0.6.1
+      ### Deployment values for interpolation in prefect.yaml
+      - PREFECT_VERSION=${PREFECT_VERSION}
       - PREFECT_WORKER_LTS_VOLUME_NAME=scopemarchiver_${PREFECT_WORKER_LTS_VOLUME_NAME}
+      - LTS_ROOT_FOLDER=${LTS_ROOT_FOLDER}
       - PREFECT_NETWORK=scopemarchiver_network
-      - FLOWS_DOCKER_IMAGE=${PREFECT_FLOWS_IMAGE_NAME}:${OPENEM_IMAGE_TAG}
-      - MINIO_EXTERNAL_ENDPOINT=${HOST}:9000
-    command: prefect --no-prompt deploy --all --prefect-file prefect.yaml
-    working_dir: /home/dev
+    command: prefect --no-prompt deploy --all --prefect-file /home/dev/backend/prefect.yaml
+    working_dir: /home/dev/
     volumes:
       - type: bind
-        source: ./backend/prefect.yaml
-        target: /home/dev/prefect.yaml
+        source: ./
+        target: /home/dev/
+        read_only: true
+      - /usr/bin/docker:/usr/bin/docker
+      - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
       prefect-server:
         condition: service_healthy
-  prefect-archival-worker:
-    image: prefecthq/prefect:3.0.4-python3.11
-    profiles:
-      - config
-      - full
-    restart: always
-    deploy:
-      mode: replicated
-      replicas: 1
-    command: [ "prefect", "worker", "start", "--pool", "${PREFECT_ARCHIVAL_WORKPOOL_NAME}", "--type", "docker", "--install-policy", "if-not-present", "--base-job-template", "/var/local/prefect-jobtemplate.json" ]
-    # ports:
-    #   - "8081:8081" # if you want healthchecks, otherwise not necessary
-    networks:
-      - scopemarchiver_network
-    volumes:
-      - ./${PREFECT_JOB_TEMPLATE}:/var/local/prefect-jobtemplate.json
-      - /usr/bin/docker:/usr/bin/docker
-      - /var/run/docker.sock:/var/run/docker.sock
-    environment:
-      # Fixes bug in docker/requests package
-      - EXTRA_PIP_PACKAGES=requests==2.31.0
-      - PREFECT_LOGGING_LEVEL=DEBUG
-      - PREFECT_API_URL=http://prefect-server:4200/api
-  prefect-retrieval-worker:
-    image: prefecthq/prefect:3.0.4-python3.11
-    profiles:
-      - config
-      - full
-    restart: always
-    deploy:
-      mode: replicated
-      replicas: 1
-    command: [ "prefect", "worker", "start", "--pool", "${PREFECT_RETRIEVAL_WORKPOOL_NAME}", "--type", "docker", "--install-policy", "if-not-present", "--base-job-template", "/var/local/prefect-jobtemplate.json" ]
-    # ports:
-    #   - "8081:8081" # if you want healthchecks, otherwise not necessary
-    networks:
-      - scopemarchiver_network
-    volumes:
-      - ./${PREFECT_JOB_TEMPLATE}:/var/local/prefect-jobtemplate.json
-      - /usr/bin/docker:/usr/bin/docker
-      - /var/run/docker.sock:/var/run/docker.sock
-    environment:
-      # Fixes bug in docker/requests package
-      - EXTRA_PIP_PACKAGES=requests==2.31.0
-      - PREFECT_LOGGING_LEVEL=DEBUG
-      - PREFECT_API_URL=http://prefect-server:4200/api
-  scopemarchiver-runtime:
-    image: ${PREFECT_RUNTIME_IMAGE_NAME}:${OPENEM_IMAGE_TAG}
-    container_name: scopemarchiver-runtime
-    build:
-      context: ./backend/
-      dockerfile: ./prefect-runtime.Dockerfile
-    command: ls -l /tmp/LTS
-    volumes:
-      - ${PREFECT_WORKER_LTS_VOLUME_NAME}:/tmp/LTS
-    networks:
-      - scopemarchiver_network
-  scopemarchiver-flows:
-    image: ${PREFECT_FLOWS_IMAGE_NAME}:${OPENEM_IMAGE_TAG}
-    container_name: scopemarchiver-flows
-    build:
-      context: ./backend/
-      dockerfile: ./prefect-flows.Dockerfile
-    command: ls -l /tmp/LTS
-    volumes:
-      - ${PREFECT_WORKER_LTS_VOLUME_NAME}:/tmp/LTS
-    networks:
-      - scopemarchiver_network
-  postgres:
-    image: postgres:15.2-alpine
-    restart: always
-    profiles:
-      - services
-      - delpoy
-      - full
-    environment:
-      - POSTGRES_USER_FILE=/run/secrets/postgres_user
-      - POSTGRES_PASSWORD_FILE=/run/secrets/postgres_pass
-      - POSTGRES_DB=prefect
-    secrets:
-      - postgres_user
-      - postgres_pass
-    expose:
-      - 5432
-    volumes:
-      - postgres-volume:/var/lib/postgresql/data
-    networks:
-      - scopemarchiver_network
-  scicatmock:
-    image: ${SCICAT_MOCK_IMAGE_NAME}:${OPENEM_IMAGE_TAG}
-    container_name: scicatmock
-    profiles:
-      - services
-      - full
-    build:
-      context: ./backend
-      dockerfile: ./scicatmock.Dockerfile
-    ports:
-      - 8005:8000
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.scicatmock.rule=Host(`${HOST}`) && PathPrefix(`/scicatmock`)"
-      - "traefik.http.middlewares.scicatmock-stripprefix.stripprefix.prefixes=/scicatmock`"
-      - "traefik.http.routers.scicatmock.entrypoints=web"
-      - "traefik.http.routers.scicatmock.middlewares=scicatmock-stripprefix"
-      - "traefik.http.services.scicatmock.loadbalancer.server.port=8000"
-    networks:
-      - scopemarchiver_network
 volumes:
   lts-mock-volume:
-    driver: local
-  postgres-volume:
-    driver: local
-  prefect-volume:
     driver: local
   nfs-lts-share:
     driver_opts:
@@ -251,10 +83,6 @@ volumes:
       device: ":/scopem_lts_nfs_test_lts22"
 
 secrets:
-  postgres_user:
-    file: ./.secrets/postgresuser.txt
-  postgres_pass:
-    file: ./.secrets/postgrespass.txt
   github_user:
     file: ./.secrets/githubuser.txt
   github_pass:
@@ -263,3 +91,7 @@ secrets:
     file: ./.secrets/scicatuser.txt
   scicat_pass:
     file: ./.secrets/scicatpass.txt
+  minio_user:
+    file: ./.secrets/miniouser.txt
+  minio_pass:
+    file: ./.secrets/miniopass.txt
