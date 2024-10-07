@@ -1,19 +1,18 @@
 
 [archiver]
 ARCHIVER_SCRATCH_FOLDER = "/tmp/scratch" #string
-ARCHIVER_TARGET_SIZE_MB = 200
+ARCHIVER_TARGET_SIZE_MB = 200            # target size of datablocks that are stored in the LTS
 
 [lts]
-LTS_STORAGE_ROOT = "/tmp/LTS"  #string
-LTS_FREE_SPACE_PERCENTAGE = 20
+LTS_STORAGE_ROOT = "/tmp/LTS"  # Root path where LTS share is mounted
+LTS_FREE_SPACE_PERCENTAGE = 20 # Minimum free space percentage of the LTS before archiving task starts
 
 [minio]
-MINIO_REGION = "eu-west1"                # secret
-MINIO_RETRIEVAL_BUCKET = "retrieval"     # string
-MINIO_LANDINGZONE_BUCKET = "landingzone" # string
-MINIO_STAGING_BUCKET = "staging"         #string
-MINIO_ENDPOINT = "minio:9000"            #string
+MINIO_REGION = "eu-west1"                # S3 region
+MINIO_RETRIEVAL_BUCKET = "retrieval"     # S3 bucket where datasets are retrieved to
+MINIO_LANDINGZONE_BUCKET = "landingzone" # S3 bucket where datasets are uploaded to  
+MINIO_STAGING_BUCKET = "staging"         # S3 internally used bucket where datasets are staged before copying to LTS
+MINIO_ENDPOINT = "minio:9000"            # S3 endpoint of storage server
 
 [scicat]
-
-SCICAT_API_PREFIX = "/api/v3/" # string
+SCICAT_API_PREFIX = "/api/v3/" # Route prefix of Scicat instance

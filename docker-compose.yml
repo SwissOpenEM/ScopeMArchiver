@@ -1,8 +1,13 @@
 include:
+  # Traefik, Prefect, Postgress
   - infra.docker-compose.yml
-  - minio.docker-compose.yml
+  # Prefect config and flows
   - jobs.docker-compose.yml
+  # Prefect worker, workpool
   - prefect-worker.docker-compose.yml
+  # S3 storage
+  - minio.docker-compose.yml
+  # Monitoring stack
   # - monitoring.docker-compose.yml
 
 

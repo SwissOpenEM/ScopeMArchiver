@@ -3,6 +3,9 @@ theme:
   name: "material"
   palette:
     primary: teal
+  features:
+    - toc.follow
+    - toc.integrate
 plugins:
   - mkdocstrings:
       default_handler: python
@@ -17,21 +20,24 @@ plugins:
       nav_file: referece/Summary.md
   - drawio
   - mermaid2
-  - panzoom
+  - panzoom:
+      mermaid: true
+      full_screen: true
 nav:
   - Introduction: index.md
   - Architecture: architecture.md
+  - Deployment: deployment.md
   - Flows: 
-      - Archiving: flows.md
+      - Ingestion: upload_flow.md
+      - Archiving: archival_flow.md
+      - Retrieval: retrieval_flow.md
   - Code Reference: reference/
 docs_dir: ./docs
 site_dir: ./.site
+site_url: http://0.0.0.0:8000
 repo_url: https://github.com/SwissOpenEM/ScopeMArchiver
 repo_name: SwissOpenEM/ScopeMArchiver
 
-# markdown_extensions:
-#   - pymdownx.superfences:
-#       custom_fences:
-#         - name: mermaid
-#           class: mermaid
-#           format: !!python/name:pymdownx.superfences.fence_code_format
+markdown_extensions:
+  - markdown_include.include:
+      base_path: docs
