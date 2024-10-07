@@ -1,18 +1,23 @@
 # ScopeMArchiver
 
-An archiver service that allows uploading dataset and registering it with [SciCat](https://scicatproject.github.io).
+An archiver service that allows uploading dataset and registering it with [SciCat](https://scicatproject.github.io). It is built on
+[Prefect.io](prefect.io) to orchestrate the asynchronous jobs (called flows) to archive and retrieve datasets to/from the ETH LTS.
 
-## Archiver
+The full setup is containerized and requires a SciCat instance (or a mocked instance) to run correctly.
 
-[Prefect.io](prefect.io) is used to orchestrate the asynchronous jobs (flows) to archive and retrieve datasets. The detail sequence of steps can be found [here](./docs/flows.md)
+Refer to the [Github pages](#github-pages) for more details.
 
 ## Quick start
 
 Starting up all services for development:
 
 ```bash
-docker compose --profile full --env-file .production.env --env-file .development.env up -d
+docker compose --env-file .production.env --env-file .development.env up -d
 ```
+
+## Deploy Local Flows
+
+For development and debugging, a local process can serve flows, for example by running `python -m archiver.flows`. However, some more configuration is required to fully integration with the other services; therefore a VS Code launch command `Prefect Flows` can be used in [launch.json](./backend/.vscode/launch.json)). This allows to debug flows locally and the registered flows have a prefix, `DEV_`.
 
 ## Github Pages
 
@@ -43,22 +48,5 @@ docker run --rm -it -p 8000:8000 -v ${PWD}:/docs ghcr.io/swissopenem/scopemarchi
 Deploy documentation to GitHub Pages
 
 ```bash
-docker run --rm -it -v ~/.ssh:/root/.ssh -v ${PWD}:/docs squidfunk/mkdocs-material gh-deploy 
+docker run --rm -it -v ~/.ssh:/root/.ssh -v ${PWD}:/docs ghcr.io/swissopenem/scopemarchiver-docs:latest gh-deploy 
 ```
-
-
-Architecture
-  High Level Blocks
-  - Ingestor App/Service + frontend
-  - Storage
-  - Scicat
-  - Backend
-  - Prefect
-  Prefect:
-  - Server, Worker, Runtime Containers
-
-Deployment 
-  - Readme: build, mkdocs, 
-
-
-
