@@ -2,9 +2,9 @@ services:
   traefik:
     image: "traefik:v2.10"
     container_name: "traefik"
-    profiles:
-      - services
-      - full
+    # profiles:
+    #   - services
+    #   - full
     command:
       - "--log.level=DEBUG"
       - "--api.insecure=true"
@@ -36,9 +36,9 @@ services:
     volumes:
       - ./backend/config.toml:/var/local/config.toml
     command: "/var/local/config.toml"
-    profiles:
-      - services
-      - full
+    # profiles:
+    #   - services
+    #   - full
     build:
       context: ./backend
       dockerfile: ./web.Dockerfile
@@ -64,10 +64,10 @@ services:
     image: prefecthq/prefect:${PREFECT_VERSION}
     container_name: prefect-server
     restart: always
-    profiles:
-      - services
-      - deploy
-      - full
+    # profiles:
+    #   - services
+    #   - deploy
+    #   - full
     volumes:
       - prefect-volume-new:/root/.prefect
     entrypoint:
@@ -123,10 +123,10 @@ services:
   postgres:
     image: postgres:15.2-alpine
     restart: always
-    profiles:
-      - services
-      - delpoy
-      - full
+    # profiles:
+    #   - services
+    #   - delpoy
+    #   - full
     environment:
       - POSTGRES_USER_FILE=/run/secrets/postgres_user
       - POSTGRES_PASSWORD_FILE=/run/secrets/postgres_pass
@@ -143,9 +143,9 @@ services:
   scicatmock:
     image: ${SCICAT_MOCK_IMAGE_NAME}:${OPENEM_IMAGE_TAG}
     container_name: scicatmock
-    profiles:
-      - services
-      - full
+    # profiles:
+    #   - services
+    #   - full
     build:
       context: ./backend
       dockerfile: ./scicatmock.Dockerfile
