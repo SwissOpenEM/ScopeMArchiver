@@ -1,4 +1,4 @@
-ARG PREFECT_VERSION
+ARG PREFECT_VERSION=latest
 FROM prefecthq/prefect:${PREFECT_VERSION}
 
 # Keeps Python from generating .pyc files in the container

@@ -1,15 +1,14 @@
 services:
   prefect-config:
-    image: ${PREFECT_CONFIG_IMAGE_NAME}:${OPENEM_IMAGE_TAG}
+    image: ${PREFECT_CONFIG_IMAGE_NAME}:${OPENEM_IMAGE_TAG:-latest}
     container_name: prefect-config
-    # profiles:
-    #   - config
-    #   - full
     build:
       context: ./backend/
       dockerfile: ./prefect-config.Dockerfile
       args:
         PREFECT_VERSION: ${PREFECT_VERSION}
+      tags:
+        - ${OPENEM_IMAGE_TAG}
     networks:
       - scopemarchiver_network
     environment:
@@ -45,10 +44,6 @@ services:
   prefect-flows-deployment:
     image: prefecthq/prefect:${PREFECT_VERSION}
     container_name: prefect-flows-deployment
-    # profiles:
-    #   - full
-    #   - config
-    #   - deploy
     networks:
       - scopemarchiver_network
     environment:

@@ -36,12 +36,11 @@ services:
     volumes:
       - ./backend/config.toml:/var/local/config.toml
     command: "/var/local/config.toml"
-    # profiles:
-    #   - services
-    #   - full
     build:
       context: ./backend
       dockerfile: ./web.Dockerfile
+      tags:
+        - ${OPENEM_IMAGE_TAG}
     environment:
       - PREFECT_LOGGING_LEVEL=${PREFECT_LOGGING_LEVEL}
       - PREFECT_API_URL=http://prefect-server:4200/api
@@ -143,12 +142,12 @@ services:
   scicatmock:
     image: ${SCICAT_MOCK_IMAGE_NAME}:${OPENEM_IMAGE_TAG}
     container_name: scicatmock
-    # profiles:
-    #   - services
-    #   - full
+
     build:
       context: ./backend
       dockerfile: ./scicatmock.Dockerfile
+      tags:
+        - ${OPENEM_IMAGE_TAG}
     ports:
       - 8005:8000
     labels:

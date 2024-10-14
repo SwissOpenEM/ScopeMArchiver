@@ -29,9 +29,7 @@
       "cwd": "${workspaceFolder}",
       "env": {
         "PREFECT_API_URL": "http://localhost/api",
-        // "PREFECT_API_URL": "http://scopem-openem:4200/api",
         "PREFECT_LOGGING_LEVEL": "DEBUG",
-        // "SCICAT_ENDPOINT": "http://localhost:8005",
         "MINIO_ENDPOINT": "localhost:9000",
         "MINIO_EXTERNAL_ENDPOINT": "localhost:9000",
         "LTS_STORAGE_ROOT": "/tmp/data/LTS/",
