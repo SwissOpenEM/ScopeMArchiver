@@ -1,4 +1,4 @@
-ARG PREFECT_VERSION
+ARG PREFECT_VERSION=latest
 FROM prefecthq/prefect:${PREFECT_VERSION}
 
 # Keeps Python from generating .pyc files in the container
@@ -16,7 +16,7 @@ RUN systemctl --system enable rpcbind.service
 RUN pip3 install pipenv --upgrade pip
 
 # LTS mount folder
-ARG LTS_ROOT_FOLDER
+ARG LTS_ROOT_FOLDER=/tmp/LTS
 RUN mkdir ${LTS_ROOT_FOLDER}
 
 RUN mkdir /opt/prefect/backend
