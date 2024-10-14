@@ -1,6 +1,6 @@
 # Architecture
 
-## Components
+## Component Diagram
 
 ![Compnents](components.drawio)
 

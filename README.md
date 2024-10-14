@@ -9,6 +9,12 @@ Refer to the [Github pages](#github-pages) for more details.
 
 ## Quick start
 
+Build all the services:
+
+```bash
+docker compose --env-file .production.env --env-file .development.env build
+```
+
 Starting up all services for development:
 
 ```bash

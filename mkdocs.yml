@@ -27,7 +27,7 @@ nav:
   - Introduction: index.md
   - Architecture: architecture.md
   - Deployment: deployment.md
-  - Flows: 
+  - Flows (WIP): 
       - Ingestion: upload_flow.md
       - Archiving: archival_flow.md
       - Retrieval: retrieval_flow.md
