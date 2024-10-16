@@ -6,13 +6,36 @@ on:
     branches:
       - main 
 
+
+permissions:
+  contents: write
 jobs:
-  build:
-    name: Deploy docs
+  deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout main
-        uses: actions/checkout@v4
-
-      - name: Deploy docs
-        run: docker run --rm -v ${PWD}:/docs -it $(docker build -f docs.Dockerfile .) gh-deploy 
+      - uses: actions/checkout@v4
+      - name: Configure Git Credentials
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+      - uses: actions/setup-python@v5
+        with:
+          python-version: 3.x
+      - run: echo "cache_id=$(date --utc '+%V')" >> $GITHUB_ENV 
+      - uses: actions/cache@v4
+        with:
+          key: mkdocs-material-${{ env.cache_id }}
+          path: .cache
+          restore-keys: |
+            mkdocs-material-
+      - run: |
+          pip install mkdocs-material 
+          pip install mkdocstrings
+          pip install "mkdocstrings[python]"
+          pip install mkdocs-gen-files
+          pip install mkdocs-literate-nav
+          pip install mkdocs-drawio
+          pip install mkdocs-mermaid2-plugin
+          pip install mkdocs-panzoom-plugin
+          pip install markdown-include
+      - run: mkdocs gh-deploy --force
