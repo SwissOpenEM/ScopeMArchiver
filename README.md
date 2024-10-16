@@ -12,13 +12,13 @@ Refer to the [Github pages](#github-pages) for more details.
 Build all the services:
 
 ```bash
-docker compose --env-file .production.env --env-file .development.env build
+docker compose --env-file .env --env-file .development.env build
 ```
 
 Starting up all services for development:
 
 ```bash
-docker compose --env-file .production.env --env-file .development.env up -d
+docker compose --env-file .env --env-file .development.env up -d
 ```
 
 ## Deploy Local Flows

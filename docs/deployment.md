@@ -9,7 +9,7 @@
 The services on the virtual machine can be deployed using a single docker-compose file:
 
 ```bash
-docker compose --env-file .production.env --env-file .development.env up -d
+docker compose --env-file .env --env-file .development.env up -d
 ```
 
 There are configuration parameters for all the services for production and develoment:
@@ -17,7 +17,7 @@ There are configuration parameters for all the services for production and devel
 ### Production
 
 ```bash
-{!../.production.env!}
+{!../.env!}
 ```
 
 ### Development
@@ -53,7 +53,7 @@ In order to run Prefect server, variables, secrets and concurrency limits need t
 All of the configuration can be done by running
 
   ```bash
-    docker compose --env-file .production.env --env-file .development.env run --rm prefect-config
+    docker compose --env-file .env --env-file .development.env run --rm prefect-config
   ```
 
 with the appropriate PREFECT_API_URL set.
@@ -115,8 +115,8 @@ Workers can only be deployed on a machine that has access to
 They can be started by the following command:
 
 ```bash
-docker compose --env-file .production.env --env-file .development.env up -d prefect-archival-worker
-docker compose --env-file .production.env --env-file .development.env up -d prefect-retrieval-worker
+docker compose --env-file .env --env-file .development.env up -d prefect-archival-worker
+docker compose --env-file .env --env-file .development.env up -d prefect-retrieval-worker
 ```
 
 > Note: due to a bug in Prefect the workers concurrency limit needs to be set manually in the UI.
@@ -126,7 +126,7 @@ docker compose --env-file .production.env --env-file .development.env up -d pref
 The [flows](../backend/archiver/flows/__init__.py) can be deployed using a container:
 
 ```bash
-docker compose --env-file .production.env --env-file .development.env run --rm prefect-flows-deployment
+docker compose --env-file .env --env-file .development.env run --rm prefect-flows-deployment
 ```
 
 This deploys the flows as defined in the [prefect.yaml](https://github.com/SwissOpenEM/ScopeMArchiver/backend/prefect.yaml) and requires the secrets set up in the previous step.
