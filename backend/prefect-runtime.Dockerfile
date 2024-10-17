@@ -9,9 +9,7 @@ ENV PYTHONUNBUFFERED=1
 
 RUN apt-get update -y && apt-get upgrade -y
 
-# Configure for NFS mounts; rpcbind.service required for nfsv3 remote locking
-RUN apt-get install -y nfs-common systemctl
-RUN systemctl --system enable rpcbind.service
+RUN apt-get install -y rsync
 
 RUN pip3 install pipenv --upgrade pip
 
