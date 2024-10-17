@@ -2,15 +2,18 @@ services:
   minio:
     image: minio/minio
     container_name: minio
-    # profiles:
-    #   - services
-    #   - full
-    # S3 specs for presigned urls require minio to be directly exposed, with path?
     ports:
       - 9000:9000
       - 9001:9001
+    healthcheck:
+      test: [ "CMD", "mc", "ready", "local" ]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    depends_on:
+      - traefik
     volumes:
-      - minio-volume:/data
+      - minio-volume-idadata:/data
     networks:
       - scopemarchiver_network
     environment:
@@ -49,10 +52,8 @@ services:
   minio-create-bucket:
     image: minio/mc
     depends_on:
-      - minio
-    # profiles:
-    #   - config
-    #   - full
+      minio:
+        condition: service_healthy
     entrypoint:
       - /bin/sh
       - -c
@@ -70,8 +71,12 @@ services:
       - minio_pass
 
 volumes:
-  minio-volume:
+  minio-volume-idadata:
     driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${MINIO_HOST_DEVICE_PATH}
 
 networks:
   scopemarchiver_network:
