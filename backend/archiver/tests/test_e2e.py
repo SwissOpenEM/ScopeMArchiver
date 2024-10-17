@@ -196,7 +196,7 @@ async def find_flow_in_prefect(job_id: UUID) -> UUID:
     return flow_run_ids[0]['id']
 
 
-@pytest.mark.endtoend
+# @pytest.mark.endtoend
 @pytest.mark.asyncio
 async def test_end_to_end(scicat_token_setup, set_env, minio_client):
     """Runs a full workflow, i.e.
@@ -236,7 +236,7 @@ async def test_end_to_end(scicat_token_setup, set_env, minio_client):
     assert scicat_archival_job_status is not None
     assert scicat_archival_job_status.get("type") == "archive"
     assert scicat_archival_job_status.get(
-        "statusMessage") == "jobCreated" or scicat_archival_job_status.get("statusMessage") == "inProgress"
+        "statusMessage") == "Job has been created." or scicat_archival_job_status.get("statusMessage") == "inProgress"
 
     time.sleep(10)
     # Verify Prefect Flow
@@ -248,14 +248,16 @@ async def test_end_to_end(scicat_token_setup, set_env, minio_client):
     scicat_archival_job_status = await get_scicat_job(job_id=scicat_archival_job_id, token=scicat_token_setup)
     assert scicat_archival_job_status is not None
     assert scicat_archival_job_status.get("type") == "archive"
-    assert scicat_archival_job_status.get("statusMessage") == "finishedSuccessful"
+    assert scicat_archival_job_status.get(
+        "statusMessage") == "finishedSuccessful"
 
     # Verify Scicat datasetlifecycle
     dataset = await get_scicat_dataset(dataset_pid=dataset_pid, token=scicat_token_setup)
     assert dataset is not None
     dataset_lifecycle = dataset.get("datasetlifecycle")
     assert dataset_lifecycle is not None
-    assert dataset_lifecycle.get("archiveStatusMessage") == "datasetOnArchiveDisk"
+    assert dataset_lifecycle.get(
+        "archiveStatusMessage") == "datasetOnArchiveDisk"
     assert dataset_lifecycle.get("retrieveStatusMessage") == ""
     assert not dataset_lifecycle.get("archivable")
     assert dataset_lifecycle.get("retrievable")
@@ -268,7 +270,7 @@ async def test_end_to_end(scicat_token_setup, set_env, minio_client):
     assert scicat_retrieval_job_status is not None
     assert scicat_retrieval_job_status.get("type") == "retrieve"
     assert scicat_retrieval_job_status.get(
-        "statusMessage") == "jobCreated" or scicat_retrieval_job_status.get("statusMessage") == "inProgress"
+        "statusMessage") == "Job has been created." or scicat_retrieval_job_status.get("statusMessage") == "inProgress"
 
     time.sleep(10)
     # Verify Prefect Flow
@@ -280,9 +282,11 @@ async def test_end_to_end(scicat_token_setup, set_env, minio_client):
     scicat_retrieval_job_status = await get_scicat_job(job_id=scicat_retrieval_job_id, token=scicat_token_setup)
     assert scicat_retrieval_job_status is not None
     assert scicat_retrieval_job_status.get("type") == "retrieve"
-    assert scicat_retrieval_job_status.get("statusMessage") == "finishedSuccessful"
+    assert scicat_retrieval_job_status.get(
+        "statusMessage") == "finishedSuccessful"
     assert scicat_retrieval_job_status.get("jobResultObject") is not None
-    jobResult = scicat_retrieval_job_status.get("jobResultObject").get("result")
+    jobResult = scicat_retrieval_job_status.get(
+        "jobResultObject").get("result")
     assert len(jobResult) == 1
     assert jobResult[0].get("datasetId") == dataset_pid
     assert jobResult[0].get("url") is not None
