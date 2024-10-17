@@ -302,10 +302,13 @@ def move_data_to_LTS(dataset_id: str, datablock: DataBlock):
     copy_file_to_folder(src_file=datablock_full_path.absolute(),
                         dst_folder=lts_target_dir.absolute())
 
-    # Wait before recalling the file for checksum verification
-    time.sleep(10)
-
     destination = lts_target_dir / datablock_name
+
+    # Wait before recalling the file for checksum verification
+    getLogger().info("Waiting for file being accessible")
+
+    asyncio.run(wait_for_file_accessible(
+        destination.absolute(), Variables().ARCHIVER_LTS_FILE_TIMEOUT_S))
 
     getLogger().info("Verifying checksum")
 
@@ -558,7 +561,7 @@ async def wait_for_file_accessible(file: Path, timeout_s=360):
     while not os.access(path=file, mode=os.R_OK):
         seconds_to_wait = 30
         getLogger().info(
-            f"File {file} currently not available. Try again in {seconds_to_wait} seconds.")
+            f"File {file} currently not available. Trying again in {seconds_to_wait} seconds.")
         await asyncio.sleep(seconds_to_wait)
         total_time_waited_s += seconds_to_wait
         if total_time_waited_s > timeout_s:
