@@ -1,0 +1,29 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Backend API",
+      "type": "debugpy",
+      "request": "launch",
+      "env": {
+        "PREFECT_API_URL": "http://localhost:4200/api",
+        "PREFECT_LOGGING_LEVEL": "DEBUG",
+        "MINIO_ENDPOINT": "http://scopem-openem.ethz.ch:9000",
+        "MINIO_USER": "minio_user",
+        "MINIO_PASSWORD": "minio_pass",
+        "UVICORN_ROOT_PATH": "",
+        "UVICORN_RELOAD": "true",
+        "UVICORN_LOG_LEVEL": "debug",
+        "UVICORN_PORT": "8888"
+      },
+      "cwd": "${workspaceFolder}/src",
+      "module": "openapi_server",
+      "args": [
+        "--reload"
+      ],
+      "jinja": true
+    }
+  ]
