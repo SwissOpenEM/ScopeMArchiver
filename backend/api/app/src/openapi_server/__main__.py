@@ -22,16 +22,16 @@ from openapi_server.apis.presigned_urls_api import router as PresignedUrlsApiRou
 
 from .settings import Settings
 
+app = FastAPI(
+    title="ETHZ Archiver Service",
+    description="REST API endpoint provider for presigned S3 upload and archiving workflow scheduling",
+    version="0.1.0",
+)
+
 if __name__ == "__main__":
 
     settings = Settings()
     print(settings)
-
-    app = FastAPI(
-        title="ETHZ Archiver Service",
-        description="REST API endpoint provider for presigned S3 upload and archiving workflow scheduling",
-        version="0.1.0",
-    )
 
     origins = [
         "http://127.0.0.1*",
