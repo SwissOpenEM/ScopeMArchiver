@@ -1,0 +1,67 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Prefect Flows",
+      "type": "debugpy",
+      "request": "launch",
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "PREFECT_API_URL": "http://localhost/api",
+        "PREFECT_LOGGING_LEVEL": "DEBUG",
+        "MINIO_ENDPOINT": "localhost:9000",
+        "MINIO_EXTERNAL_ENDPOINT": "localhost:9000",
+        "LTS_STORAGE_ROOT": "/tmp/data/LTS/",
+        "LTS_FREE_SPACE_PERCENTAGE": "0.2",
+        "ARCHIVER_SCRATCH_FOLDER": "/tmp/data/scratch/",
+      },
+      "module": "flows",
+      "jinja": true
+    },
+    {
+      "name": "Prefect Config",
+      "type": "debugpy",
+      "request": "launch",
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "PREFECT_API_URL": "http://localhost:4200/api",
+        "MINIO_PASSWORD_FILE": "${workspaceFolder}/../.secrets/miniopass.txt"
+      },
+      "program": "prefect-config.py",
+      "args": [
+        "-s",
+        "MINIO_PASSWORD_FILE",
+        "-l",
+        "${workspaceFolder}/concurrency-limits.toml"
+      ]
+    },
+    {
+      "name": "SciCat API Mock",
+      "type": "debugpy",
+      "request": "launch",
+      "env": {},
+      "module": "uvicorn",
+      "args": [
+        "archiver.tests.scicat_service_mock:app",
+        "--reload",
+        "--port",
+        "8005",
+      ],
+      "jinja": true
+    },
+  ],
+  "compounds": [
+    {
+      "name": "Archiver Service",
+      "configurations": [
+        "Backend API",
+        "Prefect Flows",
+        "SciCat API Mock",
+      ],
+      "stopAll": true
+    }
+  ]
+}
