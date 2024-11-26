@@ -19,14 +19,18 @@ USER ${USER}
 WORKDIR /home/${USER}
 
 RUN mkdir /tmp/archiving
+RUN mkdir archiver
 
-COPY . ./
+COPY ./archiver ./archiver
+COPY prefect-config.py ./
 
 RUN echo 'export PATH="${HOME}/.local/bin:$PATH"' >> ~/.bashrc
 RUN PATH="${HOME}/.local/bin:$PATH"
 
+RUN cp ./archiver/Pipfile ./
+RUN cp ./archiver/Pipfile.lock ./
 RUN PIPENV_VENV_IN_PROJECT=1 pipenv install --deploy
 
 # Run our flow script when the container starts
-CMD ["pipenv", "run", "python", "prefect-.config.py"]
+CMD ["pipenv", "run", "python", "prefect-config.py"]
 ENTRYPOINT ["pipenv", "run", "python", "prefect-config.py"]

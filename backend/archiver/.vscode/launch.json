@@ -45,7 +45,7 @@
       "env": {},
       "module": "uvicorn",
       "args": [
-        "archiver.tests.scicat_service_mock:app",
+        "tests.scicat_service_mock:app",
         "--reload",
         "--port",
         "8005",

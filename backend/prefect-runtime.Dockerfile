@@ -22,7 +22,10 @@ RUN mkdir ${LTS_ROOT_FOLDER}
 RUN mkdir /opt/prefect/backend
 WORKDIR /opt/prefect/backend
 
-COPY ./backend ./
+COPY ./backend/ ./
+
+COPY ./backend/archiver/Pipfile ./
+COPY ./backend/archiver/Pipfile.lock ./
 
 RUN PIPENV_VENV_IN_PROJECT=1 pipenv install --system --deploy
 CMD ["/bin/bash"]

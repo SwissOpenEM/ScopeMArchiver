@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "311599f8f66f685f83867b8e0cdb959fa69d6440597e8cf5c476a856c4c0b023"
+            "sha256": "a54440a89634f107bfb382531f02009cd8a9a05bbff6bb3c475ffe19b21835a3"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -1033,6 +1033,15 @@
             "index": "pypi",
             "markers": "python_version >= '3.9'",
             "version": "==3.1.4"
+        },
+        "prefect-docker": {
+            "hashes": [
+                "sha256:405cdf2b266c7e1ffcb61f5b80c710401bc2eb5f25dcbccc195b0e5c86f5a421",
+                "sha256:bae500ff0c18e3e1c55f2e79ec154bc1f8c8329fbe6a3726052dfb0fe38d7d4c"
+            ],
+            "index": "pypi",
+            "markers": "python_version >= '3.9'",
+            "version": "==0.6.2"
         },
         "prometheus-client": {
             "hashes": [

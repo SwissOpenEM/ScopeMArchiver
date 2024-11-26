@@ -10,6 +10,7 @@ minio = "*"
 strenum = "*"
 pytest-asyncio = "*"
 requests-mock = "*"
+prefect-docker = "*"
 
 [dev-packages]
 autopep8 = "*"
