@@ -1,11 +1,13 @@
 from typing import List
 from uuid import UUID
+from prefect.client.schemas.objects import FlowRun
+from prefect import flow  # required do to https://github.com/PrefectHQ/prefect/issues/16105
 from prefect.deployments import run_deployment
 
 
 async def run_create_dataset_deployment(
-        file_size_MB: int = 10, num_files: int = 10, datablock_size_MB: int = 20, dataset_id: str | None = None):
-    deploy = await run_deployment("create_test_dataset/dataset_creation", parameters={
+        file_size_MB: int = 10, num_files: int = 10, datablock_size_MB: int = 20, dataset_id: str | None = None) -> FlowRun:
+    deploy: FlowRun = await run_deployment("create_test_dataset/dataset_creation", parameters={
         "num_files": num_files,
         "file_size_MB": file_size_MB,
         "datablock_size_MB": datablock_size_MB,

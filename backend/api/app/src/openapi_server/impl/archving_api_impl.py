@@ -24,16 +24,17 @@ class BaseArchivingApiImpl(BaseArchivingApi):
         try:
             import random
             data_set_id = create_dataset_body.data_set_id or str(random.randint(0, 10000))
-            m = await run_create_dataset_deployment(file_size_MB=create_dataset_body.file_size_in_mb,
-                                                    num_files=create_dataset_body.number_of_files,
-                                                    datablock_size_MB=create_dataset_body.datablock_size_in_mb,
-                                                    dataset_id=create_dataset_body.data_set_id)
+            flowRun = await run_create_dataset_deployment(file_size_MB=create_dataset_body.file_size_in_mb,
+                                                          num_files=create_dataset_body.number_of_files,
+                                                          datablock_size_MB=create_dataset_body.datablock_size_in_mb,
+                                                          dataset_id=data_set_id)
 
-            return CreateDatasetResp(Name=m.name, Uuid=m.id, DataSetId=data_set_id)
+            return CreateDatasetResp(Name=flowRun.name, Uuid=str(flowRun.id), DataSetId=data_set_id)
         except Exception as e:
             return JSONResponse(content={"error": str(e)}, status_code=500)
 
     async def create_job(
+        self,
         create_job_body: CreateJobBody,
     ) -> CreateJobResp:
         try:

@@ -7,6 +7,7 @@ name = "pypi"
 fastapi = "*"
 boto3 = "*"
 mypy = "*"
+prefect = "==3.1.4"
 
 [dev-packages]
 flake8 = "*"

@@ -24,6 +24,8 @@
       "args": [
         "--reload"
       ],
-      "jinja": true
+      "jinja": true,
+      "justMyCode": true
     }
   ]
+}
