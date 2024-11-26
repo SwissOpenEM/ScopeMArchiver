@@ -43,7 +43,7 @@ services:
       - UVICORN_PORT=8000
       - UVICORN_LOG_LEVEL=info
       - UVICORN_RELOAD=False
-      - MINIO_ENDPOINT=http://scopem-openem.ethz.ch:9000
+      - MINIO_ENDPOINT=${MINIO_ENDPOINT}
       - MINIO_USER_FILE=/run/secrets/minio_user
       - MINIO_PASSWORD_FILE=/run/secrets/minio_pass
     ports:
@@ -133,27 +133,6 @@ services:
       - postgres-volume-new:/var/lib/postgresql/data
     networks:
       - scopemarchiver_network
-  scicatmock:
-    image: ${SCICAT_MOCK_IMAGE_NAME}:${OPENEM_IMAGE_TAG}
-    container_name: scicatmock
-
-    build:
-      context: ./backend
-      dockerfile: ./scicatmock.Dockerfile
-      tags:
-        - ${OPENEM_IMAGE_TAG}
-    ports:
-      - 8005:8000
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.scicatmock.rule=Host(`${HOST}`) && PathPrefix(`/scicatmock`)"
-      - "traefik.http.middlewares.scicatmock-stripprefix.stripprefix.prefixes=/scicatmock`"
-      - "traefik.http.routers.scicatmock.entrypoints=web"
-      - "traefik.http.routers.scicatmock.middlewares=scicatmock-stripprefix"
-      - "traefik.http.services.scicatmock.loadbalancer.server.port=8000"
-    networks:
-      - scopemarchiver_network
-
 volumes:
   postgres-volume-new:
     driver: local
