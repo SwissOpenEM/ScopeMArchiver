@@ -17,7 +17,7 @@ settings = Settings(_secrets_dir=os.environ.get('SECRETS_DIR', "/run/secrets"))
 s3_client = boto3.client(
     's3',
     # 'http://scopem-openem.ethz.ch:9000',  # Replace with your MinIO server URL
-    endpoint_url=settings.MINIO_ENDPOINT,
+    endpoint_url=f"http://{settings.MINIO_ENDPOINT}",
     # endpoint_url='http://localhost:9000',  # Replace with your MinIO server URL
     # 'minio_user',            # Replace with your MinIO access key
     aws_access_key_id=settings.MINIO_USER.get_secret_value(),

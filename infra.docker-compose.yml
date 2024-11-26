@@ -43,7 +43,7 @@ services:
       - UVICORN_PORT=8000
       - UVICORN_LOG_LEVEL=info
       - UVICORN_RELOAD=False
-      - MINIO_ENDPOINT=${MINIO_ENDPOINT}
+      - MINIO_ENDPOINT=${MINIO_EXTERNAL_ENDPOINT}
       - SECRETS_DIR=/run/secrets
     secrets:
       - minio_user
