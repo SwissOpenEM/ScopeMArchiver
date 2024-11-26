@@ -5,6 +5,7 @@ from typing import Any, List, Optional
 from fastapi import Body, HTTPException, Header, Query
 from fastapi.responses import JSONResponse
 from pydantic import StrictInt, StrictStr
+from uuid import UUID
 
 from openapi_server.apis.archiving_api_base import BaseArchivingApi
 from openapi_server.models.create_dataset_body import CreateDatasetBody
@@ -40,13 +41,12 @@ class BaseArchivingApiImpl(BaseArchivingApi):
         try:
             match create_job_body.type:
                 case "archive":
-                    m = await run_archiving_deployment(job_id=id, dataset_list=[])
+                    flowRun = await run_archiving_deployment(job_id=UUID(create_job_body.id), dataset_list=[])
                 case "retrieve":
-                    m = await run_retrieval_deployment(job_id=id, dataset_list=[])
+                    flowRun = await run_retrieval_deployment(job_id=UUID(create_job_body.id), dataset_list=[])
                 case _:
                     return JSONResponse(content={"error": f"unknown job type {type}"}, status_code=500)
 
-            return CreateJobResp(Uuid=m.id, Name=m.name)
+            return CreateJobResp(Uuid=str(flowRun.id), Name=flowRun.name)
         except Exception as e:
             return JSONResponse(content={"error": str(e)}, status_code=500)
-            pass
