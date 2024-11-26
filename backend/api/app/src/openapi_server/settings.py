@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     UVICORN_ROOT_PATH: str = "/"
     UVICORN_RELOAD: bool = False
     UVICORN_LOG_LEVEL: str = "info"
-    MINIO_ENDPOINT: str = "http://scopem-openem.ethz.ch:9000"
+    MINIO_ENDPOINT: str = "scopem-openem.ethz.ch:9000"
     MINIO_REGION: str = "eu-west1"                # secret
     MINIO_LANDINGZONE_BUCKET: str = "landingzone"  # string
     MINIO_USER: SecretStr
