@@ -1,5 +1,6 @@
 from typing import List
 import boto3
+import os
 from botocore.exceptions import ClientError
 from botocore.client import Config
 from pydantic import BaseModel
@@ -11,8 +12,7 @@ from openapi_server.models.complete_upload_resp import CompleteUploadResp
 
 # boto3.set_stream_logger('')
 
-
-settings = Settings()
+settings = Settings(_secrets_dir=os.environ.get('SECRETS_DIR', "/run/secrets"))
 
 s3_client = boto3.client(
     's3',

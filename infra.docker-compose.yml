@@ -44,8 +44,10 @@ services:
       - UVICORN_LOG_LEVEL=info
       - UVICORN_RELOAD=False
       - MINIO_ENDPOINT=${MINIO_ENDPOINT}
-      - MINIO_USER_FILE=/run/secrets/minio_user
-      - MINIO_PASSWORD_FILE=/run/secrets/minio_pass
+      - SECRETS_DIR=/run/secrets
+    secrets:
+      - minio_user
+      - minio_password
     ports:
       - 8004:8000
     labels:
@@ -146,5 +148,5 @@ secrets:
     file: ./.secrets/postgrespass.txt
   minio_user:
     file: ./.secrets/miniouser.txt
-  minio_pass:
+  minio_password:
     file: ./.secrets/miniopass.txt

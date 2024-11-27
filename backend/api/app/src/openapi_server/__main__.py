@@ -21,6 +21,7 @@ from openapi_server.apis.archiving_api import router as ArchivingApiRouter
 from openapi_server.apis.presigned_urls_api import router as PresignedUrlsApiRouter
 
 from .settings import Settings
+import os
 
 app = FastAPI(
     title="ETHZ Archiver Service",
@@ -30,8 +31,7 @@ app = FastAPI(
 
 if __name__ == "__main__":
 
-    settings = Settings()
-    print(settings)
+    settings = Settings(_secrets_dir=os.environ.get('SECRETS_DIR', "/run/secrets"))
 
     origins = [
         "http://127.0.0.1*",

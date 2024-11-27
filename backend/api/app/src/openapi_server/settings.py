@@ -1,5 +1,5 @@
 from pydantic_settings import BaseSettings
-from pydantic import SecretStr
+from pydantic import Field, SecretStr
 
 
 class Settings(BaseSettings):
@@ -10,5 +10,8 @@ class Settings(BaseSettings):
     MINIO_ENDPOINT: str = "http://scopem-openem.ethz.ch:9000"
     MINIO_REGION: str = "eu-west1"                # secret
     MINIO_LANDINGZONE_BUCKET: str = "landingzone"  # string
-    MINIO_USER: SecretStr = SecretStr("")
-    MINIO_PASSWORD: SecretStr = SecretStr("")
+    MINIO_USER: SecretStr
+    MINIO_PASSWORD: SecretStr
+
+    class Config:
+        secrets_dir = '/run/secrets'
