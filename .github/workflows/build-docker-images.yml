@@ -79,12 +79,12 @@ jobs:
           python -m pip install pipenv
           pipenv sync
           pipenv install pytest-cov
-          pipenv run pytest archiver --junitxml=junit/test-results.xml --cov=. --cov-report=xml --cov-report=html -m "not endtoend"
+          pipenv run pytest --junitxml=junit/test-results.xml --cov=. --cov-report=xml --cov-report=html -m "not endtoend"
       - name: Upload pytest test results
         uses: actions/upload-artifact@v4
         with:
           name: archiver-test-results
-          path: ./backend/archiver/junit/test-results.xml
+          path: ./junit/test-results.xml
           # Use always() to always run this step to publish test results when there are test failures
         if: ${{ always() }}
 
@@ -121,7 +121,7 @@ jobs:
       with:
         context: ./
         file: ./backend/prefect-runtime.Dockerfile
-        push: true # ${{ github.event_name != 'pull_request' }}
+        push: ${{ github.event_name != 'pull_request' }}
         build-args: PREFECT_VERSION=3.0.4-python3.11
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
@@ -154,16 +154,16 @@ jobs:
         images: ${{ env.REGISTRY }}/${{ env.OPENEM_CONFIG_IMAGE_NAME }}
 
 
-    - name: Build and push
-      uses: docker/bake-action@v5
+    - name: Build and push Docker image
       id: build-and-push
+      uses: docker/build-push-action@v6
       with:
-        workdir: ./
-        targets: prefect-config
-        push: true # ${{ github.event_name != 'pull_request' }}
-        set: |
-          *.tags=${{ steps.meta.outputs.tags }}
-  
+        context: ./backend/
+        file: ./backend/prefect-config.Dockerfile
+        push: ${{ github.event_name != 'pull_request' }}
+        build-args: PREFECT_VERSION=3.0.4-python3.11
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }} 
           
   build_openem_backend:
     runs-on: ubuntu-latest
@@ -198,6 +198,6 @@ jobs:
       with:
         workdir: ./
         targets: archiver-backend
-        push: true # ${{ github.event_name != 'pull_request' }}
+        push: ${{ github.event_name != 'pull_request' }}
         set: |
             *.tags=${{ steps.meta.outputs.tags }}
