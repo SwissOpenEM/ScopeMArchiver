@@ -28,6 +28,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
           description: Validation Error
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalError'
+          description: Internal Server Error
       summary: Create New Dataset
       tags:
       - archiving
@@ -53,6 +59,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
           description: Validation Error
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalError'
+          description: Internal Server Error
       summary: Job Created
       tags:
       - archiving
@@ -78,6 +90,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
           description: Validation Error
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalError'
+          description: Internal Server Error
       summary: Get Presigned Urls
       tags:
       - presignedUrls
@@ -103,6 +121,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
           description: Validation Error
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalError'
+          description: Internal Server Error
       summary: Complete Upload
       tags:
       - presignedUrls
@@ -127,6 +151,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
           description: Validation Error
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalError'
+          description: Internal Server Error
       summary: Abort Multipart Upload
       tags:
       - presignedUrls
@@ -303,6 +333,25 @@ components:
           title: detail
           type: array
       title: HTTPValidationError
+    InternalError:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          description: A specific error code indicating the error type
+        message:
+          type: string
+          description: A human-readable message providing more details about the error
+        details:
+          type: string
+          description: Additional context or information about the error
+        timestamp:
+          type: string
+          format: date-time
+          description: The time when the error occurred
     PresignedUrlBody:
       example:
         Parts: 0
@@ -314,6 +363,7 @@ components:
         Parts:
           title: Parts
           type: integer
+          minimum: 1
       required:
       - ObjectName
       - Parts

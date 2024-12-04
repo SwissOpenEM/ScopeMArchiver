@@ -12,6 +12,7 @@ from openapi_server.models.create_dataset_body import CreateDatasetBody
 from openapi_server.models.create_dataset_resp import CreateDatasetResp
 from openapi_server.models.create_job_body import CreateJobBody
 from openapi_server.models.create_job_resp import CreateJobResp
+from openapi_server.models.internal_error import InternalError
 
 from .archiving import run_create_dataset_deployment, run_archiving_deployment, run_retrieval_deployment
 
@@ -38,7 +39,7 @@ class BaseArchivingApiImpl(BaseArchivingApi):
             return CreateDatasetResp(Name=flowRun.name, Uuid=str(flowRun.id), DataSetId=data_set_id)
         except Exception as e:
             _LOGGER.error(e)
-            return JSONResponse(content={"error": str(e)}, status_code=500)
+            return JSONResponse(status_code=500, content={"message": "Failed to create new dataset", "details": str(e)})
 
     async def create_job(
         self,
@@ -51,10 +52,10 @@ class BaseArchivingApiImpl(BaseArchivingApi):
                 case "retrieve":
                     flowRun = await run_retrieval_deployment(job_id=UUID(create_job_body.id), dataset_list=[])
                 case _:
-                    return JSONResponse(content={"error": f"unknown job type {type}"}, status_code=500)
+                    return JSONResponse(status_code=500, content={"message": f"unknown job type {type}"})
 
             _LOGGER.debug("Flow run for job %s created. Id=%d Name=%s", create_job_body.id, flowRun.id, flowRun.name)
             return CreateJobResp(Uuid=str(flowRun.id), Name=flowRun.name)
         except Exception as e:
             _LOGGER.error(e)
-            return JSONResponse(content={"error": str(e)}, status_code=500)
+            return JSONResponse(status_code=500, content={"message": "Failed to create job", "details": str(e)})

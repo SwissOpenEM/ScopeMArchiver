@@ -28,6 +28,7 @@ from openapi_server.models.create_dataset_resp import CreateDatasetResp
 from openapi_server.models.create_job_body import CreateJobBody
 from openapi_server.models.create_job_resp import CreateJobResp
 from openapi_server.models.http_validation_error import HTTPValidationError
+from openapi_server.models.internal_error import InternalError
 
 
 router = APIRouter()
@@ -42,6 +43,7 @@ for _, name, _ in pkgutil.iter_modules(ns_pkg.__path__, ns_pkg.__name__ + "."):
     responses={
         200: {"model": CreateJobResp, "description": "Successful Response"},
         422: {"model": HTTPValidationError, "description": "Validation Error"},
+        500: {"model": InternalError, "description": "Internal Server Error"},
     },
     tags=["archiving"],
     summary="Job Created",
@@ -60,6 +62,7 @@ async def create_job(
     responses={
         200: {"model": CreateDatasetResp, "description": "Successful Response"},
         422: {"model": HTTPValidationError, "description": "Validation Error"},
+        500: {"model": InternalError, "description": "Internal Server Error"},
     },
     tags=["archiving"],
     summary="Create New Dataset",

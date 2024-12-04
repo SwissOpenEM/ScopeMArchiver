@@ -28,6 +28,7 @@ from openapi_server.models.abort_upload_body import AbortUploadBody
 from openapi_server.models.complete_upload_body import CompleteUploadBody
 from openapi_server.models.complete_upload_resp import CompleteUploadResp
 from openapi_server.models.http_validation_error import HTTPValidationError
+from openapi_server.models.internal_error import InternalError
 from openapi_server.models.presigned_url_body import PresignedUrlBody
 from openapi_server.models.presigned_url_resp import PresignedUrlResp
 
@@ -44,6 +45,7 @@ for _, name, _ in pkgutil.iter_modules(ns_pkg.__path__, ns_pkg.__name__ + "."):
     responses={
         200: {"model": object, "description": "Successful Response"},
         422: {"model": HTTPValidationError, "description": "Validation Error"},
+        500: {"model": InternalError, "description": "Internal Server Error"},
     },
     tags=["presignedUrls"],
     summary="Abort Multipart Upload",
@@ -62,6 +64,7 @@ async def abort_multipart_upload(
     responses={
         200: {"model": CompleteUploadResp, "description": "Successful Response"},
         422: {"model": HTTPValidationError, "description": "Validation Error"},
+        500: {"model": InternalError, "description": "Internal Server Error"},
     },
     tags=["presignedUrls"],
     summary="Complete Upload",
@@ -80,6 +83,7 @@ async def complete_upload(
     responses={
         200: {"model": PresignedUrlResp, "description": "Successful Response"},
         422: {"model": HTTPValidationError, "description": "Validation Error"},
+        500: {"model": InternalError, "description": "Internal Server Error"},
     },
     tags=["presignedUrls"],
     summary="Get Presigned Urls",

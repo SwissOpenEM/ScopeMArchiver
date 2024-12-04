@@ -6,6 +6,7 @@ from fastapi.responses import JSONResponse
 from openapi_server.models.complete_upload_body import CompleteUploadBody
 from openapi_server.models.complete_upload_resp import CompleteUploadResp
 from openapi_server.models.abort_upload_body import AbortUploadBody
+from openapi_server.models.internal_error import InternalError
 from openapi_server.models.presigned_url_body import PresignedUrlBody
 from openapi_server.models.presigned_url_resp import PresignedUrlResp
 
@@ -31,7 +32,7 @@ class BasePresignedUrlsApiImpl(BasePresignedUrlsApi):
             return complete_multipart_upload(_SETTINGS.MINIO_LANDINGZONE_BUCKET, complete_upload_body)
         except Exception as e:
             _LOGGER.error(str(e))
-            return JSONResponse(content={"error": str(e)}, status_code=500)
+            return JSONResponse(status_code=500, content={"message": "Failed to complete upload", "details": str(e)})
 
     async def abort_multipart_upload(
         self,
@@ -44,7 +45,7 @@ class BasePresignedUrlsApiImpl(BasePresignedUrlsApi):
             return {}
         except Exception as e:
             _LOGGER.error(str(e))
-            return JSONResponse(content={"error": str(e)}, status_code=500)
+            return JSONResponse(status_code=500, content={"message": "Failed to abort multipart upload", "details": str(e)})
 
     async def get_presigned_urls(
         self,
@@ -67,4 +68,4 @@ class BasePresignedUrlsApiImpl(BasePresignedUrlsApi):
                 return PresignedUrlResp(UploadID=uploadId, Urls=b64urls)
         except Exception as e:
             _LOGGER.error(str(e))
-            return JSONResponse(content={"error": str(e)}, status_code=500)
+            return JSONResponse(status_code=500, content={"message": "Failed to get presigned urls", "details": str(e)})

@@ -20,21 +20,23 @@ import json
 
 
 
+from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
-from typing import Any, ClassVar, Dict, List
-from typing_extensions import Annotated
+from typing import Any, ClassVar, Dict, List, Optional
 try:
     from typing import Self
 except ImportError:
     from typing_extensions import Self
 
-class PresignedUrlBody(BaseModel):
+class InternalError(BaseModel):
     """
-    PresignedUrlBody
+    InternalError
     """ # noqa: E501
-    object_name: StrictStr = Field(alias="ObjectName")
-    parts: Annotated[int, Field(strict=True, ge=1)] = Field(alias="Parts")
-    __properties: ClassVar[List[str]] = ["ObjectName", "Parts"]
+    code: StrictStr = Field(description="A specific error code indicating the error type")
+    message: StrictStr = Field(description="A human-readable message providing more details about the error")
+    details: Optional[StrictStr] = Field(default=None, description="Additional context or information about the error")
+    timestamp: Optional[datetime] = Field(default=None, description="The time when the error occurred")
+    __properties: ClassVar[List[str]] = ["code", "message", "details", "timestamp"]
 
     model_config = {
         "populate_by_name": True,
@@ -54,7 +56,7 @@ class PresignedUrlBody(BaseModel):
 
     @classmethod
     def from_json(cls, json_str: str) -> Self:
-        """Create an instance of PresignedUrlBody from a JSON string"""
+        """Create an instance of InternalError from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self) -> Dict[str, Any]:
@@ -77,7 +79,7 @@ class PresignedUrlBody(BaseModel):
 
     @classmethod
     def from_dict(cls, obj: Dict) -> Self:
-        """Create an instance of PresignedUrlBody from a dict"""
+        """Create an instance of InternalError from a dict"""
         if obj is None:
             return None
 
@@ -85,8 +87,10 @@ class PresignedUrlBody(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "ObjectName": obj.get("ObjectName"),
-            "Parts": obj.get("Parts")
+            "code": obj.get("code"),
+            "message": obj.get("message"),
+            "details": obj.get("details"),
+            "timestamp": obj.get("timestamp")
         })
         return _obj
 
