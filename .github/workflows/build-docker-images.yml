@@ -48,7 +48,7 @@ jobs:
         with:
           python-version: '3.11'
       - name: Install dependencies and run tests
-        working-directory: ./backend/api/app/src/openapi_server
+        working-directory: ./backend/api/src/openapi_server
         run: |
           python -m pip install --upgrade pip
           python -m pip install pipenv
