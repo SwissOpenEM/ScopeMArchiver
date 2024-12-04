@@ -31,6 +31,8 @@ app = FastAPI(
 
 if __name__ == "__main__":
 
+    settings = Settings()
+
     settings = Settings(_secrets_dir=os.environ.get('SECRETS_DIR', "/run/secrets"))
 
     origins = [

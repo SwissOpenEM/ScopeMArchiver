@@ -13,6 +13,7 @@ from openapi_server.apis.presigned_urls_api_base import BasePresignedUrlsApi
 from openapi_server.settings import Settings
 
 from .s3 import complete_multipart_upload, abort_multipart_upload, create_presigned_url, create_presigned_urls_multipart
+_SETTINGS = Settings()
 
 
 class BasePresignedUrlsApiImpl(BasePresignedUrlsApi):
@@ -22,7 +23,7 @@ class BasePresignedUrlsApiImpl(BasePresignedUrlsApi):
         complete_upload_body: CompleteUploadBody,
     ) -> CompleteUploadResp:
         try:
-            return complete_multipart_upload(Settings().MINIO_LANDINGZONE_BUCKET, complete_upload_body)
+            return complete_multipart_upload(_SETTINGS.MINIO_LANDINGZONE_BUCKET, complete_upload_body)
         except Exception as e:
             return JSONResponse(content={"error": str(e)}, status_code=500)
 
@@ -31,7 +32,7 @@ class BasePresignedUrlsApiImpl(BasePresignedUrlsApi):
         abort_upload_body: AbortUploadBody,
     ) -> object:
         try:
-            resp = abort_multipart_upload(bucket_name=Settings().MINIO_LANDINGZONE_BUCKET,
+            resp = abort_multipart_upload(bucket_name=_SETTINGS.MINIO_LANDINGZONE_BUCKET,
                                           object_name=abort_upload_body.object_name,
                                           upload_id=abort_upload_body.upload_id)
             return {}
@@ -44,13 +45,13 @@ class BasePresignedUrlsApiImpl(BasePresignedUrlsApi):
     ) -> PresignedUrlResp:
         try:
             if presigned_url_body.parts == 1:
-                url = create_presigned_url(bucket_name=Settings().MINIO_LANDINGZONE_BUCKET,
+                url = create_presigned_url(bucket_name=_SETTINGS.MINIO_LANDINGZONE_BUCKET,
                                            object_name=presigned_url_body.object_name)
                 b64url = base64.b64encode(url.encode("utf-8")).decode()
                 return PresignedUrlResp(upload_id="", urls=[b64url])
             else:
 
-                uploadId, urls = create_presigned_urls_multipart(bucket_name=Settings().MINIO_LANDINGZONE_BUCKET,
+                uploadId, urls = create_presigned_urls_multipart(bucket_name=_SETTINGS.MINIO_LANDINGZONE_BUCKET,
                                                                  object_name=presigned_url_body.object_name,
                                                                  part_count=presigned_url_body.parts)
                 b64urls: List[str] = [base64.b64encode(b[1].encode("utf-8")).decode() for b in urls]

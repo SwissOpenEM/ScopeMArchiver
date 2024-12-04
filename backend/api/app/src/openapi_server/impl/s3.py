@@ -1,6 +1,5 @@
 from typing import List
 import boto3
-import os
 from botocore.exceptions import ClientError
 from botocore.client import Config
 from pydantic import BaseModel
@@ -16,14 +15,10 @@ settings = Settings(_secrets_dir=os.environ.get('SECRETS_DIR', "/run/secrets"))
 
 s3_client = boto3.client(
     's3',
-    # 'http://scopem-openem.ethz.ch:9000',  # Replace with your MinIO server URL
-    endpoint_url=f"http://{settings.MINIO_ENDPOINT}",
-    # endpoint_url='http://localhost:9000',  # Replace with your MinIO server URL
-    # 'minio_user',            # Replace with your MinIO access key
-    aws_access_key_id=settings.MINIO_USER.get_secret_value(),
-    # 'minio_pass',        # Replace with your MinIO secret key
-    aws_secret_access_key=settings.MINIO_PASSWORD.get_secret_value(),
-    region_name='eu-west1',
+    endpoint_url=f"http://{_SETTINGS.MINIO_ENDPOINT}",
+    aws_access_key_id=_SETTINGS.MINIO_USER.get_secret_value(),
+    aws_secret_access_key=_SETTINGS.MINIO_PASSWORD.get_secret_value(),
+    region_name=_SETTINGS.MINIO_REGION,
     config=Config(signature_version="s3v4")
 )
 
@@ -65,7 +60,7 @@ def create_presigned_urls_multipart(bucket_name, object_name, part_count) -> tup
                     'PartNumber': part_number
                 },
                 HttpMethod="PUT",
-                ExpiresIn=3600  # URL expiration time in seconds
+                ExpiresIn=_SETTINGS.URL_EXPIRATION_SECONDS
 
             )
             presigned_urls.append((part_number, presigned_url))
