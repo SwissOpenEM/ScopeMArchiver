@@ -143,7 +143,8 @@ paths:
         "200":
           content:
             application/json:
-              schema: {}
+              schema: 
+                $ref: '#/components/schemas/AbortUploadResp'
           description: Successful Response
         "422":
           content:
@@ -176,7 +177,27 @@ components:
       required:
       - ObjectName
       - UploadID
-      title: AbortUploadBody
+      title: AbortUploadBody    
+    AbortUploadResp:
+      example:
+        UploadID: UploadID
+        ObjectName: ObjectName
+        Message: Succeeded
+      properties:
+        Message:
+          title: Message 
+          type: string
+        UploadID:
+          title: Uploadid
+          type: string
+        ObjectName:
+          title: Objectname
+          type: string
+      required:
+      - ObjectName
+      - UploadID
+      - Message
+      title: AbortUploadResp
     CompletePart:
       example:
         PartNumber: 0

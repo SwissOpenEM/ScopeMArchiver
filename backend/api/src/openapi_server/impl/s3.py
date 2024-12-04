@@ -94,8 +94,8 @@ def complete_multipart_upload(bucket_name, body: CompleteUploadBody) -> Complete
 
 
 def abort_multipart_upload(bucket_name, object_name, upload_id,):
-    resp = s3_client.abort_multipart_upload(Bucket=bucket_name,
-                                            Key=object_name,
-                                            UploadId=upload_id,
-                                            )
-    _LOGGER.info("Multipart upload aborted successfully.")
+    s3_client.abort_multipart_upload(Bucket=bucket_name,
+                                     Key=object_name,
+                                     UploadId=upload_id,
+                                     )
+    _LOGGER.info(f"Multipart upload aborted successfully. UploadID={upload_id}, ObjectName={object_name}")

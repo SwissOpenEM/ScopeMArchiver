@@ -6,6 +6,7 @@ from fastapi.responses import JSONResponse
 from openapi_server.models.complete_upload_body import CompleteUploadBody
 from openapi_server.models.complete_upload_resp import CompleteUploadResp
 from openapi_server.models.abort_upload_body import AbortUploadBody
+from openapi_server.models.abort_upload_resp import AbortUploadResp
 from openapi_server.models.internal_error import InternalError
 from openapi_server.models.presigned_url_body import PresignedUrlBody
 from openapi_server.models.presigned_url_resp import PresignedUrlResp
@@ -37,12 +38,12 @@ class BasePresignedUrlsApiImpl(BasePresignedUrlsApi):
     async def abort_multipart_upload(
         self,
         abort_upload_body: AbortUploadBody,
-    ) -> object:
+    ) -> AbortUploadResp:
         try:
-            resp = abort_multipart_upload(bucket_name=_SETTINGS.MINIO_LANDINGZONE_BUCKET,
-                                          object_name=abort_upload_body.object_name,
-                                          upload_id=abort_upload_body.upload_id)
-            return {}
+            abort_multipart_upload(bucket_name=_SETTINGS.MINIO_LANDINGZONE_BUCKET,
+                                   object_name=abort_upload_body.object_name,
+                                   upload_id=abort_upload_body.upload_id)
+            return AbortUploadResp(Message="Abortin multipart upload succeeded.", UploadID=abort_upload_body.upload_id, ObjectName=abort_upload_body.object_name)
         except Exception as e:
             _LOGGER.error(str(e))
             return JSONResponse(status_code=500, content={"message": "Failed to abort multipart upload", "details": str(e)})

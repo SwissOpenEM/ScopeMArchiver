@@ -23,8 +23,8 @@ from fastapi import (  # noqa: F401
 )
 
 from openapi_server.models.extra_models import TokenModel  # noqa: F401
-from typing import Any
 from openapi_server.models.abort_upload_body import AbortUploadBody
+from openapi_server.models.abort_upload_resp import AbortUploadResp
 from openapi_server.models.complete_upload_body import CompleteUploadBody
 from openapi_server.models.complete_upload_resp import CompleteUploadResp
 from openapi_server.models.http_validation_error import HTTPValidationError
@@ -43,7 +43,7 @@ for _, name, _ in pkgutil.iter_modules(ns_pkg.__path__, ns_pkg.__name__ + "."):
 @router.post(
     "/abortMultipartUpload",
     responses={
-        200: {"model": object, "description": "Successful Response"},
+        200: {"model": AbortUploadResp, "description": "Successful Response"},
         422: {"model": HTTPValidationError, "description": "Validation Error"},
         500: {"model": InternalError, "description": "Internal Server Error"},
     },
@@ -53,7 +53,7 @@ for _, name, _ in pkgutil.iter_modules(ns_pkg.__path__, ns_pkg.__name__ + "."):
 )
 async def abort_multipart_upload(
     abort_upload_body: AbortUploadBody = Body(None, description=""),
-) -> object:
+) -> AbortUploadResp:
     if not BasePresignedUrlsApi.subclasses:
         raise HTTPException(status_code=500, detail="Not implemented")
     return await BasePresignedUrlsApi.subclasses[0]().abort_multipart_upload(abort_upload_body)

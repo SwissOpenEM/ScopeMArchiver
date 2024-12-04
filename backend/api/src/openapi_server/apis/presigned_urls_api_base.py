@@ -2,8 +2,8 @@
 
 from typing import ClassVar, Dict, List, Tuple  # noqa: F401
 
-from typing import Any
 from openapi_server.models.abort_upload_body import AbortUploadBody
+from openapi_server.models.abort_upload_resp import AbortUploadResp
 from openapi_server.models.complete_upload_body import CompleteUploadBody
 from openapi_server.models.complete_upload_resp import CompleteUploadResp
 from openapi_server.models.http_validation_error import HTTPValidationError
@@ -21,7 +21,7 @@ class BasePresignedUrlsApi:
     async def abort_multipart_upload(
         self,
         abort_upload_body: AbortUploadBody,
-    ) -> object:
+    ) -> AbortUploadResp:
         ...
 
 
