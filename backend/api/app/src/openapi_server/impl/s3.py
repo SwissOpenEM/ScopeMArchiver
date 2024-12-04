@@ -9,9 +9,12 @@ from openapi_server.settings import Settings
 from openapi_server.models.complete_upload_body import CompleteUploadBody
 from openapi_server.models.complete_upload_resp import CompleteUploadResp
 
-# boto3.set_stream_logger('')
+from logging import getLogger
 
-settings = Settings(_secrets_dir=os.environ.get('SECRETS_DIR', "/run/secrets"))
+_LOGGER = getLogger("api.s3")
+_SETTINGS = Settings()
+
+boto3.set_stream_logger('api.s3.boto3', _LOGGER.level)
 
 s3_client = boto3.client(
     's3',
@@ -32,22 +35,22 @@ def create_presigned_url(bucket_name, object_name) -> str:
         )
         return presigned_url
     except ClientError as e:
-        print(f"Error creating multipart upload: {e}")
+        _LOGGER.error(f"Error creating multipart upload: {e}")
         raise e
 
 
-def create_presigned_urls_multipart(bucket_name, object_name, part_count) -> tuple[str, List[str]]:
-    # Step 1: Create a multipart upload
+def create_presigned_urls_multipart(bucket_name, object_name, part_count) -> tuple[str, List[tuple[int, str]]]:
+    # Create a multipart upload
     try:
         response = s3_client.create_multipart_upload(
             Bucket=bucket_name, Key=object_name, ChecksumAlgorithm='SHA256')
         upload_id = response['UploadId']
-        print(f"Upload ID: {upload_id}")
+        _LOGGER.info(f"Upload ID: {upload_id}")
     except ClientError as e:
-        print(f"Error creating multipart upload: {e}")
+        _LOGGER.error(f"Error creating multipart upload: {e}")
         raise e
 
-    # Step 2: Generate presigned URLs for each part
+    # Generate presigned URLs for each part
     presigned_urls = []
     for part_number in range(1, part_count + 1):
         try:
@@ -65,11 +68,11 @@ def create_presigned_urls_multipart(bucket_name, object_name, part_count) -> tup
             )
             presigned_urls.append((part_number, presigned_url))
         except ClientError as e:
-            print(f"Error generating presigned URL for part {part_number}: {e}")
+            _LOGGER.error(f"Error generating presigned URL for part {part_number}: {e}")
             raise e
 
-    print(presigned_urls)
-    return upload_id, presigned_urls
+    _LOGGER.debug(presigned_urls)
+    return str(upload_id), presigned_urls
 
 
 class CompletePart(BaseModel):
@@ -95,4 +98,4 @@ def abort_multipart_upload(bucket_name, object_name, upload_id,):
                                             Key=object_name,
                                             UploadId=upload_id,
                                             )
-    print("Multipart upload aborted successfully.")
+    _LOGGER.info("Multipart upload aborted successfully.")

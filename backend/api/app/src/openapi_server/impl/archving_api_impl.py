@@ -15,6 +15,10 @@ from openapi_server.models.create_job_resp import CreateJobResp
 
 from .archiving import run_create_dataset_deployment, run_archiving_deployment, run_retrieval_deployment
 
+from logging import getLogger
+
+_LOGGER = getLogger("api.archiving")
+
 
 class BaseArchivingApiImpl(BaseArchivingApi):
 
@@ -30,8 +34,10 @@ class BaseArchivingApiImpl(BaseArchivingApi):
                                                           datablock_size_MB=create_dataset_body.datablock_size_in_mb,
                                                           dataset_id=data_set_id)
 
+            _LOGGER.debug("Flow run for dataset % created. Id=%d Name=%s", data_set_id, flowRun.id, flowRun.name)
             return CreateDatasetResp(Name=flowRun.name, Uuid=str(flowRun.id), DataSetId=data_set_id)
         except Exception as e:
+            _LOGGER.error(e)
             return JSONResponse(content={"error": str(e)}, status_code=500)
 
     async def create_job(
@@ -47,6 +53,8 @@ class BaseArchivingApiImpl(BaseArchivingApi):
                 case _:
                     return JSONResponse(content={"error": f"unknown job type {type}"}, status_code=500)
 
+            _LOGGER.debug("Flow run for job %s created. Id=%d Name=%s", create_job_body.id, flowRun.id, flowRun.name)
             return CreateJobResp(Uuid=str(flowRun.id), Name=flowRun.name)
         except Exception as e:
+            _LOGGER.error(e)
             return JSONResponse(content={"error": str(e)}, status_code=500)

@@ -21,7 +21,9 @@ from openapi_server.apis.archiving_api import router as ArchivingApiRouter
 from openapi_server.apis.presigned_urls_api import router as PresignedUrlsApiRouter
 
 from .settings import Settings
-import os
+from logging import getLogger
+
+_LOGGER = getLogger("api")
 
 app = FastAPI(
     title="ETHZ Archiver Service",
@@ -29,11 +31,12 @@ app = FastAPI(
     version="0.1.0",
 )
 
+
 if __name__ == "__main__":
 
     settings = Settings()
 
-    settings = Settings(_secrets_dir=os.environ.get('SECRETS_DIR', "/run/secrets"))
+    _LOGGER.setLevel(settings.UVICORN_LOG_LEVEL.upper())
 
     origins = [
         "http://127.0.0.1*",
