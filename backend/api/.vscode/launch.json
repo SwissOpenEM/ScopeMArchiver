@@ -12,7 +12,7 @@
         "PREFECT_API_URL": "http://localhost:4200/api",
         "PREFECT_LOGGING_LEVEL": "DEBUG",
         "MINIO_ENDPOINT": "scopem-openemdata.ethz.ch:9000",
-        "SECRETS_DIR": "${workspaceFolder}/../../../.secrets",
+        "SECRETS_DIR": "${workspaceFolder}/../../.secrets",
         "UVICORN_ROOT_PATH": "",
         "UVICORN_RELOAD": "true",
         "UVICORN_LOG_LEVEL": "debug",
