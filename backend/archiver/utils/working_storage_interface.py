@@ -49,6 +49,7 @@ class S3Storage():
         self.STAGING_BUCKET: Bucket = Bucket.staging_bucket()
         self.RETRIEVAL_BUCKET: Bucket = Bucket.retrieval_bucket()
         self.LANDINGZONE_BUCKET: Bucket = Bucket.landingzone_bucket()
+        self.MULTIPART_SIZE: int = 64 * 1024 * 1024
 
         self._minio = minio.Minio(
             endpoint=self._URL,
@@ -99,7 +100,7 @@ class S3Storage():
     @log
     def fput_object(self, source_file: Path, destination_file: Path, bucket: Bucket):
         self._minio.fput_object(bucket.name, str(
-            destination_file), str(source_file))
+            destination_file), str(source_file), part_size=self.MULTIPART_SIZE)
 
     @log
     def delete_object(self, minio_prefix: Path, bucket: Bucket) -> None:
