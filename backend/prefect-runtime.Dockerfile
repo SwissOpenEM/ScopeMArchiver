@@ -27,5 +27,11 @@ COPY ./backend/ ./
 COPY ./backend/archiver/Pipfile ./
 COPY ./backend/archiver/Pipfile.lock ./
 
+RUN wget https://cacerts.digicert.com/DigiCertGlobalG2TLSRSASHA2562020CA1-1.crt.pem -O DigiCertGlobalG2TLSRSASHA2562020CA1-1.crt
+RUN cp DigiCertGlobalG2TLSRSASHA2562020CA1-1.crt /usr/local/share/ca-certificates/
+RUN update-ca-certificates
+
+ENV AWS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
+
 RUN PIPENV_VENV_IN_PROJECT=1 pipenv install --system --deploy
 CMD ["/bin/bash"]

@@ -55,7 +55,7 @@ class S3Storage():
             access_key=self._USER,
             secret_key=self._PASSWORD.get_secret_value(),
             region=self._REGION,
-            secure=False
+            secure=True
         )
 
     @property
@@ -69,7 +69,7 @@ class S3Storage():
             access_key=self._USER,
             secret_key=self._PASSWORD.get_secret_value(),
             region=self._REGION,
-            secure=False
+            secure=True
         )
         url = external_minio.presigned_get_object(
             bucket_name=bucket.name,
