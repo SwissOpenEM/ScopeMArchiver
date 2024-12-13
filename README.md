@@ -3,7 +3,7 @@
 An archiver service that allows uploading dataset and registering it with [SciCat](https://scicatproject.github.io). It is built on
 [Prefect.io](prefect.io) to orchestrate the asynchronous jobs (called flows) to archive and retrieve datasets to/from the ETH LTS.
 
-The full setup is containerized and requires a SciCat instance (or a mocked instance) to run correctly.
+The full setup is containerized and requires a SciCat instance to run correctly.
 
 Refer to the [Github pages](#github-pages) for more details.
 

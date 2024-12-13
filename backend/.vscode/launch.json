@@ -59,28 +59,13 @@
         "${workspaceFolder}/concurrency-limits.toml"
       ]
     },
-    {
-      "name": "SciCat API Mock",
-      "type": "debugpy",
-      "request": "launch",
-      "env": {},
-      "module": "uvicorn",
-      "args": [
-        "archiver.tests.scicat_service_mock:app",
-        "--reload",
-        "--port",
-        "8005",
-      ],
-      "jinja": true
-    },
   ],
   "compounds": [
     {
       "name": "Archiver Service",
       "configurations": [
         "Backend API",
-        "Prefect Flows",
-        "SciCat API Mock",
+        "Prefect Flows"
       ],
       "stopAll": true
     }

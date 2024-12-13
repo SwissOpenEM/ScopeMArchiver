@@ -8,7 +8,6 @@ env:
     OPENEM_FLOWS_IMAGE_NAME: ${{ github.repository }}-openem-flows
     OPENEM_BACKEND_IMAGE_NAME: ${{ github.repository }}-openem-backend
     OPENEM_CONFIG_IMAGE_NAME: ${{ github.repository }}-openem-config
-    SCICAT_MOCK_IMAGE_NAME: ${{ github.repository }}-openem-scicat-mock
 
 on:
   push:

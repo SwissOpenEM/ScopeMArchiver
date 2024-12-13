@@ -2,9 +2,6 @@ services:
   traefik:
     image: "traefik:v2.10"
     container_name: "traefik"
-    # profiles:
-    #   - services
-    #   - full
     command:
       - "--log.level=DEBUG"
       - "--api.insecure=true"
@@ -44,7 +41,6 @@ services:
       - UVICORN_LOG_LEVEL=info
       - UVICORN_RELOAD=False
       - MINIO_ENDPOINT=${MINIO_EXTERNAL_ENDPOINT}
-      - SECRETS_DIR=/run/secrets
     secrets:
       - minio_user
       - minio_password
@@ -118,10 +114,6 @@ services:
   postgres:
     image: postgres:15.2-alpine
     restart: always
-    # profiles:
-    #   - services
-    #   - delpoy
-    #   - full
     environment:
       - POSTGRES_USER_FILE=/run/secrets/postgres_user
       - POSTGRES_PASSWORD_FILE=/run/secrets/postgres_pass
