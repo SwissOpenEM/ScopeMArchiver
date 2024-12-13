@@ -18,7 +18,7 @@ boto3.set_stream_logger('api.s3.boto3', _LOGGER.level)
 
 s3_client = boto3.client(
     's3',
-    endpoint_url=f"http://{_SETTINGS.MINIO_ENDPOINT}",
+    endpoint_url=f"https://{_SETTINGS.MINIO_ENDPOINT}",
     aws_access_key_id=_SETTINGS.MINIO_USER.get_secret_value(),
     aws_secret_access_key=_SETTINGS.MINIO_PASSWORD.get_secret_value(),
     region_name=_SETTINGS.MINIO_REGION,
