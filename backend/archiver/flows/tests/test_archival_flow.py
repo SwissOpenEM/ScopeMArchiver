@@ -12,7 +12,7 @@ from archiver.scicat.scicat_interface import SciCatClient
 from archiver.flows.tests.scicat_unittest_mock import ScicatMock, mock_scicat_client
 from archiver.flows.utils import DatasetError, SystemError
 from archiver.flows.tests.helpers import mock_s3client, create_datablocks, create_orig_datablocks, mock_create_datablocks, expected_datablocks, expected_archival_dataset_lifecycle, expected_job_status
-from archiver.utils.working_storage_interface import S3Storage
+from archiver.utils.s3_storage_interface import S3Storage
 
 
 def raise_user_error(*args, **kwargs):

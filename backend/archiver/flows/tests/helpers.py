@@ -6,7 +6,7 @@ from archiver.utils.model import Job, Dataset, DatasetLifecycle, JobResultObject
 from archiver.scicat.scicat_interface import SciCatClient
 from pathlib import Path
 
-from archiver.utils.working_storage_interface import S3Storage
+from archiver.utils.s3_storage_interface import S3Storage
 
 
 def mock_s3client() -> S3Storage:

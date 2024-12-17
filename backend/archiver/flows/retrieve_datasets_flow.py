@@ -6,7 +6,7 @@ from pydantic import SecretStr
 from prefect import flow, task, State, Task, Flow
 from prefect.client.schemas.objects import TaskRun, FlowRun
 
-from archiver.utils.working_storage_interface import get_s3_client
+from archiver.utils.s3_storage_interface import get_s3_client
 
 
 from .task_utils import generate_flow_name_job_id, generate_task_name_dataset

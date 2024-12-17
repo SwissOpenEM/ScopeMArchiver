@@ -20,7 +20,7 @@ from archiver.utils.datablocks import wait_for_free_space
 from archiver.utils.model import OrigDataBlock, DataBlock
 import archiver.utils.datablocks as datablocks_operations
 from archiver.config.concurrency_limits import ConcurrencyLimits
-from archiver.utils.working_storage_interface import S3Storage, get_s3_client
+from archiver.utils.s3_storage_interface import S3Storage, get_s3_client
 
 
 def on_get_origdatablocks_error(dataset_id: str, task: Task, task_run: TaskRun, state: State):

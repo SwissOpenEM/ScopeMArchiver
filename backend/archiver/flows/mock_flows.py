@@ -7,7 +7,7 @@ import requests
 from pathlib import Path
 from archiver.config.variables import Variables
 from archiver.utils.datablocks import upload_objects_to_s3
-from archiver.utils.working_storage_interface import Bucket, get_s3_client
+from archiver.utils.s3_storage_interface import Bucket, get_s3_client
 from archiver.utils.model import OrigDataBlock, DataFile, Dataset, DatasetLifecycle
 from archiver.flows.utils import StoragePaths
 from archiver.scicat.scicat_tasks import get_scicat_access_token

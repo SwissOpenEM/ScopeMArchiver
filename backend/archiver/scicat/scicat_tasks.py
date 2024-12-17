@@ -9,7 +9,7 @@ from archiver.scicat.scicat_interface import SciCatClient
 from archiver.config.variables import Variables
 from archiver.utils.model import DataBlock, OrigDataBlock, JobResultEntry, JobResultObject
 from archiver.flows.task_utils import generate_task_name_dataset, generate_task_name_job
-from archiver.utils.working_storage_interface import Bucket, S3Storage, get_s3_client
+from archiver.utils.s3_storage_interface import Bucket, S3Storage, get_s3_client
 
 
 from prefect.artifacts import create_link_artifact

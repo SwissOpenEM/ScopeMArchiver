@@ -11,7 +11,7 @@ import hashlib
 from typing import Dict, Iterator, List
 from pathlib import Path
 
-from archiver.utils.working_storage_interface import S3Storage, Bucket
+from archiver.utils.s3_storage_interface import S3Storage, Bucket
 from archiver.utils.model import OrigDataBlock, DataBlock, DataFile
 from archiver.utils.log import getLogger, log
 from archiver.config.variables import Variables
