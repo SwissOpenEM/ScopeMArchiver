@@ -9,7 +9,7 @@ from archiver.scicat.scicat_interface import SciCatClient
 from archiver.config.variables import Variables
 from archiver.utils.model import DataBlock, OrigDataBlock, JobResultEntry, JobResultObject
 from archiver.flows.task_utils import generate_task_name_dataset, generate_task_name_job
-from archiver.utils.working_storage_interface import S3Storage, Bucket
+from archiver.utils.working_storage_interface import Bucket, S3Storage, get_s3_client
 
 
 from prefect.artifacts import create_link_artifact
@@ -128,7 +128,7 @@ def create_job_result_object_task(dataset_ids: List[str]) -> List[JobResultEntry
     for dataset_id in dataset_ids:
         datablocks_future = get_datablocks.submit(
             dataset_id=dataset_id,
-            token=access_token
+            token=access_token.result()
         )
 
         datablocks_future.wait()
@@ -140,10 +140,16 @@ def create_job_result_object_task(dataset_ids: List[str]) -> List[JobResultEntry
     return job_results
 
 
+def create_presigned_url(client: S3Storage, datablock: DataBlock):
+    url = client.get_presigned_url(Bucket.retrieval_bucket(), datablock.archiveId)
+    return url
+
+
 def create_job_result_object(dataset_id: str, datablocks: List[DataBlock]) -> List[JobResultEntry]:
+    s3_client = get_s3_client()
     job_result_entries: List[JobResultEntry] = []
     for datablock in datablocks:
-        url = create_presigned_url(datablock)
+        url = create_presigned_url(s3_client, datablock)
 
         invalid_chars = ['/', '.', '_']
         sanitized_name = str(Path(datablock.archiveId).name)
@@ -164,8 +170,3 @@ def create_job_result_object(dataset_id: str, datablocks: List[DataBlock]) -> Li
         ))
 
     return job_result_entries
-
-
-def create_presigned_url(datablock: DataBlock):
-    url = S3Storage().get_presigned_url(Bucket.retrieval_bucket(), datablock.archiveId)
-    return url

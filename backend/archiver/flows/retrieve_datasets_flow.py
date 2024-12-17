@@ -6,6 +6,8 @@ from pydantic import SecretStr
 from prefect import flow, task, State, Task, Flow
 from prefect.client.schemas.objects import TaskRun, FlowRun
 
+from archiver.utils.working_storage_interface import get_s3_client
+
 
 from .task_utils import generate_flow_name_job_id, generate_task_name_dataset
 from .utils import report_retrieval_error
@@ -24,12 +26,14 @@ def on_get_datablocks_error(dataset_id: str, task: Task, task_run: TaskRun, stat
 
 @task(task_run_name=generate_task_name_dataset, tags=[ConcurrencyLimits().LTS_TO_RETRIEVAL_TAG])
 def copy_datablock_from_LTS_to_S3(dataset_id: str, datablock: DataBlock):
-    datablocks_operations.copy_from_LTS_to_retrieval(dataset_id, datablock)
+    s3_client = get_s3_client()
+    datablocks_operations.copy_from_LTS_to_retrieval(s3_client, dataset_id, datablock)
 
 
 def on_dataset_flow_failure(flow: Flow, flow_run: FlowRun, state: State):
     datablocks_operations.cleanup_scratch(flow_run.parameters['dataset_id'])
-    datablocks_operations.cleanup_s3_retrieval(flow_run.parameters['dataset_id'])
+    s3_client = get_s3_client()
+    datablocks_operations.cleanup_s3_retrieval(s3_client, flow_run.parameters['dataset_id'])
 
     scicat_token = get_scicat_access_token()
 
@@ -55,7 +59,7 @@ def retrieve_single_dataset_flow(dataset_id: str, job_id: UUID, scicat_token: Se
         dataset_id=dataset_id,
         token=scicat_token,
         wait_for=[dataset_update]
-    )
+    )  # type: ignore
 
     # TODO: check if on retrieval bucket
     datablocks_not_in_retrieval_bucket = datablocks.result()
@@ -67,7 +71,8 @@ def retrieve_single_dataset_flow(dataset_id: str, job_id: UUID, scicat_token: Se
 
     update_scicat_retrieval_dataset_lifecycle.submit(dataset_id=dataset_id,
                                                      status=SciCatClient.RETRIEVESTATUSMESSAGE.DATASET_RETRIEVED,
-                                                     token=scicat_token, wait_for=retrieval_tasks).result()
+                                                     token=scicat_token,
+                                                     wait_for=retrieval_tasks).wait()  # type: ignore
 
 
 def on_job_flow_failure(flow: Flow, flow_run: FlowRun, state: State):

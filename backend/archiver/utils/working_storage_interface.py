@@ -1,13 +1,16 @@
 from __future__ import annotations
-from typing import Iterable
-from datetime import timedelta
-import minio
-import minio.datatypes
-from minio.deleteobjects import DeleteObject
+import functools
+from typing import Iterable, List
+import boto3
+from boto3.s3.transfer import TransferConfig
+from botocore.client import Config
+
 from dataclasses import dataclass
 from pathlib import Path
 
-from .log import getLogger, log
+from pydantic import SecretStr
+
+from .log import log
 
 from archiver.config.variables import Variables
 from archiver.config.blocks import Blocks
@@ -32,31 +35,29 @@ class Bucket():
 
 class S3Storage():
 
-    _instance = None
-
-    def __new__(cls):
-        if cls._instance is None:
-            cls._instance = super(S3Storage, cls).__new__(cls)
-            # Put any initialization here.
-        return cls._instance
-
-    def __init__(self):
-        self._USER = Blocks().MINIO_USER
-        self._PASSWORD = Blocks().MINIO_PASSWORD
-        self._REGION = Variables().MINIO_REGION
-        self._URL = Variables().MINIO_ENDPOINT
+    def __init__(self, url: str, user: str, password: SecretStr, region: str):
+        self._URL = url
+        self._USER = user
+        self._PASSWORD = password
+        self._REGION = region
 
         self.STAGING_BUCKET: Bucket = Bucket.staging_bucket()
         self.RETRIEVAL_BUCKET: Bucket = Bucket.retrieval_bucket()
         self.LANDINGZONE_BUCKET: Bucket = Bucket.landingzone_bucket()
 
-        self._minio = minio.Minio(
-            endpoint=self._URL,
-            access_key=self._USER,
-            secret_key=self._PASSWORD.get_secret_value(),
-            region=self._REGION,
-            secure=True
+        self._minio = boto3.client(
+            's3',
+            endpoint_url=f"https://{self._URL}",
+            aws_access_key_id=self._USER.strip(),
+            aws_secret_access_key=self._PASSWORD.get_secret_value().strip(),
+            region_name=self._REGION,
+            config=Config(signature_version="s3v4")
         )
+
+    def __eq__(self, value: object) -> bool:
+        if not isinstance(value, S3Storage):
+            return False
+        return self._URL == value._URL and self._USER == value._USER and self._REGION == value._REGION
 
     @property
     def url(self):
@@ -64,56 +65,96 @@ class S3Storage():
 
     @log
     def get_presigned_url(self, bucket: Bucket, filename: str) -> str:
-        external_minio = minio.Minio(
-            endpoint=Variables().MINIO_EXTERNAL_ENDPOINT,
-            access_key=self._USER,
-            secret_key=self._PASSWORD.get_secret_value(),
-            region=self._REGION,
-            secure=True
+        presigned_url = self._minio.generate_presigned_url(
+            'get_object',
+            Params={'Bucket': bucket.name, 'Key': filename},
+            ExpiresIn=3600  # URL expiration time in seconds
         )
-        url = external_minio.presigned_get_object(
-            bucket_name=bucket.name,
-            object_name=filename,
-            expires=timedelta(hours=2)
-        )
+        return presigned_url
 
-        return url
+    @dataclass
+    class StatInfo:
+        Size: int
 
     @log
-    def stat_object(self, bucket: Bucket, filename: str) -> minio.datatypes.Object:
-        return self._minio.stat_object(
-            bucket_name=bucket.name,
-            object_name=filename
+    def stat_object(self, bucket: Bucket, filename: str) -> StatInfo:
+        object = self._minio.head_object(
+            Bucket=bucket.name,
+            Key=filename
         )
+        return object['ContentLength']
 
     @log
     def fget_object(self, bucket: Bucket, folder: str, object_name: str, target_path: Path):
-        self._minio.fget_object(
-            bucket_name=bucket.name, object_name=object_name, file_path=str(target_path.absolute()))
+        self._minio.download_file(
+            Bucket=bucket.name,
+            Key=object_name,
+            Filename=str(target_path.absolute())
+        )
+
+    @dataclass
+    class ListedObject:
+        Name: str
 
     @log
-    def list_objects(self, bucket: Bucket, folder: str | None = None):
+    def list_objects(self, bucket: Bucket, folder: str | None = None) -> List[S3Storage.ListedObject]:
         f = folder or ""
-        return self._minio.list_objects(bucket_name=bucket.name, prefix=f + "/", start_after=f"{f}/")
+        response = self._minio.list_objects(
+            Bucket=bucket.name,
+            Prefix=f + "/",
+            Marker=f"{f}/")
+
+        objects: List[S3Storage.ListedObject] = []
+        if response is not None:
+            for c in response['Contents']:
+                objects.append(S3Storage.ListedObject(Name=c['Key']))
+            return objects
+
+        return objects
 
     @log
+    def get_objects(self, bucket: Bucket, folder: str) -> bool:
+
+        return False
+
+    @ log
     def fput_object(self, source_file: Path, destination_file: Path, bucket: Bucket):
-        self._minio.fput_object(bucket.name, str(
-            destination_file), str(source_file))
+        self._minio.upload_file(
+            Bucket=bucket.name,
+            Key=str(destination_file),
+            Filename=str(source_file),
+            ExtraArgs={},
+            Config=TransferConfig(
+                multipart_threshold=64 * 1024 * 1024,
+                multipart_chunksize=64 * 1024 * 1024
+            )
+        )
 
-    @log
+    @ log
     def delete_object(self, minio_prefix: Path, bucket: Bucket) -> None:
-        delete_object_list: Iterable[DeleteObject] = list(
+        delete_object_list: Iterable[object] = list(
             map(
-                lambda x: DeleteObject(x.object_name or ""),
+                lambda x: x.Name,
                 self._minio.list_objects(
-                    bucket.name,
-                    str(minio_prefix),
+                    Bucket=bucket.name,
+                    Key=str(minio_prefix),
                     recursive=True,
                 ),
             )
         )
 
-        errors = self._minio.remove_objects(bucket.name, delete_object_list)
-        for e in errors:
-            getLogger().error(f"Failed to remove objects from Minio {e}")
+        for obj in delete_object_list:
+            response = self._minio.delete_object(
+                Bucket=bucket.name,
+                key=obj)
+            # getLogger().error(f"Failed to remove objects from Minio {e}")
+
+
+@functools.cache
+def get_s3_client() -> S3Storage:
+    return S3Storage(
+        url=Variables().MINIO_ENDPOINT,
+        user=Blocks().MINIO_USER,
+        password=Blocks().MINIO_PASSWORD,
+        region=Variables().MINIO_REGION
+    )

@@ -7,7 +7,7 @@ from prefect.testing.utilities import prefect_test_harness
 
 from archiver.flows.retrieve_datasets_flow import retrieve_datasets_flow
 from archiver.flows.tests.scicat_unittest_mock import ScicatMock, mock_scicat_client
-from archiver.flows.tests.helpers import create_datablocks, create_orig_datablocks
+from archiver.flows.tests.helpers import create_datablocks, create_orig_datablocks, mock_s3client
 from archiver.flows.tests.helpers import expected_retrieval_dataset_lifecycle, expected_job_status, expected_jobresultsobject
 from archiver.scicat.scicat_interface import SciCatClient
 from archiver.flows.utils import StoragePaths
@@ -38,6 +38,8 @@ async def mock_wait_for_file_accessible(file, timeout_s=360) -> bool:
 @ pytest.mark.parametrize("job_id,dataset_id", [
     (uuid4(), "somePrefix/456"),
 ])
+@patch("archiver.flows.retrieve_datasets_flow.get_s3_client", mock_s3client)
+@patch("archiver.scicat.scicat_tasks.get_s3_client", mock_s3client)
 @patch("archiver.scicat.scicat_tasks.scicat_client", mock_scicat_client)
 @patch("archiver.utils.datablocks.get_datablock_path_in_LTS", mock_get_datablock_path_in_LTS)
 @patch("archiver.utils.datablocks.wait_for_file_accessible", mock_wait_for_file_accessible)
@@ -117,6 +119,7 @@ def test_scicat_api_retrieval(
 @ pytest.mark.parametrize("job_id,dataset_id", [
     (uuid4(), "somePrefix/456"),
 ])
+@patch("archiver.flows.retrieve_datasets_flow.get_s3_client", mock_s3client)
 @patch("archiver.scicat.scicat_tasks.scicat_client", mock_scicat_client)
 @ patch("archiver.utils.datablocks.get_datablock_path_in_LTS", mock_raise_system_error)
 @ patch("archiver.utils.datablocks.wait_for_file_accessible", mock_wait_for_file_accessible)

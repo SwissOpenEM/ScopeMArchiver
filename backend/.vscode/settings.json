@@ -15,9 +15,10 @@
   ],
   "python.testing.pytestArgs": [
     "-m not endtoend",
+    "archiver",
+    "--asyncio-mode=auto"
     // "--cov=./archiver",
     // "--cov-report=html",
-    "."
   ],
   "python.testing.pytestEnabled": true,
   "python.testing.unittestEnabled": false,

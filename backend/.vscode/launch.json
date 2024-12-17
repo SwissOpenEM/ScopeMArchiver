@@ -12,8 +12,9 @@
       "env": {
         "PREFECT_API_URL": "http://localhost/api",
         "PREFECT_LOGGING_LEVEL": "DEBUG",
-        "MINIO_ENDPOINT": "localhost:9000",
-        "MINIO_EXTERNAL_ENDPOINT": "localhost:9000",
+        "MINIO_ENDPOINT": "scopem-openemdata.ethz.ch:9090",
+        "MINIO_EXTERNAL_ENDPOINT": "scopem-openemdata.ethz.ch:9090",
+        "AWS_CA_BUNDLE": "/etc/ssl/certs/ca-certificates.crt",
         "LTS_STORAGE_ROOT": "/tmp/data/LTS/",
         "LTS_FREE_SPACE_PERCENTAGE": "0.2",
         "ARCHIVER_SCRATCH_FOLDER": "/tmp/data/scratch/",
