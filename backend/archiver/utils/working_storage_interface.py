@@ -47,7 +47,7 @@ class S3Storage():
 
         self._minio = boto3.client(
             's3',
-            endpoint_url=f"https://{self._URL}",
+            endpoint_url=f"https://{self._URL}" if self._URL is not None else None,
             aws_access_key_id=self._USER.strip(),
             aws_secret_access_key=self._PASSWORD.get_secret_value().strip(),
             region_name=self._REGION,
@@ -82,7 +82,7 @@ class S3Storage():
             Bucket=bucket.name,
             Key=filename
         )
-        return object['ContentLength']
+        return S3Storage.StatInfo(Size=object['ContentLength'])
 
     @log
     def fget_object(self, bucket: Bucket, folder: str, object_name: str, target_path: Path):
@@ -101,21 +101,17 @@ class S3Storage():
         f = folder or ""
         response = self._minio.list_objects(
             Bucket=bucket.name,
-            Prefix=f + "/",
-            Marker=f"{f}/")
+            Prefix=f,
+            Marker=f"{f}/"
+        )
 
         objects: List[S3Storage.ListedObject] = []
-        if response is not None:
+        if response is not None and 'Contents' in response.keys():
             for c in response['Contents']:
                 objects.append(S3Storage.ListedObject(Name=c['Key']))
             return objects
 
         return objects
-
-    @log
-    def get_objects(self, bucket: Bucket, folder: str) -> bool:
-
-        return False
 
     @ log
     def fput_object(self, source_file: Path, destination_file: Path, bucket: Bucket):
@@ -131,23 +127,22 @@ class S3Storage():
         )
 
     @ log
-    def delete_object(self, minio_prefix: Path, bucket: Bucket) -> None:
-        delete_object_list: Iterable[object] = list(
+    def delete_objects(self, minio_prefix: Path, bucket: Bucket) -> None:
+        response = self._minio.list_objects(
+            Bucket=bucket.name,
+            Prefix=str(minio_prefix)
+        )
+        delete_object_list: Iterable[str] = list(
             map(
-                lambda x: x.Name,
-                self._minio.list_objects(
-                    Bucket=bucket.name,
-                    Key=str(minio_prefix),
-                    recursive=True,
-                ),
+                lambda x: x['Key'],
+                response['Contents']
             )
         )
 
         for obj in delete_object_list:
             response = self._minio.delete_object(
                 Bucket=bucket.name,
-                key=obj)
-            # getLogger().error(f"Failed to remove objects from Minio {e}")
+                Key=obj)
 
 
 @functools.cache

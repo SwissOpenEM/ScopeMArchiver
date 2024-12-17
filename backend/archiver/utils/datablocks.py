@@ -187,7 +187,7 @@ def upload_objects_to_s3(client: S3Storage, prefix: Path, bucket: Bucket, source
 @ log
 def delete_objects_from_s3(client: S3Storage, prefix: Path, bucket: Bucket):
     getLogger().info(f"Cleaning up objects in {bucket.name}/{prefix}")
-    client.delete_object(minio_prefix=prefix, bucket=bucket)
+    client.delete_objects(minio_prefix=prefix, bucket=bucket)
 
 
 @ log
