@@ -3,7 +3,6 @@ from unittest.mock import patch, MagicMock
 from uuid import UUID, uuid4
 
 
-from pydantic import SecretStr
 import pytest
 from prefect.testing.utilities import prefect_test_harness
 
@@ -12,7 +11,6 @@ from archiver.scicat.scicat_interface import SciCatClient
 from archiver.flows.tests.scicat_unittest_mock import ScicatMock, mock_scicat_client
 from archiver.flows.utils import DatasetError, SystemError
 from archiver.flows.tests.helpers import mock_s3client, create_datablocks, create_orig_datablocks, mock_create_datablocks, expected_datablocks, expected_archival_dataset_lifecycle, expected_job_status
-from archiver.utils.s3_storage_interface import S3Storage
 
 
 def raise_user_error(*args, **kwargs):
@@ -30,7 +28,6 @@ def mock_void_function(*args, **kwargs):
 @pytest.mark.parametrize("job_id,dataset_id", [
     (uuid4(), "somePrefix/456"),
 ])
-@patch("archiver.flows.archive_datasets_flow.get_s3_client", mock_s3client)
 @patch("archiver.scicat.scicat_tasks.scicat_client", mock_scicat_client)
 @patch("archiver.utils.datablocks.create_datablocks", mock_create_datablocks)
 @patch("archiver.utils.datablocks.move_data_to_LTS", mock_void_function)
@@ -46,7 +43,7 @@ def test_scicat_api_archiving(
         mock_cleanup_s3_staging: MagicMock,
         mock_cleanup_scratch: MagicMock,
         mock_cleanup_lts: MagicMock,
-        job_id: UUID, dataset_id: str):
+        job_id: UUID, dataset_id: str, mocked_s3):
 
     num_orig_datablocks = 10
     num_files_per_block = 10
@@ -94,7 +91,6 @@ def test_scicat_api_archiving(
 @pytest.mark.parametrize("job_id,dataset_id", [
     (uuid4(), "somePrefix/456"),
 ])
-@patch("archiver.flows.archive_datasets_flow.get_s3_client", mock_s3client)
 @patch("archiver.scicat.scicat_tasks.scicat_client", mock_scicat_client)
 @patch("archiver.utils.datablocks.create_datablocks", raise_user_error)
 @patch("archiver.utils.datablocks.cleanup_lts_folder")
@@ -108,7 +104,7 @@ def test_create_datablocks_user_error(
         mock_cleanup_s3_staging: MagicMock,
         mock_cleanup_scratch: MagicMock,
         mock_cleanup_lts: MagicMock,
-        job_id: UUID, dataset_id: str):
+        job_id: UUID, dataset_id: str, mocked_s3):
 
     num_orig_datablocks = 10
     num_files_per_block = 10
@@ -149,7 +145,6 @@ def test_create_datablocks_user_error(
 @ pytest.mark.parametrize("job_id,dataset_id", [
     (uuid4(), "somePrefix/456"),
 ])
-@patch("archiver.flows.archive_datasets_flow.get_s3_client", mock_s3client)
 @patch("archiver.scicat.scicat_tasks.scicat_client", mock_scicat_client)
 @patch("archiver.utils.datablocks.create_datablocks", mock_create_datablocks)
 @patch("archiver.utils.datablocks.move_data_to_LTS", raise_system_error)
@@ -164,7 +159,7 @@ def test_move_to_LTS_failure(
         mock_cleanup_s3_staging: MagicMock,
         mock_cleanup_scratch: MagicMock,
         mock_cleanup_lts: MagicMock,
-        job_id: UUID, dataset_id: str):
+        job_id: UUID, dataset_id: str, mocked_s3):
 
     num_orig_datablocks = 10
     num_files_per_block = 10
@@ -210,7 +205,6 @@ def test_move_to_LTS_failure(
 @pytest.mark.parametrize("job_id,dataset_id", [
     (uuid4(), "somePrefix/456"),
 ])
-@patch("archiver.flows.archive_datasets_flow.get_s3_client", mock_s3client)
 @patch("archiver.scicat.scicat_tasks.scicat_client", mock_scicat_client)
 @patch("archiver.utils.datablocks.create_datablocks", mock_create_datablocks)
 @patch("archiver.utils.datablocks.move_data_to_LTS", mock_void_function)
@@ -226,7 +220,7 @@ def test_LTS_validation_failure(
         mock_cleanup_s3_staging: MagicMock,
         mock_cleanup_scratch: MagicMock,
         mock_cleanup_lts: MagicMock,
-        job_id: UUID, dataset_id: str):
+        job_id: UUID, dataset_id: str, mocked_s3):
 
     num_orig_datablocks = 10
     num_files_per_block = 10

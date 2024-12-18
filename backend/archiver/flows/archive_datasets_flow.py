@@ -115,7 +115,7 @@ def create_datablocks_flow(dataset_id: str, scicat_token: SecretStr) -> List[Dat
         token=scicat_token
     )
 
-    orig_datablocks: List[OrigDataBlock] = get_origdatablocks.with_options(
+    orig_datablocks = get_origdatablocks.with_options(
         on_failure=[partial(on_get_origdatablocks_error, dataset_id)]
     ).submit(
         dataset_id=dataset_id,
@@ -129,7 +129,7 @@ def create_datablocks_flow(dataset_id: str, scicat_token: SecretStr) -> List[Dat
     )  # type: ignore
 
     register_datablocks.submit(
-        datablocks=datablocks_future,
+        datablocks=datablocks_future,  # type: ignore
         dataset_id=dataset_id,
         token=scicat_token
     ).wait()

@@ -47,7 +47,7 @@ class S3Storage():
 
         self._minio = boto3.client(
             's3',
-            endpoint_url=f"https://{self._URL}" if self._URL is not None else None,
+            endpoint_url=f"https://{self._URL}" if self._URL is not None and self._URL != '' else None,
             aws_access_key_id=self._USER.strip(),
             aws_secret_access_key=self._PASSWORD.get_secret_value().strip(),
             region_name=self._REGION,

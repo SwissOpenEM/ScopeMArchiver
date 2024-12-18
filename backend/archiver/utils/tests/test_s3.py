@@ -100,7 +100,7 @@ def test_s3_interface(s3):
 
     assert len(listed_objects) == 1
 
-    s3.delete_object(
+    s3.delete_objects(
         bucket=bucket,
         minio_prefix="/tmp")
 

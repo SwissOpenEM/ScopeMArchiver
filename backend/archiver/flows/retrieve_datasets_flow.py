@@ -4,6 +4,7 @@ from uuid import UUID
 from pydantic import SecretStr
 
 from prefect import flow, task, State, Task, Flow
+from prefect.futures import wait
 from prefect.client.schemas.objects import TaskRun, FlowRun
 
 from archiver.utils.s3_storage_interface import get_s3_client
@@ -69,10 +70,11 @@ def retrieve_single_dataset_flow(dataset_id: str, job_id: UUID, scicat_token: Se
     for d in datablocks_not_in_retrieval_bucket:
         retrieval_tasks.append(copy_datablock_from_LTS_to_S3.submit(dataset_id=dataset_id, datablock=d))
 
+    done, not_done = wait(retrieval_tasks)
+    r = [d.result() for d in done]
     update_scicat_retrieval_dataset_lifecycle.submit(dataset_id=dataset_id,
                                                      status=SciCatClient.RETRIEVESTATUSMESSAGE.DATASET_RETRIEVED,
-                                                     token=scicat_token,
-                                                     wait_for=retrieval_tasks).wait()  # type: ignore
+                                                     token=scicat_token).result()  # type: ignore
 
 
 def on_job_flow_failure(flow: Flow, flow_run: FlowRun, state: State):

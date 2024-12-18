@@ -2,7 +2,6 @@ from unittest.mock import patch, MagicMock, call
 import pytest
 from uuid import UUID, uuid4
 
-
 from prefect.testing.utilities import prefect_test_harness
 
 from archiver.flows.retrieve_datasets_flow import retrieve_datasets_flow
@@ -38,8 +37,6 @@ async def mock_wait_for_file_accessible(file, timeout_s=360) -> bool:
 @ pytest.mark.parametrize("job_id,dataset_id", [
     (uuid4(), "somePrefix/456"),
 ])
-@patch("archiver.flows.retrieve_datasets_flow.get_s3_client", mock_s3client)
-@patch("archiver.scicat.scicat_tasks.get_s3_client", mock_s3client)
 @patch("archiver.scicat.scicat_tasks.scicat_client", mock_scicat_client)
 @patch("archiver.utils.datablocks.get_datablock_path_in_LTS", mock_get_datablock_path_in_LTS)
 @patch("archiver.utils.datablocks.wait_for_file_accessible", mock_wait_for_file_accessible)
@@ -59,7 +56,7 @@ def test_scicat_api_retrieval(
         mock_cleanup_lts: MagicMock,
         mock_upload_datablock: MagicMock,
         mock_copy_file_to_folder: MagicMock,
-        job_id: UUID, dataset_id: str):
+        job_id: UUID, dataset_id: str, mocked_s3):
 
     # data in LTS
     # datablock in SciCat mock
@@ -119,7 +116,6 @@ def test_scicat_api_retrieval(
 @ pytest.mark.parametrize("job_id,dataset_id", [
     (uuid4(), "somePrefix/456"),
 ])
-@patch("archiver.flows.retrieve_datasets_flow.get_s3_client", mock_s3client)
 @patch("archiver.scicat.scicat_tasks.scicat_client", mock_scicat_client)
 @ patch("archiver.utils.datablocks.get_datablock_path_in_LTS", mock_raise_system_error)
 @ patch("archiver.utils.datablocks.wait_for_file_accessible", mock_wait_for_file_accessible)
@@ -139,13 +135,14 @@ def test_datablock_not_found(
         mock_cleanup_lts: MagicMock,
         mock_upload_datablock: MagicMock,
         mock_copy_file_to_folder: MagicMock,
-        job_id, dataset_id):
+        job_id, dataset_id, mocked_s3):
 
     num_orig_datablocks = 10
     num_datablocks = 10
     num_files_per_block = 1
     origDataBlocks = create_orig_datablocks(num_blocks=num_orig_datablocks, num_files_per_block=num_files_per_block)
     datablocks = create_datablocks(num_blocks=num_datablocks, num_files_per_block=num_files_per_block)
+    expected_s3_client = mock_s3client()
 
     with ScicatMock(job_id=job_id, dataset_id=dataset_id, origDataBlocks=origDataBlocks, datablocks=datablocks) as m, prefect_test_harness():
         try:
@@ -174,7 +171,7 @@ def test_datablock_not_found(
         )
 
         mock_upload_datablock.assert_not_called()
-        mock_cleanup_s3_retrieval.assert_called_once_with(dataset_id)
+        mock_cleanup_s3_retrieval.assert_called_once_with(expected_s3_client, dataset_id)
         mock_cleanup_s3_landingzone.assert_not_called()
         mock_cleanup_s3_staging.assert_not_called()
         mock_cleanup_scratch.assert_called_once_with(dataset_id)

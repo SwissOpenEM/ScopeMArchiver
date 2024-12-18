@@ -12,8 +12,8 @@ from archiver.utils.s3_storage_interface import S3Storage
 def mock_s3client() -> S3Storage:
     s3client = S3Storage(
         url="endpoint:9000",
-        user="user",
-        password=SecretStr("password"),
+        user="",
+        password=SecretStr(""),
         region="eu-west-1"
     )
     return s3client

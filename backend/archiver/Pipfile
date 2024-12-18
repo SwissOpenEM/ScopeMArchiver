@@ -11,6 +11,7 @@ pytest-asyncio = "*"
 requests-mock = "*"
 prefect-docker = "*"
 boto3 = "*"
+moto = {extras = ["s3"], version = "*"}
 
 [dev-packages]
 autopep8 = "*"
