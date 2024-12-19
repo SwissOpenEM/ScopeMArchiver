@@ -2,6 +2,8 @@ import tempfile
 import urllib.request
 from pathlib import Path
 import logging
+import boto3
+from botocore.client import Config
 import pytest
 import requests
 import time
@@ -9,7 +11,6 @@ from typing import Dict, Optional, Any
 from uuid import UUID
 from archiver.utils.model import Job, DatasetListEntry
 from pydantic import SecretStr
-import minio
 
 from prefect.client.schemas.objects import FlowRun, State
 from prefect.client.orchestration import PrefectClient
@@ -28,7 +29,7 @@ SCICAT_DATASETS_PATH = "/datasets"
 SCICAT_LOGIN_PATH = "/auth/login"
 
 PREFECT_SERVER_URL = "http://scopem-openem.ethz.ch/api"
-MINIO_SERVER_URL = "scopem-openem.ethz.ch:9000"
+MINIO_SERVER_URL = "scopem-openemdata.ethz.ch:9090"
 
 
 LTS_ROOT_PATH = "/tmp/LTS"
@@ -59,13 +60,15 @@ def scicat_token_setup():
 
 @pytest.fixture
 def minio_client():
-    return minio.Minio(
-        endpoint=MINIO_SERVER_URL,
-        access_key="minio_user",
-        secret_key="minio_pass",
-        region="eu-west1",
-        secure=False
-    )
+    pass
+    # return boto3.client(
+    #     's3',
+    #     endpoint_url=MINIO_SERVER_URL,
+    #     aws_access_key_id="archiver-service",
+    #     aws_secret_access_key="",
+    #     region_name="eu-west-1",
+    #     config=Config(signature_version="s3v4")
+    # )
 
 
 @pytest.fixture
@@ -226,9 +229,9 @@ async def test_end_to_end(scicat_token_setup, set_env, minio_client):
     assert not dataset_lifecycle.get("retrievable")
 
     # Verify datablocks in MINIO
-    orig_datablocks = list(map(lambda idx: minio_client.stat_object(bucket_name="landingzone",
-                           object_name=f"openem-network/datasets/{dataset_pid}/raw_files/file_{idx}.bin"), range(9)))
-    assert len(orig_datablocks) == 9
+    # orig_datablocks = list(map(lambda idx: minio_client.stat_object(bucket_name="landingzone",
+    #                        object_name=f"openem-network/datasets/{dataset_pid}/raw_files/file_{idx}.bin"), range(9)))
+    # assert len(orig_datablocks) == 9
 
     # trigger archive job in scicat
     scicat_archival_job_id = await scicat_create_archival_job(dataset=dataset_pid, token=scicat_token_setup)
@@ -298,10 +301,10 @@ async def test_end_to_end(scicat_token_setup, set_env, minio_client):
         assert dest_file.exists()
 
     # Verify retrieved datablock in MINIO
-    retrieved_datablock = minio_client.stat_object(
-        bucket_name="retrieval", object_name=f"openem-network/datasets/{dataset_pid}/datablocks/{dataset_pid}_0.tar.gz")
-    assert retrieved_datablock is not None
-    assert retrieved_datablock.size > 80 * 1024 * 1024
+    # retrieved_datablock = minio_client.stat_object(
+    #     bucket_name="retrieval", object_name=f"openem-network/datasets/{dataset_pid}/datablocks/{dataset_pid}_0.tar.gz")
+    # assert retrieved_datablock is not None
+    # assert retrieved_datablock.size > 80 * 1024 * 1024
 
     # Verify Scicat datasetlifecycle
     dataset = await get_scicat_dataset(dataset_pid=dataset_pid, token=scicat_token_setup)

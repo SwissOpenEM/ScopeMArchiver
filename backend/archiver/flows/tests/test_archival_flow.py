@@ -10,7 +10,7 @@ from archiver.flows.archive_datasets_flow import archive_datasets_flow
 from archiver.scicat.scicat_interface import SciCatClient
 from archiver.flows.tests.scicat_unittest_mock import ScicatMock, mock_scicat_client
 from archiver.flows.utils import DatasetError, SystemError
-from archiver.flows.tests.helpers import create_datablocks, create_orig_datablocks, mock_create_datablocks, expected_datablocks, expected_archival_dataset_lifecycle, expected_job_status
+from archiver.flows.tests.helpers import mock_s3client, create_datablocks, create_orig_datablocks, mock_create_datablocks, expected_datablocks, expected_archival_dataset_lifecycle, expected_job_status
 
 
 def raise_user_error(*args, **kwargs):
@@ -43,7 +43,7 @@ def test_scicat_api_archiving(
         mock_cleanup_s3_staging: MagicMock,
         mock_cleanup_scratch: MagicMock,
         mock_cleanup_lts: MagicMock,
-        job_id: UUID, dataset_id: str):
+        job_id: UUID, dataset_id: str, mocked_s3):
 
     num_orig_datablocks = 10
     num_files_per_block = 10
@@ -52,6 +52,8 @@ def test_scicat_api_archiving(
 
     origDataBlocks = create_orig_datablocks(num_blocks=num_orig_datablocks, num_files_per_block=num_files_per_block)
     datablocks = create_datablocks(num_blocks=num_datablocks, num_files_per_block=num_files_per_block)
+
+    expected_s3_client = mock_s3client()
 
     with ScicatMock(job_id=job_id, dataset_id=dataset_id, origDataBlocks=origDataBlocks, datablocks=datablocks) as m, prefect_test_harness():
         try:
@@ -80,8 +82,8 @@ def test_scicat_api_archiving(
             "archive", SciCatClient.JOBSTATUS.FINISHED_SUCCESSFULLY)
 
         mock_cleanup_s3_retrieval.assert_not_called()
-        mock_cleanup_s3_landingzone.assert_called_once_with(dataset_id)
-        mock_cleanup_s3_staging.assert_called_once_with(dataset_id)
+        mock_cleanup_s3_landingzone.assert_called_once_with(expected_s3_client, dataset_id)
+        mock_cleanup_s3_staging.assert_called_once_with(expected_s3_client, dataset_id)
         mock_cleanup_scratch.assert_called_once_with(dataset_id)
         mock_cleanup_lts.assert_not_called()
 
@@ -102,7 +104,7 @@ def test_create_datablocks_user_error(
         mock_cleanup_s3_staging: MagicMock,
         mock_cleanup_scratch: MagicMock,
         mock_cleanup_lts: MagicMock,
-        job_id: UUID, dataset_id: str):
+        job_id: UUID, dataset_id: str, mocked_s3):
 
     num_orig_datablocks = 10
     num_files_per_block = 10
@@ -110,7 +112,7 @@ def test_create_datablocks_user_error(
 
     # datablocks created but not moved to staging, therefore none reported
     num_expected_datablocks = 0
-
+    expected_s3_client = mock_s3client()
     origDataBlocks = create_orig_datablocks(num_blocks=num_orig_datablocks, num_files_per_block=num_files_per_block)
     datablocks = create_datablocks(num_blocks=num_datablocks, num_files_per_block=num_files_per_block)
     with ScicatMock(job_id=job_id, dataset_id=dataset_id, origDataBlocks=origDataBlocks, datablocks=datablocks) as m, prefect_test_harness():
@@ -135,7 +137,7 @@ def test_create_datablocks_user_error(
 
         mock_cleanup_s3_retrieval.assert_not_called()
         mock_cleanup_s3_landingzone.assert_not_called()
-        mock_cleanup_s3_staging.assert_called_once_with(dataset_id)
+        mock_cleanup_s3_staging.assert_called_once_with(expected_s3_client, dataset_id)
         mock_cleanup_scratch.assert_called_once_with(dataset_id)
         mock_cleanup_lts.assert_called_once_with(dataset_id)
 
@@ -157,7 +159,7 @@ def test_move_to_LTS_failure(
         mock_cleanup_s3_staging: MagicMock,
         mock_cleanup_scratch: MagicMock,
         mock_cleanup_lts: MagicMock,
-        job_id: UUID, dataset_id: str):
+        job_id: UUID, dataset_id: str, mocked_s3):
 
     num_orig_datablocks = 10
     num_files_per_block = 10
@@ -165,6 +167,7 @@ def test_move_to_LTS_failure(
 
     num_expected_datablocks = num_orig_datablocks
 
+    expected_s3_client = mock_s3client()
     origDataBlocks = create_orig_datablocks(num_blocks=num_orig_datablocks, num_files_per_block=num_files_per_block)
     datablocks = create_datablocks(num_blocks=num_datablocks, num_files_per_block=num_files_per_block)
     with ScicatMock(job_id=job_id, dataset_id=dataset_id, origDataBlocks=origDataBlocks, datablocks=datablocks) as m, prefect_test_harness():
@@ -194,7 +197,7 @@ def test_move_to_LTS_failure(
         # 6: cleanup LTS
         mock_cleanup_s3_retrieval.assert_not_called()
         mock_cleanup_s3_landingzone.assert_not_called()
-        mock_cleanup_s3_staging.assert_called_once_with(dataset_id)
+        mock_cleanup_s3_staging.assert_called_once_with(expected_s3_client, dataset_id)
         mock_cleanup_scratch.assert_called_once_with(dataset_id)
         mock_cleanup_lts.assert_called_once_with(dataset_id)
 
@@ -217,12 +220,13 @@ def test_LTS_validation_failure(
         mock_cleanup_s3_staging: MagicMock,
         mock_cleanup_scratch: MagicMock,
         mock_cleanup_lts: MagicMock,
-        job_id: UUID, dataset_id: str):
+        job_id: UUID, dataset_id: str, mocked_s3):
 
     num_orig_datablocks = 10
     num_files_per_block = 10
     num_datablocks = 10
 
+    expected_s3_client = mock_s3client()
     origDataBlocks = create_orig_datablocks(num_blocks=num_orig_datablocks, num_files_per_block=num_files_per_block)
     datablocks = create_datablocks(num_blocks=num_datablocks, num_files_per_block=num_files_per_block)
 
@@ -255,6 +259,6 @@ def test_LTS_validation_failure(
 
         mock_cleanup_s3_retrieval.assert_not_called()
         mock_cleanup_s3_landingzone.assert_not_called()
-        mock_cleanup_s3_staging.assert_called_once_with(dataset_id)
+        mock_cleanup_s3_staging.assert_called_once_with(expected_s3_client, dataset_id)
         mock_cleanup_scratch.assert_called_once_with(dataset_id)
         mock_cleanup_lts.assert_called_once_with(dataset_id)

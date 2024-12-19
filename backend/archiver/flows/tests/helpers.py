@@ -1,8 +1,22 @@
 from typing import List, Dict, Any
+
+from pydantic import SecretStr
 from archiver.utils.model import DataFile, OrigDataBlock, DataBlock
 from archiver.utils.model import Job, Dataset, DatasetLifecycle, JobResultObject, JobResultEntry
 from archiver.scicat.scicat_interface import SciCatClient
 from pathlib import Path
+
+from archiver.utils.s3_storage_interface import S3Storage
+
+
+def mock_s3client() -> S3Storage:
+    s3client = S3Storage(
+        url="endpoint:9000",
+        user="",
+        password=SecretStr(""),
+        region="eu-west-1"
+    )
+    return s3client
 
 
 def create_orig_datablocks(num_blocks: int = 10, num_files_per_block: int = 10) -> List[OrigDataBlock]:
@@ -104,7 +118,7 @@ def expected_jobresultsobject(dataset_id: str, datablocks: List[DataBlock]):
     return JobResultObject(result=results).model_dump(exclude_none=True)
 
 
-def mock_create_datablocks(dataset_id: str, origDataBlocks: List[OrigDataBlock]) -> List[DataBlock]:
+def mock_create_datablocks(s3_client: S3Storage, dataset_id: str, origDataBlocks: List[OrigDataBlock]) -> List[DataBlock]:
     datablocks: List[DataBlock] = []
     for o in origDataBlocks:
         d = DataBlock(
