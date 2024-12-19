@@ -1,0 +1,9 @@
+version: '3.6'
+services:
+  scopem-archiver-backend:
+    build:
+      context: .
+      target: service
+    ports:
+      - 8888:8000
+    command: python -m openapi_server

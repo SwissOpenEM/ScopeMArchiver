@@ -18,7 +18,7 @@
         "LTS_FREE_SPACE_PERCENTAGE": "0.2",
         "ARCHIVER_SCRATCH_FOLDER": "/tmp/data/scratch/",
       },
-      "module": "archiver.flows",
+      "module": "flows",
       "jinja": true
     },
     {
@@ -37,12 +37,13 @@
         "-l",
         "${workspaceFolder}/concurrency-limits.toml"
       ]
-    },
+    }
   ],
   "compounds": [
     {
       "name": "Archiver Service",
       "configurations": [
+        "Backend API",
         "Prefect Flows"
       ],
       "stopAll": true

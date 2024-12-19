@@ -2,10 +2,6 @@ services:
   minio:
     image: minio/minio
     container_name: minio
-    # profiles:
-    #   - services
-    #   - full
-    # S3 specs for presigned urls require minio to be directly exposed, with path?
     ports:
       - 9000:9000
       - 9001:9001
@@ -50,9 +46,6 @@ services:
     image: minio/mc
     depends_on:
       - minio
-    # profiles:
-    #   - config
-    #   - full
     entrypoint:
       - /bin/sh
       - -c

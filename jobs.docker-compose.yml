@@ -15,7 +15,8 @@ services:
       - PREFECT_LOGGING_LEVEL=${PREFECT_LOGGING_LEVEL}
       - PREFECT_API_URL=http://prefect-server:4200/api
       - SCICAT_ENDPOINT=${SCICAT_ENDPOINT}
-      - MINIO_EXTERNAL_ENDPOINT=${HOST}:9000
+      - MINIO_EXTERNAL_ENDPOINT=${MINIO_EXTERNAL_ENDPOINT}
+      - MINIO_ENDPOINT=${MINIO_ENDPOINT}
       # Secrets are stored as blocks, removing _FILE suffix
       - MINIO_USER_FILE=/run/secrets/minio_user
       - MINIO_PASSWORD_FILE=/run/secrets/minio_pass

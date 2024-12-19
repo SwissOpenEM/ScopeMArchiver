@@ -91,13 +91,15 @@ async def create_dataset() -> str:
     response = requests.post(
         url=f"http://{EXTERNAL_BACKEND_SERVER_URL}{BACKEND_API_PREFIX}{BACKEND_API_CREATE_DATASET_PATH}",
         json={
-
+            "FileSizeInMB": 10,
+            "NumberOfFiles": 10,
+            "DatablockSizeInMB": 10,
         }
     )
     response.raise_for_status()
-    new_dataset_flow_id = UUID(response.json()["uuid"])
-    new_dataset_flow_name = response.json()["name"]
-    new_dataset_id = response.json()["dataset_id"]
+    new_dataset_flow_id = UUID(response.json()["Uuid"])
+    new_dataset_flow_name = response.json()["Name"]
+    new_dataset_id = response.json()["DataSetId"]
     LOGGER.info(f"created flow {new_dataset_flow_name}")
     assert new_dataset_flow_id is not None
 
@@ -236,7 +238,7 @@ async def test_end_to_end(scicat_token_setup, set_env, minio_client):
     assert scicat_archival_job_status is not None
     assert scicat_archival_job_status.get("type") == "archive"
     assert scicat_archival_job_status.get(
-        "statusMessage") == "jobCreated" or scicat_archival_job_status.get("statusMessage") == "inProgress"
+        "statusCode") == "jobCreated" or scicat_archival_job_status.get("statusMessage") == "inProgress"
 
     time.sleep(10)
     # Verify Prefect Flow
@@ -268,7 +270,7 @@ async def test_end_to_end(scicat_token_setup, set_env, minio_client):
     assert scicat_retrieval_job_status is not None
     assert scicat_retrieval_job_status.get("type") == "retrieve"
     assert scicat_retrieval_job_status.get(
-        "statusMessage") == "jobCreated" or scicat_retrieval_job_status.get("statusMessage") == "inProgress"
+        "statusCode") == "jobCreated" or scicat_retrieval_job_status.get("statusMessage") == "inProgress"
 
     time.sleep(10)
     # Verify Prefect Flow

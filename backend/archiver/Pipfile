@@ -1,0 +1,21 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+prefect = "==3.1.4"
+requests = "*"
+minio = "*"
+strenum = "*"
+pytest-asyncio = "*"
+requests-mock = "*"
+prefect-docker = "*"
+
+[dev-packages]
+autopep8 = "*"
+pytest = "*"
+requests-mock = "*"
+
+[requires]
+python_version = "3.11"
