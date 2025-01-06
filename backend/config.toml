@@ -14,7 +14,7 @@ MINIO_REGION = "eu-west-1"
 MINIO_RETRIEVAL_BUCKET = "retrieval"
 MINIO_LANDINGZONE_BUCKET = "landingzone"
 MINIO_STAGING_BUCKET = "staging"
-MINIO_ENDPOINT = "scopem-openemdata.ethz.ch:9000"
+MINIO_ENDPOINT = "scopem-openemdata.ethz.ch:9090"
 
 [scicat]
 SCICAT_ENDPOINT = "http://scopem-openem.ethz.ch:89"

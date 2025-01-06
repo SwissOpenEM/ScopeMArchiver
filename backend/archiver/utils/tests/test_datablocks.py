@@ -8,6 +8,7 @@ from pathlib import Path
 import tempfile
 from unittest.mock import patch
 
+from archiver.flows.tests.helpers import mock_s3client
 from archiver.utils.datablocks import TarInfo
 import archiver.utils.datablocks as datablock_operations
 from archiver.utils.model import OrigDataBlock, DataBlock, DataFile
@@ -372,7 +373,7 @@ def mock_download_objects_from_s3(*args, **kwargs):
 def test_move_data_to_LTS(storage_paths_fixture, datablock_fixture):
 
     for datablock in datablock_fixture:
-        datablock_operations.move_data_to_LTS(test_dataset_id, datablock)
+        datablock_operations.move_data_to_LTS(mock_s3client(), test_dataset_id, datablock)
 
         file_in_lts = StoragePaths.lts_datablocks_folder(
             test_dataset_id) / Path(datablock.archiveId).name
@@ -395,7 +396,8 @@ def mock_verify_objects(*args, **kwargs):
     return []
 
 
-@ patch("archiver.utils.datablocks.list_s3_objects", mock_list_s3_objects)
+@patch("archiver.flows.retrieve_datasets_flow.get_s3_client", mock_s3client)
+@ patch("archiver.utils.datablocks.list_datablocks", mock_list_s3_objects)
 @ patch("archiver.utils.datablocks.download_objects_from_s3", mock_download_objects_from_s3)
 @ patch("archiver.utils.datablocks.upload_objects_to_s3", mock_upload_objects_to_s3)
 @ patch("archiver.utils.datablocks.verify_objects", mock_verify_objects)
@@ -409,8 +411,8 @@ def test_create_datablocks(create_raw_files_fixture, storage_paths_fixture, orig
             dataset_id) / Path(raw_file).name)
 
     # Act
-    datablocks = datablock_operations.create_datablocks(
-        dataset_id=dataset_id, origDataBlocks=origDataBlocks_fixture)
+    datablocks = datablock_operations.create_datablocks(mock_s3client(),
+                                                        dataset_id=dataset_id, origDataBlocks=origDataBlocks_fixture)
 
     assert len(datablocks) == 1
 

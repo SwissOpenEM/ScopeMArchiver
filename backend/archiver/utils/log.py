@@ -1,16 +1,17 @@
 import prefect
 import logging
 import functools
+import os
 
 import prefect.logging
 
 
 def getLogger():
-    try:
+    if "PYTEST_CURRENT_TEST" in os.environ:
+        return logging.getLogger(name="TestLogger")
+    else:
         prefect_logger = prefect.get_run_logger()
         return prefect_logger
-    except Exception:
-        return logging.getLogger(name="TestLogger")
 
 
 __attributes__ = [

@@ -7,7 +7,7 @@ import requests
 from pathlib import Path
 from archiver.config.variables import Variables
 from archiver.utils.datablocks import upload_objects_to_s3
-from archiver.utils.working_storage_interface import Bucket
+from archiver.utils.s3_storage_interface import Bucket, get_s3_client
 from archiver.utils.model import OrigDataBlock, DataFile, Dataset, DatasetLifecycle
 from archiver.flows.utils import StoragePaths
 from archiver.scicat.scicat_tasks import get_scicat_access_token
@@ -25,7 +25,7 @@ def create_dummy_dataset(dataset_id: str, file_size_MB: int, num_files: int, dat
     for i in range(num_files):
         os.system(f"dd if=/dev/urandom of={raw_files_folder}/file_{i}.bin bs={file_size_MB}M count=1 iflag=fullblock")
 
-    files = upload_objects_to_s3(prefix=Path(StoragePaths.relative_raw_files_folder(dataset_id)),
+    files = upload_objects_to_s3(get_s3_client(), prefix=Path(StoragePaths.relative_raw_files_folder(dataset_id)),
                                  bucket=Bucket.landingzone_bucket(), source_folder=raw_files_folder)
 
     checksums = []

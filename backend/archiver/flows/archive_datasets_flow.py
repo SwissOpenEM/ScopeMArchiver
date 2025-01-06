@@ -20,6 +20,7 @@ from archiver.utils.datablocks import wait_for_free_space
 from archiver.utils.model import OrigDataBlock, DataBlock
 import archiver.utils.datablocks as datablocks_operations
 from archiver.config.concurrency_limits import ConcurrencyLimits
+from archiver.utils.s3_storage_interface import S3Storage, get_s3_client
 
 
 def on_get_origdatablocks_error(dataset_id: str, task: Task, task_run: TaskRun, state: State):
@@ -29,7 +30,6 @@ def on_get_origdatablocks_error(dataset_id: str, task: Task, task_run: TaskRun, 
     report_dataset_user_error(dataset_id, token=scicat_token)
 
 
-# Tasks
 @task(task_run_name=generate_task_name_dataset)
 def create_datablocks(dataset_id: str, origDataBlocks: List[OrigDataBlock]) -> List[DataBlock]:
     """Prefect task to create datablocks.
@@ -41,7 +41,9 @@ def create_datablocks(dataset_id: str, origDataBlocks: List[OrigDataBlock]) -> L
     Returns:
         List[DataBlock]: List of DataBlocks (Pydantic Model)
     """
-    return datablocks_operations.create_datablocks(dataset_id, origDataBlocks)
+
+    s3_client = get_s3_client()
+    return datablocks_operations.create_datablocks(s3_client, dataset_id, origDataBlocks)
 
 
 @task(tags=[ConcurrencyLimits().LTS_FREE_TAG])
@@ -58,7 +60,8 @@ def move_data_to_LTS(dataset_id: str, datablock: DataBlock):
     """ Prefect task to move a datablock (.tar.gz file) to the LTS. Concurrency of this task is limited to 2 instances
     at the same time.
     """
-    return datablocks_operations.move_data_to_LTS(dataset_id, datablock)
+    s3_client = get_s3_client()
+    return datablocks_operations.move_data_to_LTS(s3_client, dataset_id, datablock)
 
 
 @task(task_run_name=generate_task_name_dataset, tags=[ConcurrencyLimits().VERIFY_LTS_TAG])
@@ -86,13 +89,13 @@ def move_datablock_to_lts_flow(dataset_id: str, datablock: DataBlock):
         dataset_id=dataset_id,
         datablock=datablock,
         wait_for=[wait]
-    )
+    )  # type: ignore
 
     verify_data_in_LTS.submit(
         dataset_id=dataset_id,
         datablock=datablock,
         wait_for=[move_data]
-    ).result()
+    ).result()  # type: ignore
 
 
 @flow(name="create_datablocks", flow_run_name=generate_subflow_run_name_job_id_dataset_id)
@@ -118,15 +121,15 @@ def create_datablocks_flow(dataset_id: str, scicat_token: SecretStr) -> List[Dat
         dataset_id=dataset_id,
         token=scicat_token,
         wait_for=[dataset_update]
-    )
+    )  # type: ignore
 
     datablocks_future = create_datablocks.submit(
         dataset_id=dataset_id,
         origDataBlocks=orig_datablocks
-    )
+    )  # type: ignore
 
     register_datablocks.submit(
-        datablocks=datablocks_future,
+        datablocks=datablocks_future,  # type: ignore
         dataset_id=dataset_id,
         token=scicat_token
     ).wait()
@@ -140,13 +143,22 @@ def on_dataset_flow_failure(flow: Flow, flow_run: FlowRun, state: State):
         dataset_id=flow_run.parameters['dataset_id'], state=state, task_run=None, token=scicat_token)
     datablocks_operations.cleanup_lts_folder(flow_run.parameters['dataset_id'])
     datablocks_operations.cleanup_scratch(flow_run.parameters['dataset_id'])
-    datablocks_operations.cleanup_s3_staging(flow_run.parameters['dataset_id'])
+    try:
+        s3_client = get_s3_client()
+        datablocks_operations.cleanup_s3_staging(s3_client, flow_run.parameters['dataset_id'])
+    except:
+        pass
 
 
 def cleanup_dataset(flow: Flow, flow_run: FlowRun, state: State):
-    datablocks_operations.cleanup_s3_landingzone(
-        flow_run.parameters['dataset_id'])
-    datablocks_operations.cleanup_s3_staging(flow_run.parameters['dataset_id'])
+    try:
+        s3_client = get_s3_client()
+        datablocks_operations.cleanup_s3_landingzone(s3_client,
+                                                     flow_run.parameters['dataset_id'])
+        datablocks_operations.cleanup_s3_staging(s3_client,
+                                                 flow_run.parameters['dataset_id'])
+    except:
+        pass
     datablocks_operations.cleanup_scratch(flow_run.parameters['dataset_id'])
 
 
@@ -189,10 +201,16 @@ def on_job_flow_cancellation(flow: Flow, flow_run: FlowRun, state: State):
 
     dataset_ids = flow_run.parameters['dataset_ids']
 
+    try:
+        s3_client = get_s3_client()
+        for dataset_id in dataset_ids:
+            datablocks_operations.cleanup_s3_staging(s3_client, dataset_id)
+    except:
+        pass
+
     for dataset_id in dataset_ids:
         datablocks_operations.cleanup_lts_folder(dataset_id)
         datablocks_operations.cleanup_scratch(dataset_id)
-        datablocks_operations.cleanup_s3_staging(dataset_id)
 
     # Getting the token here should just fetch it from the cache
     token = get_scicat_access_token()
