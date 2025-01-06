@@ -6,7 +6,7 @@ info:
 servers:
 - url: /
 paths:
-  /new_dataset/:
+  /archiver/new_dataset/:
     post:
       operationId: create_new_dataset
       requestBody:
@@ -37,7 +37,7 @@ paths:
       summary: Create New Dataset
       tags:
       - archiving
-  /jobs/:
+  /archiver/jobs/:
     post:
       operationId: create_job
       requestBody:
@@ -68,7 +68,7 @@ paths:
       summary: Job Created
       tags:
       - archiving
-  /presignedUrls:
+  /s3/presignedUrls:
     post:
       operationId: get_presigned_urls
       requestBody:
@@ -99,7 +99,7 @@ paths:
       summary: Get Presigned Urls
       tags:
       - presignedUrls
-  /completeUpload:
+  /s3/completeUpload:
     post:
       operationId: complete_upload
       requestBody:
@@ -130,7 +130,7 @@ paths:
       summary: Complete Upload
       tags:
       - presignedUrls
-  /abortMultipartUpload:
+  /s3/abortMultipartUpload:
     post:
       operationId: abort_multipart_upload
       requestBody:
