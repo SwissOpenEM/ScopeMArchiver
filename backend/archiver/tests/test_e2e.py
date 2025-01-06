@@ -2,16 +2,17 @@ import tempfile
 import urllib.request
 from pathlib import Path
 import logging
-import boto3
-from botocore.client import Config
 import pytest
 import requests
 import time
 from typing import Dict, Optional, Any
 from uuid import UUID
-from archiver.utils.model import Job, DatasetListEntry
 from pydantic import SecretStr
 
+from archiver.utils.model import Job, DatasetListEntry
+from archiver.utils.s3_storage_interface import S3Storage, Bucket
+
+from prefect import flow, State
 from prefect.client.schemas.objects import FlowRun, State
 from prefect.client.orchestration import PrefectClient
 
@@ -29,7 +30,11 @@ SCICAT_DATASETS_PATH = "/datasets"
 SCICAT_LOGIN_PATH = "/auth/login"
 
 PREFECT_SERVER_URL = "http://scopem-openem.ethz.ch/api"
+
 MINIO_SERVER_URL = "scopem-openemdata.ethz.ch:9090"
+MINIO_USER = ""
+MINIO_PASSWORD = ""
+
 
 
 LTS_ROOT_PATH = "/tmp/LTS"
@@ -59,16 +64,13 @@ def scicat_token_setup():
 
 
 @pytest.fixture
-def minio_client():
-    pass
-    # return boto3.client(
-    #     's3',
-    #     endpoint_url=MINIO_SERVER_URL,
-    #     aws_access_key_id="archiver-service",
-    #     aws_secret_access_key="",
-    #     region_name="eu-west-1",
-    #     config=Config(signature_version="s3v4")
-    # )
+def s3_client() -> S3Storage:
+    return S3Storage(
+        url=MINIO_SERVER_URL,
+        user=MINIO_USER,
+        password=SecretStr(MINIO_PASSWORD),
+        region="eu-west-1"
+    )
 
 
 @pytest.fixture
@@ -77,6 +79,7 @@ def set_env():
 
     envs = {
         'PREFECT_SERVER_URL': PREFECT_SERVER_URL,
+        "AWS_CA_BUNDLE": "/etc/ssl/certs/ca-certificates.crt",
     }
 
     for k, v in envs.items():
@@ -201,9 +204,9 @@ async def find_flow_in_prefect(job_id: UUID) -> UUID:
     return flow_run_ids[0]['id']
 
 
-@pytest.mark.endtoend
+@pytest.mark.skip(reason="Manually executed end to end test")
 @pytest.mark.asyncio
-async def test_end_to_end(scicat_token_setup, set_env, minio_client):
+async def test_end_to_end(scicat_token_setup, set_env, s3_client):
     """Runs a full workflow, i.e.
     - creating and registering a dataset
     - archving (on test volume)
@@ -229,9 +232,9 @@ async def test_end_to_end(scicat_token_setup, set_env, minio_client):
     assert not dataset_lifecycle.get("retrievable")
 
     # Verify datablocks in MINIO
-    # orig_datablocks = list(map(lambda idx: minio_client.stat_object(bucket_name="landingzone",
-    #                        object_name=f"openem-network/datasets/{dataset_pid}/raw_files/file_{idx}.bin"), range(9)))
-    # assert len(orig_datablocks) == 9
+    orig_datablocks = list(map(lambda idx: s3_client.stat_object(bucket=Bucket("landingzone"),
+                           filename=f"openem-network/datasets/{dataset_pid}/raw_files/file_{idx}.bin"), range(9)))
+    assert len(orig_datablocks) == 9
 
     # trigger archive job in scicat
     scicat_archival_job_id = await scicat_create_archival_job(dataset=dataset_pid, token=scicat_token_setup)
@@ -253,14 +256,16 @@ async def test_end_to_end(scicat_token_setup, set_env, minio_client):
     scicat_archival_job_status = await get_scicat_job(job_id=scicat_archival_job_id, token=scicat_token_setup)
     assert scicat_archival_job_status is not None
     assert scicat_archival_job_status.get("type") == "archive"
-    assert scicat_archival_job_status.get("statusMessage") == "finishedSuccessful"
+    assert scicat_archival_job_status.get(
+        "statusMessage") == "finishedSuccessful"
 
     # Verify Scicat datasetlifecycle
     dataset = await get_scicat_dataset(dataset_pid=dataset_pid, token=scicat_token_setup)
     assert dataset is not None
     dataset_lifecycle = dataset.get("datasetlifecycle")
     assert dataset_lifecycle is not None
-    assert dataset_lifecycle.get("archiveStatusMessage") == "datasetOnArchiveDisk"
+    assert dataset_lifecycle.get(
+        "archiveStatusMessage") == "datasetOnArchiveDisk"
     assert dataset_lifecycle.get("retrieveStatusMessage") == ""
     assert not dataset_lifecycle.get("archivable")
     assert dataset_lifecycle.get("retrievable")
@@ -285,9 +290,11 @@ async def test_end_to_end(scicat_token_setup, set_env, minio_client):
     scicat_retrieval_job_status = await get_scicat_job(job_id=scicat_retrieval_job_id, token=scicat_token_setup)
     assert scicat_retrieval_job_status is not None
     assert scicat_retrieval_job_status.get("type") == "retrieve"
-    assert scicat_retrieval_job_status.get("statusMessage") == "finishedSuccessful"
+    assert scicat_retrieval_job_status.get(
+        "statusMessage") == "finishedSuccessful"
     assert scicat_retrieval_job_status.get("jobResultObject") is not None
-    jobResult = scicat_retrieval_job_status.get("jobResultObject").get("result")
+    jobResult = scicat_retrieval_job_status.get(
+        "jobResultObject").get("result")
     assert len(jobResult) == 1
     assert jobResult[0].get("datasetId") == dataset_pid
     assert jobResult[0].get("url") is not None
@@ -301,10 +308,10 @@ async def test_end_to_end(scicat_token_setup, set_env, minio_client):
         assert dest_file.exists()
 
     # Verify retrieved datablock in MINIO
-    # retrieved_datablock = minio_client.stat_object(
-    #     bucket_name="retrieval", object_name=f"openem-network/datasets/{dataset_pid}/datablocks/{dataset_pid}_0.tar.gz")
-    # assert retrieved_datablock is not None
-    # assert retrieved_datablock.size > 80 * 1024 * 1024
+    retrieved_datablock = s3_client.stat_object(
+        bucket=Bucket("retrieval"), filename=f"openem-network/datasets/{dataset_pid}/datablocks/{dataset_pid}_0.tar.gz")
+    assert retrieved_datablock is not None
+    assert retrieved_datablock.Size > 80 * 1024 * 1024
 
     # Verify Scicat datasetlifecycle
     dataset = await get_scicat_dataset(dataset_pid=dataset_pid, token=scicat_token_setup)

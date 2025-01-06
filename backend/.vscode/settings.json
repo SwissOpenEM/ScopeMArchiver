@@ -14,7 +14,6 @@
     "--max-line-length=140"
   ],
   "python.testing.pytestArgs": [
-    "-m not endtoend",
     "archiver",
     "--asyncio-mode=auto"
     // "--cov=./archiver",

@@ -249,12 +249,6 @@ def create_datablock_entries(
 
 @ log
 def find_object_in_s3(client: S3Storage, dataset_id, datablock_name):
-    # object_found = next((x
-    #                      for x in list_s3_objects(
-    #                          prefix=StoragePaths.relative_datablocks_folder(
-    #                              dataset_id),
-    #                          bucket=Bucket.staging_bucket()) if x is not None and x.Name == datablock_name),
-    #                     False)
     return datablock_name in (o.Name
                               for o in list_datablocks(client,
                                                        bucket=Bucket.staging_bucket(),
