@@ -4,7 +4,7 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-prefect = "==3.1.4"
+prefect = "==3.1.11"
 requests = "*"
 strenum = "*"
 pytest-asyncio = "*"
@@ -17,6 +17,7 @@ moto = {extras = ["s3"], version = "*"}
 autopep8 = "*"
 pytest = "*"
 requests-mock = "*"
+pytest-cov = "*"
 
 [requires]
 python_version = "3.11"
