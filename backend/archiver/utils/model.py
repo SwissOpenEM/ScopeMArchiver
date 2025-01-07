@@ -216,6 +216,7 @@ class Dataset(BaseModel):
     creationLocation: Optional[str] = None
     origdatablocks: Optional[List[OrigDataBlock]] = None
     principalInvestigator: Optional[str] = None
+    datasetName: Optional[str] = None
 
 
 class StorageObject(BaseModel):

@@ -33,6 +33,7 @@ def create_dummy_dataset(dataset_id: str, file_size_MB: int, num_files: int, dat
         checksums.append("1234")
 
     dataset = Dataset(
+        datasetName=f"mock_dataset_{dataset_id}",
         pid=dataset_id,
         # createdAt=datetime.datetime.now(datetime.UTC).isoformat(),
         principalInvestigator="testPI",
