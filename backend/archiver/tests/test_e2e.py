@@ -20,7 +20,7 @@ from prefect.flow_runs import wait_for_flow_run
 
 EXTERNAL_BACKEND_SERVER_URL = "scopem-openem.ethz.ch"
 BACKEND_API_PREFIX = "/api/v1"
-BACKEND_API_CREATE_DATASET_PATH = "/new_dataset/"
+BACKEND_API_CREATE_DATASET_PATH = "archiver/new_dataset/"
 
 
 SCICAT_BACKEND_ENDPOINT = "scopem-openem.ethz.ch:89"
@@ -29,12 +29,11 @@ SCICAT_JOB_PATH = "/jobs"
 SCICAT_DATASETS_PATH = "/datasets"
 SCICAT_LOGIN_PATH = "/auth/login"
 
-PREFECT_SERVER_URL = "http://scopem-openem.ethz.ch/api"
+PREFECT_SERVER_URL = "http://scopem-openem.ethz.ch/prefect/api"
 
 MINIO_SERVER_URL = "scopem-openemdata.ethz.ch:9090"
 MINIO_USER = ""
 MINIO_PASSWORD = ""
-
 
 
 LTS_ROOT_PATH = "/tmp/LTS"
