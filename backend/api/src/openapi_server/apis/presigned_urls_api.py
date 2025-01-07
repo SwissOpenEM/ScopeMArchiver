@@ -41,7 +41,7 @@ for _, name, _ in pkgutil.iter_modules(ns_pkg.__path__, ns_pkg.__name__ + "."):
 
 
 @router.post(
-    "/abortMultipartUpload",
+    "/s3/abortMultipartUpload",
     responses={
         200: {"model": AbortUploadResp, "description": "Successful Response"},
         422: {"model": HTTPValidationError, "description": "Validation Error"},
@@ -60,7 +60,7 @@ async def abort_multipart_upload(
 
 
 @router.post(
-    "/completeUpload",
+    "/s3/completeUpload",
     responses={
         200: {"model": CompleteUploadResp, "description": "Successful Response"},
         422: {"model": HTTPValidationError, "description": "Validation Error"},
@@ -79,7 +79,7 @@ async def complete_upload(
 
 
 @router.post(
-    "/presignedUrls",
+    "/s3/presignedUrls",
     responses={
         200: {"model": PresignedUrlResp, "description": "Successful Response"},
         422: {"model": HTTPValidationError, "description": "Validation Error"},
