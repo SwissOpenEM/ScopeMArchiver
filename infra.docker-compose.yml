@@ -89,10 +89,10 @@ services:
       - PREFECT_TASK_DEFAULT_RETRY_DELAY_SECONDS=[1,10,100]
       # working; PREFECT has some issues with api prefixes...
       - PREFECT_UI_URL=http://prefect-server:4200/api
-      - PREFECT_API_URL=http://localhost/api
+      - PREFECT_API_URL=http://${HOST}/prefect/api
       - PREFECT_SERVER_API_HOST=0.0.0.0
-    ports:
-      - 4200:4200
+    expose:
+      - 4200
     depends_on:
       - postgres
     labels:
@@ -102,13 +102,14 @@ services:
       - "traefik.http.routers.prefect-server.rule=Host(`${HOST}`) && PathPrefix(`/prefect-ui`)"
       - "traefik.http.routers.prefect-server.entrypoints=web"
       # TODO: this is workaround; prefect cannot serve the api behind a prefix so this is on root
-      - "traefik.http.routers.prefect-api-server.rule=Host(`${HOST}`) && PathPrefix(`/api`)"
-      - "traefik.http.routers.prefect-api-server.entrypoints=web"
+      # - "traefik.http.routers.prefect-api-server.entrypoints=web"
 
-      - "traefik.http.routers.prefect-api-strip-server.rule=Host(`${HOST}`) && PathPrefix(`/prefect`)"
-      - "traefik.http.middlewares.prefect-api-strip-server.stripprefix.prefixes=/prefect`"
-      - "traefik.http.routers.prefect-api-strip-server.entrypoints=web"
-      - "traefik.http.routers.prefect-server.middlewares=prefect-api-strip-server"
+      - "traefik.http.routers.prefect-api-server.rule=Host(`${HOST}`) && PathPrefix(`/prefect/api`)"
+      - "traefik.http.routers.prefect-api-strip-server.rule=Host(`${HOST}`) && PathPrefix(`/prefect/api`)"
+      - "traefik.http.middlewares.prefect-api-strip-server.stripprefix.prefixes=/prefect"
+      - "traefik.http.routers.prefect-api-server.entrypoints=web"
+      - "traefik.http.routers.prefect-api-server.middlewares=prefect-api-strip-server"
+      - "traefik.http.services.prefect-server.loadbalancer.server.port=4200"
     networks:
       - scopemarchiver_network
   postgres:

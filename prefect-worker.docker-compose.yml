@@ -18,7 +18,7 @@ services:
       # Fixes bug in docker/requests package
       - EXTRA_PIP_PACKAGES=requests==2.31.0
       - PREFECT_LOGGING_LEVEL=DEBUG
-      - PREFECT_API_URL=http://prefect-server:4200/api
+      - PREFECT_API_URL=http://${HOST}/prefect/api
   prefect-retrieval-worker:
     image: prefecthq/prefect:${PREFECT_VERSION}
     restart: always
@@ -38,4 +38,4 @@ services:
       # Fixes bug in docker/requests package
       - EXTRA_PIP_PACKAGES=requests==2.31.0
       - PREFECT_LOGGING_LEVEL=DEBUG
-      - PREFECT_API_URL=http://prefect-server:4200/api
+      - PREFECT_API_URL=http://${HOST}/prefect/api
