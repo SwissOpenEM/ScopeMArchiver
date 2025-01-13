@@ -78,7 +78,6 @@ def set_env():
 
     envs = {
         'PREFECT_SERVER_URL': PREFECT_SERVER_URL,
-        "AWS_CA_BUNDLE": "/etc/ssl/certs/ca-certificates.crt",
     }
 
     for k, v in envs.items():
