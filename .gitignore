@@ -31,3 +31,4 @@ data/prefect/**
 data/uppy-server-data/**
 .site/**
 .secrets/**
+.certs/**

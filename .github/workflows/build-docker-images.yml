@@ -191,7 +191,7 @@ jobs:
         images: ${{ env.REGISTRY }}/${{ env.OPENEM_BACKEND_IMAGE_NAME }}
 
     - name: Build and push
-      uses: docker/bake-action@v5
+      uses: docker/bake-action@v6
       id: build-and-push
       with:
         workdir: ./
@@ -199,3 +199,6 @@ jobs:
         push: ${{ github.event_name != 'pull_request' }}
         set: |
             *.tags=${{ steps.meta.outputs.tags }}
+      env:
+        OPENEM_IMAGE_TAG: ${{ steps.meta.outputs.tags }}
+          

@@ -1,0 +1,49 @@
+services:
+  traefik:
+    image: "traefik:v3.3.1"
+    container_name: "traefik"
+    command:
+      - "--log.level=DEBUG"
+      - "--api.insecure=false"
+      - "--api.dashboard=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=true"
+      - "--entrypoints.websecure.address=:443"
+      - "--entrypoints.web.address=:80"
+      - "--providers.file.filename=/opt/traefik.yml"
+    ports:
+      - "443:443"
+      - "80:80"
+      - 8080:8080
+    volumes:
+      - ${CERTIFICATE_FILE:-/dev/null}:/opt/certs/cert_scopem-openem.ethz.ch.pem
+      - ${CERTIFICATE_KEY_FILE:-/dev/null}:/opt/certs/cert_scopem-openem.ethz.ch.key
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.dashboard.rule=Host(`${HOST}`) && (PathPrefix(`/api`) || PathPrefix(`/dashboard`))"
+      - "traefik.http.routers.dashboard.service=api@internal"
+      - "traefik.http.routers.dashboard.entrypoints=websecure"
+      - "traefik.http.routers.dashboard.tls"
+      - "traefik.frontend.headers.passHostHeader=true"
+      - "traefik.http.services.dashboard.loadbalancer.server.port=8080"
+    networks:
+      - scopemarchiver_network
+    configs:
+      - source: traefik.yml
+        target: /opt/traefik.yml
+
+configs:
+  traefik.yml:
+    content: |
+      tls:
+        certificates:
+          - certFile: /opt/certs/cert_scopem-openem.ethz.ch.pem
+            keyFile: /opt/certs/cert_scopem-openem.ethz.ch.key
+            stores: 
+              - default
+        stores:
+          default:
+            defaultCertificate:
+              certFile: /opt/certs/cert_scopem-openem.ethz.ch.pem
+              keyFile: /opt/certs/cert_scopem-openem.ethz.ch.key

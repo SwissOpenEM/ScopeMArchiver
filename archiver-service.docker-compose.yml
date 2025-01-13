@@ -1,0 +1,205 @@
+services:
+  archiver-backend:
+    image: ${OPENEM_BACKEND_IMAGE_NAME}:${OPENEM_IMAGE_TAG}
+    container_name: archiver-backend
+    build:
+      context: ./backend/api
+      dockerfile: ./Dockerfile
+    environment:
+      - PREFECT_LOGGING_LEVEL=${PREFECT_LOGGING_LEVEL}
+      - PREFECT_API_URL=http://prefect-server:4200/api
+      - UVICORN_ROOT_PATH=/archiver/api/v1
+      - UVICORN_PORT=8000
+      - UVICORN_LOG_LEVEL=info
+      - UVICORN_RELOAD=False
+      - MINIO_ENDPOINT=${MINIO_EXTERNAL_ENDPOINT}
+    secrets:
+      - minio_user
+      - minio_password
+    expose:
+      - 8000
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.backend.rule=Host(`${HOST}`) && PathPrefix(`/archiver/api/v1`)"
+      - "traefik.http.middlewares.backend-stripprefix.stripprefix.prefixes=/archiver/api/v1"
+      - "traefik.http.routers.backend.entrypoints=websecure"
+      - "traefik.http.routers.backend.tls"
+      - "traefik.http.routers.backend.middlewares=backend-stripprefix"
+      - "traefik.http.services.backend.loadbalancer.server.port=8000"
+    networks:
+      - scopemarchiver_network
+  prefect-server:
+    image: prefecthq/prefect:${PREFECT_VERSION}
+    container_name: prefect-server
+    restart: always
+    volumes:
+      - prefect-volume-new:/root/.prefect
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        export PREFECT_API_DATABASE_PASSWORD=$$(cat /var/run/secrets/postgres_pass)
+        export PREFECT_API_DATABASE_USER=$$(cat /var/run/secrets/postgres_user)
+        export PREFECT_API_DATABASE_CONNECTION_URL=postgresql+asyncpg://$$PREFECT_API_DATABASE_USER:$$PREFECT_API_DATABASE_PASSWORD@postgres:5432/prefect
+        /opt/prefect/entrypoint.sh prefect server start
+
+    secrets:
+      - postgres_pass
+      - postgres_user
+    healthcheck:
+      test: [ "CMD", "prefect", "version" ]
+      interval: 5s
+      timeout: 15s
+      retries: 5
+      start_period: 5s
+    environment:
+      - PREFECT_LOGGING_LEVEL=${PREFECT_LOGGING_LEVEL}
+      - PREFECT_HOME=/opt/prefect
+      - PREFECT_API_DATABASE_ECHO=False
+      - PREFECT_API_DATABASE_MIGRATE_ON_START=True
+      - PREFECT_TASK_DEFAULT_RETRIES=2
+      - PREFECT_TASK_DEFAULT_RETRY_DELAY_SECONDS=[1,10,100]
+      # working; PREFECT has some issues with api prefixes...
+      - PREFECT_UI_SERVE_BASE=/archiver/prefect/ui
+      - PREFECT_UI_URL=http://prefect-server:4200/api
+      - PREFECT_API_URL=https://${HOST}/archiver/prefect/api
+      - PREFECT_SERVER_API_HOST=0.0.0.0
+    expose:
+      - 4200
+    depends_on:
+      - postgres
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.services.prefect-server.loadbalancer.server.port=4200"
+      # UI
+      - "traefik.http.routers.prefect-server.rule=Host(`${HOST}`) && PathPrefix(`/archiver/prefect/ui`)"
+      - "traefik.http.routers.prefect-server.entrypoints=websecure"
+      - "traefik.http.routers.prefect-server.tls"
+      - "traefik.http.services.prefect-server.loadbalancer.server.port=4200"
+
+      - "traefik.http.routers.prefect-api-server.rule=Host(`${HOST}`) && PathPrefix(`/archiver/prefect/api`)"
+      - "traefik.http.routers.prefect-api-server.entrypoints=websecure"
+      - "traefik.http.routers.prefect-api-server.tls"
+      - "traefik.http.middlewares.prefect-api-strip.stripprefix.prefixes=/archiver/prefect"
+      - "traefik.http.routers.prefect-api-server.middlewares=prefect-api-strip"
+    networks:
+      - scopemarchiver_network
+  postgres:
+    image: postgres:15.2-alpine
+    restart: always
+    environment:
+      - POSTGRES_USER_FILE=/run/secrets/postgres_user
+      - POSTGRES_PASSWORD_FILE=/run/secrets/postgres_pass
+      - POSTGRES_DB=prefect
+    secrets:
+      - postgres_user
+      - postgres_pass
+    expose:
+      - 5432
+    volumes:
+      - postgres-volume-new:/var/lib/postgresql/data
+    networks:
+      - scopemarchiver_network
+
+  prefect-config:
+    image: ${PREFECT_CONFIG_IMAGE_NAME}:${OPENEM_IMAGE_TAG:-latest}
+    container_name: prefect-config
+    build:
+      context: ./backend/
+      dockerfile: ./prefect-config.Dockerfile
+      args:
+        PREFECT_VERSION: ${PREFECT_VERSION}
+      tags:
+        - ${OPENEM_IMAGE_TAG}
+    networks:
+      - scopemarchiver_network
+    environment:
+      - PREFECT_LOGGING_LEVEL=${PREFECT_LOGGING_LEVEL}
+      - PREFECT_API_URL=http://prefect-server:4200/api
+      - SCICAT_ENDPOINT=${SCICAT_ENDPOINT}
+      - MINIO_EXTERNAL_ENDPOINT=${MINIO_EXTERNAL_ENDPOINT}
+      - MINIO_ENDPOINT=${MINIO_ENDPOINT}
+      # Secrets are stored as blocks, removing _FILE suffix
+      - MINIO_USER_FILE=/run/secrets/minio_user
+      - MINIO_PASSWORD_FILE=/run/secrets/minio_password
+      - GITHUB_USER_FILE=/run/secrets/github_user
+      - GITHUB_PASSWORD_FILE=/run/secrets/github_pass
+      - SCICAT_USER_FILE=/run/secrets/scicat_user
+      - SCICAT_PASSWORD_FILE=/run/secrets/scicat_pass
+    volumes:
+      - type: bind
+        source: ./backend/prefect-vars.toml
+        target: /var/local/prefect-vars.toml
+      - type: bind
+        source: ./backend/concurrency-limits.toml
+        target: /var/local/concurrency-limits.toml
+    command: "-v /var/local/prefect-vars.toml -s MINIO_USER_FILE MINIO_PASSWORD_FILE GITHUB_USER_FILE GITHUB_PASSWORD_FILE SCICAT_USER_FILE SCICAT_PASSWORD_FILE -l /var/local/concurrency-limits.toml"
+    depends_on:
+      prefect-server:
+        condition: service_healthy
+    secrets:
+      - minio_user
+      - minio_password
+      - github_user
+      - github_pass
+      - scicat_user
+      - scicat_pass
+  prefect-flows-deployment:
+    image: prefecthq/prefect:${PREFECT_VERSION}
+    container_name: prefect-flows-deployment
+    networks:
+      - scopemarchiver_network
+    environment:
+      ### Prefect specific values
+      - PREFECT_LOGGING_LEVEL=${PREFECT_LOGGING_LEVEL}
+      - PREFECT_API_URL=http://prefect-server:4200/api
+      - EXTRA_PIP_PACKAGES=prefect-docker==0.6.1
+      ### Deployment values for interpolation in prefect.yaml
+      - PREFECT_VERSION=${PREFECT_VERSION}
+      - PREFECT_WORKER_LTS_VOLUME_NAME=scopemarchiver_${PREFECT_WORKER_LTS_VOLUME_NAME}
+      - LTS_ROOT_FOLDER=${LTS_ROOT_FOLDER}
+      - PREFECT_NETWORK=scopemarchiver_network
+    command: prefect --no-prompt deploy --all --prefect-file /home/dev/backend/prefect.yaml
+    working_dir: /home/dev/
+    volumes:
+      - type: bind
+        source: ./
+        target: /home/dev/
+        read_only: true
+      - /usr/bin/docker:/usr/bin/docker
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      prefect-server:
+        condition: service_healthy
+    labels:
+      - "traefik.enable=false"
+volumes:
+  lts-mock-volume:
+    driver: local
+  nfs-lts-share:
+    driver_opts:
+      type: "nfs"
+      o: "nfsvers=3,addr=lts22,nolock"
+      device: ":/scopem_lts_nfs_test_lts22"
+  postgres-volume-new:
+    driver: local
+  prefect-volume-new:
+    driver: local
+
+secrets:
+  postgres_user:
+    file: ./.secrets/postgresuser.txt
+  postgres_pass:
+    file: ./.secrets/postgrespass.txt
+  github_user:
+    file: ./.secrets/githubuser.txt
+  github_pass:
+    file: ./.secrets/githubpass.txt
+  scicat_user:
+    file: ./.secrets/scicatuser.txt
+  scicat_pass:
+    file: ./.secrets/scicatpass.txt
+  minio_user:
+    file: ./.secrets/miniouser.txt
+  minio_password:
+    file: ./.secrets/miniopass.txt

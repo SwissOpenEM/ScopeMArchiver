@@ -32,10 +32,4 @@ WORKDIR /root/app/site-packages
 COPY --from=builder /venv /venv
 ENV PATH=/venv/bin:$PATH
 
-RUN wget https://cacerts.digicert.com/DigiCertGlobalG2TLSRSASHA2562020CA1-1.crt.pem -O DigiCertGlobalG2TLSRSASHA2562020CA1-1.crt
-RUN cp DigiCertGlobalG2TLSRSASHA2562020CA1-1.crt /usr/local/share/ca-certificates/
-RUN update-ca-certificates
-
-ENV AWS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
-
 ENTRYPOINT [ "python", "-m", "openapi_server" ]
