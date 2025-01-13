@@ -18,18 +18,18 @@ from prefect.client.orchestration import PrefectClient
 
 from prefect.flow_runs import wait_for_flow_run
 
-EXTERNAL_BACKEND_SERVER_URL = "scopem-openem.ethz.ch"
+EXTERNAL_BACKEND_SERVER_URL = "scopem-openem.ethz.ch/archiver"
 BACKEND_API_PREFIX = "/api/v1"
-BACKEND_API_CREATE_DATASET_PATH = "archiver/new_dataset/"
+BACKEND_API_CREATE_DATASET_PATH = "/archiver/new_dataset"
 
 
-SCICAT_BACKEND_ENDPOINT = "scopem-openem.ethz.ch:89"
+SCICAT_BACKEND_ENDPOINT = "scopem-openem.ethz.ch/scicat/backend"
 SCICAT_BACKEND_API_PREFIX = "/api/v3"
 SCICAT_JOB_PATH = "/jobs"
 SCICAT_DATASETS_PATH = "/datasets"
 SCICAT_LOGIN_PATH = "/auth/login"
 
-PREFECT_SERVER_URL = "http://scopem-openem.ethz.ch/prefect/api"
+PREFECT_SERVER_URL = "https://scopem-openem.ethz.ch/archiver/prefect/api"
 
 MINIO_SERVER_URL = "scopem-openemdata.ethz.ch:9090"
 MINIO_USER = ""
@@ -43,7 +43,7 @@ LOGGER = logging.getLogger(__name__)
 
 def get_scicat_token(user: str = "ingestor", pw: str = "aman") -> SecretStr:
 
-    resp = requests.post(url=f"http://{SCICAT_BACKEND_ENDPOINT}{SCICAT_BACKEND_API_PREFIX}{SCICAT_LOGIN_PATH}", json={
+    resp = requests.post(url=f"https://{SCICAT_BACKEND_ENDPOINT}{SCICAT_BACKEND_API_PREFIX}{SCICAT_LOGIN_PATH}", json={
         "username": f"{user}",
         "password": f"{pw}"
     })
@@ -94,7 +94,7 @@ async def create_dataset() -> str:
     LOGGER.info("Creating dataset")
 
     response = requests.post(
-        url=f"http://{EXTERNAL_BACKEND_SERVER_URL}{BACKEND_API_PREFIX}{BACKEND_API_CREATE_DATASET_PATH}",
+        url=f"https://{EXTERNAL_BACKEND_SERVER_URL}{BACKEND_API_PREFIX}{BACKEND_API_CREATE_DATASET_PATH}",
         json={
             "FileSizeInMB": 10,
             "NumberOfFiles": 10,
@@ -125,7 +125,7 @@ async def scicat_create_retrieval_job(dataset: str, token: SecretStr) -> UUID:
         ownerGroup="ingestor",
     )
     # TODO: this entry point needs alignment with SciCat
-    response = requests.post(url=f"http://{SCICAT_BACKEND_ENDPOINT}{SCICAT_BACKEND_API_PREFIX}{SCICAT_JOB_PATH}",
+    response = requests.post(url=f"https://{SCICAT_BACKEND_ENDPOINT}{SCICAT_BACKEND_API_PREFIX}{SCICAT_JOB_PATH}",
                              data=job.model_dump_json(exclude_none=True),
                              headers=headers(token))
     response.raise_for_status()
@@ -145,7 +145,7 @@ async def scicat_create_archival_job(dataset: str, token: SecretStr) -> UUID:
     )
 
     j = job.model_dump_json(exclude_none=True)
-    response = requests.post(url=f"http://{SCICAT_BACKEND_ENDPOINT}{SCICAT_BACKEND_API_PREFIX}{SCICAT_JOB_PATH}",
+    response = requests.post(url=f"https://{SCICAT_BACKEND_ENDPOINT}{SCICAT_BACKEND_API_PREFIX}{SCICAT_JOB_PATH}",
                              data=j,
                              headers=headers(token))
     response.raise_for_status()
@@ -154,13 +154,13 @@ async def scicat_create_archival_job(dataset: str, token: SecretStr) -> UUID:
 
 
 async def get_scicat_dataset(dataset_pid: str, token: SecretStr) -> Dict[str, Any]:
-    response = requests.get(url=f"http://{SCICAT_BACKEND_ENDPOINT}{SCICAT_BACKEND_API_PREFIX}{SCICAT_DATASETS_PATH}/{dataset_pid}",
+    response = requests.get(url=f"https://{SCICAT_BACKEND_ENDPOINT}{SCICAT_BACKEND_API_PREFIX}{SCICAT_DATASETS_PATH}/{dataset_pid}",
                             headers=headers(token))
     return response.json()
 
 
 async def get_scicat_job(job_id: UUID, token: SecretStr) -> Dict[str, Any]:
-    response = requests.get(url=f"http://{SCICAT_BACKEND_ENDPOINT}{SCICAT_BACKEND_API_PREFIX}{SCICAT_JOB_PATH}/{job_id}",
+    response = requests.get(url=f"https://{SCICAT_BACKEND_ENDPOINT}{SCICAT_BACKEND_API_PREFIX}{SCICAT_JOB_PATH}/{job_id}",
                             headers=headers(token))
     return response.json()
 

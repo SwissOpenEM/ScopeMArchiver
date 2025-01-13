@@ -17,5 +17,5 @@ MINIO_STAGING_BUCKET = "staging"
 MINIO_ENDPOINT = "scopem-openemdata.ethz.ch:9090"
 
 [scicat]
-SCICAT_ENDPOINT = "http://scopem-openem.ethz.ch:89"
+SCICAT_ENDPOINT = "https://scopem-openem.ethz.ch/scicat/backend"
 SCICAT_API_PREFIX = "/api/v3/"

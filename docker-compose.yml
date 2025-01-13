@@ -1,8 +1,8 @@
 include:
-  # Traefik, Prefect, Postgress
-  - infra.docker-compose.yml
-  # Prefect config and flows
-  - jobs.docker-compose.yml
+  # Traefik
+  - traefik.docker-compose.yml
+  # Archiver service: api, Prefect server, Prefect config and flows
+  - archiver-service.docker-compose.yml
   # Prefect worker, workpool
   - prefect-worker.docker-compose.yml
   # S3 storage
