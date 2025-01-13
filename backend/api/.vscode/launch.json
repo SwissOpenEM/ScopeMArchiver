@@ -12,7 +12,6 @@
         "PREFECT_API_URL": "http://localhost:4200/api",
         "PREFECT_LOGGING_LEVEL": "DEBUG",
         "MINIO_ENDPOINT": "scopem-openemdata.ethz.ch:9090",
-        "AWS_CA_BUNDLE": "/etc/ssl/certs/ca-certificates.crt",
         "SECRETS_DIR": "${workspaceFolder}/../../.secrets",
         "UVICORN_ROOT_PATH": "",
         "UVICORN_RELOAD": "true",
