@@ -10,15 +10,15 @@
 
 | Name                    | Technology                             | Description                                                      | Endpoint                                |
 | ----------------------- | -------------------------------------- | ---------------------------------------------------------------- | --------------------------------------- |
-| Reverse Proxy           | Traefik <https://traefik.io/traefik/>  | Routes traffic to endpoints                                      | <http://localhost/traefik/dashboard/#/> |
-| Backend                 | FastAPI <https://fastapi.tiangolo.com> | Endpoint for Scicat backend, requests flow scheduling by Prefect | <http://localhost/api/v1/docs>          |
-| Workflow Orchestraction | Prefect <https://www.prefect.io>       | Orchestrates workflows for archival and retrieval operations     | <http://localhost/prefect-ui/dashboard> |
+| Reverse Proxy           | Traefik <https://traefik.io/traefik/>  | Routes traffic to endpoints                                      | <https://${HOST}/dashboard/> |
+| Backend Api        | FastAPI <https://fastapi.tiangolo.com> | Endpoint for Scicat backend, requests flow scheduling by Prefect | <https://${HOST}/archiver/api/v1/docs>          |
+| Workflow Orchestraction | Prefect <https://www.prefect.io>       | Orchestrates workflows for archival and retrieval operations     | <https://${HOST}/archiver/prefect/ui/dashboard> |
 
 #### Workflow Orchestration
 
 | Name           | Technology                                                            | Description | Endpoint                                              |
 | -------------- | --------------------------------------------------------------------- | ----------- | ----------------------------------------------------- |
-| Prefect Server | <https://docs.prefect.io/3.0/manage/self-host>                        |             | <http://localhost/prefect-ui/dashboard> dashboard/#/> |
+| Prefect Server | <https://docs.prefect.io/3.0/manage/self-host>                        |             | <https://${HOST}/archiver/prefect/ui/dashboard> |
 | Prefect Worker | <https://docs.prefect.io/3.0/deploy/infrastructure-concepts/workers>  |             | n/a                                                   |
 | Prefect Flow   | <https://docs.prefect.io/3.0/develop/write-flows#write-and-run-flows> |             | n/a                                                   |
 
@@ -34,4 +34,5 @@
 | Name     | Technology                                       | Description                                                                            | Endpoint                    |
 | -------- | ------------------------------------------------ | -------------------------------------------------------------------------------------- | --------------------------- |
 | Ingestor | Golang <https://github.com/SwissOpenEM/Ingestor> | Client application to select, ingest, and upload datasets                              | n/a                         |
-| SciCat   | Node.js <https://scicatproject.github.io>        | Data catalog backend where datasets are registered and archival/retrieval is triggered | <https://discovery.psi.ch/> |
+| SciCat Frontend  | Node.js <https://scicatproject.github.io>        | Data catalog frontend where datasets are registered and archival/retrieval is triggered | <https://discovery.psi.ch/>, <https://${HOST}/>  |
+| SciCat Backend | Node.js <https://scicatproject.github.io>        | Data catalog backend where datasets are registered and archival/retrieval is triggered | <https://dacat.psi.ch/explorer/>, <https://${HOST}/scicat/backend/explorer>  |

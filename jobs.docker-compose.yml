@@ -69,6 +69,8 @@ services:
     depends_on:
       prefect-server:
         condition: service_healthy
+    labels:
+      - "traefik.enable=false"
 volumes:
   lts-mock-volume:
     driver: local

@@ -1,32 +1,38 @@
 services:
   traefik:
-    image: "traefik:v2.10"
+    image: "traefik:v3.3.1"
     container_name: "traefik"
     command:
       - "--log.level=DEBUG"
-      - "--api.insecure=true"
+      - "--api.insecure=false"
       - "--api.dashboard=true"
       - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.exposedbydefault=true"
       - "--entrypoints.websecure.address=:443"
       - "--entrypoints.web.address=:80"
-      - "--entryPoints.web.forwardedHeaders.insecure"
+      - "--providers.file.filename=/opt/traefik.yml"
     ports:
       - "443:443"
       - "80:80"
+      - 8080:8080
     volumes:
+      - /home/wiphilip/certs/bundle.pem:/opt/certs/cert_scopem-openem.ethz.ch.pem
+      - /home/wiphilip/certs/cert_scopem-openem.ethz.ch.key:/opt/certs/cert_scopem-openem.ethz.ch.key
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.mydashboard.rule=Host(`${HOST}`) && (PathPrefix(`/traefik/api`, `/traefik/dashboard`) ||  HeadersRegexp(`Referer`, `/traefik`))"
-      - "traefik.http.middlewares.mydashboard-strip.stripprefix.prefixes=/traefik"
-      - "traefik.http.routers.mydashboard.service=api@internal"
-      - "traefik.http.routers.mydashboard.entrypoints=web"
-      - "traefik.http.routers.mydashboard.middlewares=mydashboard-strip"
+      - "traefik.http.routers.dashboard.rule=Host(`${HOST}`) && (PathPrefix(`/api`) || PathPrefix(`/dashboard`))"
+      - "traefik.http.routers.dashboard.service=api@internal"
+      - "traefik.http.routers.dashboard.entrypoints=websecure"
+      - "traefik.http.routers.dashboard.tls"
       - "traefik.frontend.headers.passHostHeader=true"
       - "traefik.http.services.dashboard.loadbalancer.server.port=8080"
     networks:
       - scopemarchiver_network
+    configs:
+      - source: traefik.yml
+        target: /opt/traefik.yml
+
   archiver-backend:
     image: ${OPENEM_BACKEND_IMAGE_NAME}:${OPENEM_IMAGE_TAG}
     container_name: archiver-backend
@@ -36,7 +42,7 @@ services:
     environment:
       - PREFECT_LOGGING_LEVEL=${PREFECT_LOGGING_LEVEL}
       - PREFECT_API_URL=http://prefect-server:4200/api
-      - UVICORN_ROOT_PATH=/api/v1
+      - UVICORN_ROOT_PATH=/archiver/api/v1
       - UVICORN_PORT=8000
       - UVICORN_LOG_LEVEL=info
       - UVICORN_RELOAD=False
@@ -44,13 +50,14 @@ services:
     secrets:
       - minio_user
       - minio_password
-    ports:
-      - 8004:8000
+    expose:
+      - 8000
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.backend.rule=Host(`${HOST}`) && PathPrefix(`/api/v1`)"
-      - "traefik.http.middlewares.backend-stripprefix.stripprefix.prefixes=/api/v1"
-      - "traefik.http.routers.backend.entrypoints=web"
+      - "traefik.http.routers.backend.rule=Host(`${HOST}`) && PathPrefix(`/archiver/api/v1`)"
+      - "traefik.http.middlewares.backend-stripprefix.stripprefix.prefixes=/archiver/api/v1"
+      - "traefik.http.routers.backend.entrypoints=websecure"
+      - "traefik.http.routers.backend.tls"
       - "traefik.http.routers.backend.middlewares=backend-stripprefix"
       - "traefik.http.services.backend.loadbalancer.server.port=8000"
     networks:
@@ -84,12 +91,12 @@ services:
       - PREFECT_HOME=/opt/prefect
       - PREFECT_API_DATABASE_ECHO=False
       - PREFECT_API_DATABASE_MIGRATE_ON_START=True
-      - PREFECT_UI_SERVE_BASE=/prefect-ui
       - PREFECT_TASK_DEFAULT_RETRIES=2
       - PREFECT_TASK_DEFAULT_RETRY_DELAY_SECONDS=[1,10,100]
       # working; PREFECT has some issues with api prefixes...
+      - PREFECT_UI_SERVE_BASE=/archiver/prefect/ui
       - PREFECT_UI_URL=http://prefect-server:4200/api
-      - PREFECT_API_URL=http://${HOST}/prefect/api
+      - PREFECT_API_URL=https://${HOST}/archiver/prefect/api
       - PREFECT_SERVER_API_HOST=0.0.0.0
     expose:
       - 4200
@@ -99,17 +106,16 @@ services:
       - "traefik.enable=true"
       - "traefik.http.services.prefect-server.loadbalancer.server.port=4200"
       # UI
-      - "traefik.http.routers.prefect-server.rule=Host(`${HOST}`) && PathPrefix(`/prefect-ui`)"
-      - "traefik.http.routers.prefect-server.entrypoints=web"
-      # TODO: this is workaround; prefect cannot serve the api behind a prefix so this is on root
-      # - "traefik.http.routers.prefect-api-server.entrypoints=web"
-
-      - "traefik.http.routers.prefect-api-server.rule=Host(`${HOST}`) && PathPrefix(`/prefect/api`)"
-      - "traefik.http.routers.prefect-api-strip-server.rule=Host(`${HOST}`) && PathPrefix(`/prefect/api`)"
-      - "traefik.http.middlewares.prefect-api-strip-server.stripprefix.prefixes=/prefect"
-      - "traefik.http.routers.prefect-api-server.entrypoints=web"
-      - "traefik.http.routers.prefect-api-server.middlewares=prefect-api-strip-server"
+      - "traefik.http.routers.prefect-server.rule=Host(`${HOST}`) && PathPrefix(`/archiver/prefect/ui`)"
+      - "traefik.http.routers.prefect-server.entrypoints=websecure"
+      - "traefik.http.routers.prefect-server.tls"
       - "traefik.http.services.prefect-server.loadbalancer.server.port=4200"
+
+      - "traefik.http.routers.prefect-api-server.rule=Host(`${HOST}`) && PathPrefix(`/archiver/prefect/api`)"
+      - "traefik.http.routers.prefect-api-server.entrypoints=websecure"
+      - "traefik.http.routers.prefect-api-server.tls"
+      - "traefik.http.middlewares.prefect-api-strip.stripprefix.prefixes=/archiver/prefect"
+      - "traefik.http.routers.prefect-api-server.middlewares=prefect-api-strip"
     networks:
       - scopemarchiver_network
   postgres:
@@ -143,3 +149,18 @@ secrets:
     file: ./.secrets/miniouser.txt
   minio_password:
     file: ./.secrets/miniopass.txt
+
+configs:
+  traefik.yml:
+    content: |
+      tls:
+        certificates:
+          - certFile: /opt/certs/cert_scopem-openem.ethz.ch.pem
+            keyFile: /opt/certs/cert_scopem-openem.ethz.ch.key
+            stores: 
+              - default
+        stores:
+          default:
+            defaultCertificate:
+              certFile: /opt/certs/cert_scopem-openem.ethz.ch.pem
+              keyFile: /opt/certs/cert_scopem-openem.ethz.ch.key

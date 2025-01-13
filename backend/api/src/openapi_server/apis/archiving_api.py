@@ -39,7 +39,7 @@ for _, name, _ in pkgutil.iter_modules(ns_pkg.__path__, ns_pkg.__name__ + "."):
 
 
 @router.post(
-    "/archiver/jobs/",
+    "/archiver/jobs",
     responses={
         200: {"model": CreateJobResp, "description": "Successful Response"},
         422: {"model": HTTPValidationError, "description": "Validation Error"},
@@ -58,7 +58,7 @@ async def create_job(
 
 
 @router.post(
-    "/archiver/new_dataset/",
+    "/archiver/new_dataset",
     responses={
         200: {"model": CreateDatasetResp, "description": "Successful Response"},
         422: {"model": HTTPValidationError, "description": "Validation Error"},

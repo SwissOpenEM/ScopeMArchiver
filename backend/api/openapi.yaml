@@ -6,7 +6,7 @@ info:
 servers:
 - url: /
 paths:
-  /archiver/new_dataset/:
+  /archiver/new_dataset:
     post:
       operationId: create_new_dataset
       requestBody:
@@ -37,7 +37,7 @@ paths:
       summary: Create New Dataset
       tags:
       - archiving
-  /archiver/jobs/:
+  /archiver/jobs:
     post:
       operationId: create_job
       requestBody:
