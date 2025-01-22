@@ -13,30 +13,30 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateDatasetBody'
+              $ref: "#/components/schemas/CreateDatasetBody"
         required: true
       responses:
         "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CreateDatasetResp'
+                $ref: "#/components/schemas/CreateDatasetResp"
           description: Successful Response
         "422":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/HTTPValidationError'
+                $ref: "#/components/schemas/HTTPValidationError"
           description: Validation Error
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/InternalError'
+                $ref: "#/components/schemas/InternalError"
           description: Internal Server Error
       summary: Create New Dataset
       tags:
-      - archiving
+        - archiving
   /archiver/jobs:
     post:
       operationId: create_job
@@ -44,30 +44,30 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateJobBody'
+              $ref: "#/components/schemas/CreateJobBody"
         required: true
       responses:
         "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CreateJobResp'
+                $ref: "#/components/schemas/CreateJobResp"
           description: Successful Response
         "422":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/HTTPValidationError'
+                $ref: "#/components/schemas/HTTPValidationError"
           description: Validation Error
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/InternalError'
+                $ref: "#/components/schemas/InternalError"
           description: Internal Server Error
       summary: Job Created
       tags:
-      - archiving
+        - archiving
   /s3/presignedUrls:
     post:
       operationId: get_presigned_urls
@@ -75,30 +75,30 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PresignedUrlBody'
+              $ref: "#/components/schemas/PresignedUrlBody"
         required: true
       responses:
         "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PresignedUrlResp'
+                $ref: "#/components/schemas/PresignedUrlResp"
           description: Successful Response
         "422":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/HTTPValidationError'
+                $ref: "#/components/schemas/HTTPValidationError"
           description: Validation Error
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/InternalError'
+                $ref: "#/components/schemas/InternalError"
           description: Internal Server Error
       summary: Get Presigned Urls
       tags:
-      - presignedUrls
+        - presignedUrls
   /s3/completeUpload:
     post:
       operationId: complete_upload
@@ -106,30 +106,30 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CompleteUploadBody'
+              $ref: "#/components/schemas/CompleteUploadBody"
         required: true
       responses:
         "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CompleteUploadResp'
+                $ref: "#/components/schemas/CompleteUploadResp"
           description: Successful Response
         "422":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/HTTPValidationError'
+                $ref: "#/components/schemas/HTTPValidationError"
           description: Validation Error
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/InternalError'
+                $ref: "#/components/schemas/InternalError"
           description: Internal Server Error
       summary: Complete Upload
       tags:
-      - presignedUrls
+        - presignedUrls
   /s3/abortMultipartUpload:
     post:
       operationId: abort_multipart_upload
@@ -137,30 +137,30 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AbortUploadBody'
+              $ref: "#/components/schemas/AbortUploadBody"
         required: true
       responses:
         "200":
           content:
             application/json:
-              schema: 
-                $ref: '#/components/schemas/AbortUploadResp'
+              schema:
+                $ref: "#/components/schemas/AbortUploadResp"
           description: Successful Response
         "422":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/HTTPValidationError'
+                $ref: "#/components/schemas/HTTPValidationError"
           description: Validation Error
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/InternalError'
+                $ref: "#/components/schemas/InternalError"
           description: Internal Server Error
       summary: Abort Multipart Upload
       tags:
-      - presignedUrls
+        - presignedUrls
 components:
   schemas:
     AbortUploadBody:
@@ -175,9 +175,9 @@ components:
           title: Objectname
           type: string
       required:
-      - ObjectName
-      - UploadID
-      title: AbortUploadBody    
+        - ObjectName
+        - UploadID
+      title: AbortUploadBody
     AbortUploadResp:
       example:
         UploadID: UploadID
@@ -185,7 +185,7 @@ components:
         Message: Succeeded
       properties:
         Message:
-          title: Message 
+          title: Message
           type: string
         UploadID:
           title: Uploadid
@@ -194,9 +194,9 @@ components:
           title: Objectname
           type: string
       required:
-      - ObjectName
-      - UploadID
-      - Message
+        - ObjectName
+        - UploadID
+        - Message
       title: AbortUploadResp
     CompletePart:
       example:
@@ -214,19 +214,19 @@ components:
           title: Checksumsha256
           type: string
       required:
-      - ChecksumSHA256
-      - ETag
-      - PartNumber
+        - ChecksumSHA256
+        - ETag
+        - PartNumber
       title: CompletePart
     CompleteUploadBody:
       example:
         Parts:
-        - PartNumber: 0
-          ETag: ETag
-          ChecksumSHA256: ChecksumSHA256
-        - PartNumber: 0
-          ETag: ETag
-          ChecksumSHA256: ChecksumSHA256
+          - PartNumber: 0
+            ETag: ETag
+            ChecksumSHA256: ChecksumSHA256
+          - PartNumber: 0
+            ETag: ETag
+            ChecksumSHA256: ChecksumSHA256
         UploadID: UploadID
         ObjectName: ObjectName
         ChecksumSHA256: ChecksumSHA256
@@ -239,17 +239,17 @@ components:
           type: string
         Parts:
           items:
-            $ref: '#/components/schemas/CompletePart'
+            $ref: "#/components/schemas/CompletePart"
           title: Parts
           type: array
         ChecksumSHA256:
           title: Checksumsha256
           type: string
       required:
-      - ChecksumSHA256
-      - ObjectName
-      - Parts
-      - UploadID
+        - ChecksumSHA256
+        - ObjectName
+        - Parts
+        - UploadID
       title: CompleteUploadBody
     CompleteUploadResp:
       example:
@@ -260,11 +260,11 @@ components:
           title: Location
           type: string
         Key:
-          title: Key 
+          title: Key
           type: string
       required:
-      - Location
-      - Key
+        - Location
+        - Key
       title: CompleteUploadResp
     CreateDatasetBody:
       example:
@@ -274,20 +274,20 @@ components:
       properties:
         FileSizeInMB:
           title: FileSizeInMB
-          type: integer 
+          type: integer
         NumberOfFiles:
           title: NumberOfFiles
-          type: integer 
+          type: integer
         DatablockSizeInMB:
           title: DatablockSizeInMB
-          type: integer 
+          type: integer
         DataSetId:
           title: DatasetID
           type: string
       required:
-      - FileSizeInMB
-      - NumberOfFiles
-      - DatablockSizeInMB
+        - FileSizeInMB
+        - NumberOfFiles
+        - DatablockSizeInMB
       title: CreateDatasetBody
     CreateDatasetResp:
       properties:
@@ -295,7 +295,7 @@ components:
           title: Deployment Name
           type: string
         Uuid:
-          title: Uuid 
+          title: Uuid
           type: string
           format: uuid
         DataSetId:
@@ -303,14 +303,14 @@ components:
           type: string
           format: uuid
       required:
-      - Name
-      - Uuid
-      - DataSetId
+        - Name
+        - Uuid
+        - DataSetId
       title: CreateDatasetResp
     CreateJobBody:
       properties:
         Id:
-          title: Id 
+          title: Id
           type: string
           format: uuid
         Type:
@@ -324,33 +324,33 @@ components:
     CreateJobResp:
       properties:
         Uuid:
-          title: JobID 
+          title: JobID
           type: string
           format: uuid
         Name:
           title: JobName
           type: string
       required:
-      - Uuid
-      - Name
+        - Uuid
+        - Name
       title: CreateJobResp
     HTTPValidationError:
       example:
         detail:
-        - msg: msg
-          loc:
-          - ValidationError_loc_inner
-          - ValidationError_loc_inner
-          type: type
-        - msg: msg
-          loc:
-          - ValidationError_loc_inner
-          - ValidationError_loc_inner
-          type: type
+          - msg: msg
+            loc:
+              - ValidationError_loc_inner
+              - ValidationError_loc_inner
+            type: type
+          - msg: msg
+            loc:
+              - ValidationError_loc_inner
+              - ValidationError_loc_inner
+            type: type
       properties:
         detail:
           items:
-            $ref: '#/components/schemas/ValidationError'
+            $ref: "#/components/schemas/ValidationError"
           title: detail
           type: array
       title: HTTPValidationError
@@ -386,14 +386,14 @@ components:
           type: integer
           minimum: 1
       required:
-      - ObjectName
-      - Parts
+        - ObjectName
+        - Parts
       title: PresignedUrlBody
     PresignedUrlResp:
       example:
         Urls:
-        - Urls
-        - Urls
+          - Urls
+          - Urls
         UploadID: UploadID
       properties:
         UploadID:
@@ -405,20 +405,20 @@ components:
           title: Urls
           type: array
       required:
-      - UploadID
-      - Urls
+        - UploadID
+        - Urls
       title: PresignedUrlResp
     ValidationError:
       example:
         msg: msg
         loc:
-        - ValidationError_loc_inner
-        - ValidationError_loc_inner
+          - ValidationError_loc_inner
+          - ValidationError_loc_inner
         type: type
       properties:
         loc:
           items:
-            $ref: '#/components/schemas/ValidationError_loc_inner'
+            $ref: "#/components/schemas/ValidationError_loc_inner"
           title: loc
           type: array
         msg:
@@ -428,12 +428,12 @@ components:
           title: Error Type
           type: string
       required:
-      - loc
-      - msg
-      - type
+        - loc
+        - msg
+        - type
       title: ValidationError
     ValidationError_loc_inner:
       anyOf:
-      - type: string
-      - type: integer
+        - type: string
+        - type: integer
       title: ValidationError_loc_inner
