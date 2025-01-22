@@ -31,7 +31,7 @@ from openapi_server.models.http_validation_error import HTTPValidationError
 from openapi_server.models.internal_error import InternalError
 from openapi_server.models.presigned_url_body import PresignedUrlBody
 from openapi_server.models.presigned_url_resp import PresignedUrlResp
-
+from openapi_server.security_api import get_token_BearerAuth
 
 router = APIRouter()
 
@@ -53,6 +53,9 @@ for _, name, _ in pkgutil.iter_modules(ns_pkg.__path__, ns_pkg.__name__ + "."):
 )
 async def abort_multipart_upload(
     abort_upload_body: AbortUploadBody = Body(None, description=""),
+    token_BearerAuth: TokenModel = Security(
+        get_token_BearerAuth
+    ),
 ) -> AbortUploadResp:
     if not BasePresignedUrlsApi.subclasses:
         raise HTTPException(status_code=500, detail="Not implemented")
@@ -72,6 +75,9 @@ async def abort_multipart_upload(
 )
 async def complete_upload(
     complete_upload_body: CompleteUploadBody = Body(None, description=""),
+    token_BearerAuth: TokenModel = Security(
+        get_token_BearerAuth
+    ),
 ) -> CompleteUploadResp:
     if not BasePresignedUrlsApi.subclasses:
         raise HTTPException(status_code=500, detail="Not implemented")
@@ -91,6 +97,9 @@ async def complete_upload(
 )
 async def get_presigned_urls(
     presigned_url_body: PresignedUrlBody = Body(None, description=""),
+    token_BearerAuth: TokenModel = Security(
+        get_token_BearerAuth
+    ),
 ) -> PresignedUrlResp:
     if not BasePresignedUrlsApi.subclasses:
         raise HTTPException(status_code=500, detail="Not implemented")

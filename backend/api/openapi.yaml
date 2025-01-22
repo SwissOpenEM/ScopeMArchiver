@@ -4,7 +4,9 @@ info:
   description: REST API endpoint provider for presigned S3 upload and archiving workflow scheduling
   version: 0.1.0
 servers:
-- url: /
+  - url: /
+security:
+  - BearerAuth: []
 paths:
   /archiver/new_dataset:
     post:
@@ -162,6 +164,11 @@ paths:
       tags:
         - presignedUrls
 components:
+  securitySchemes:
+    BearerAuth: # arbitrary name for the security scheme
+      type: http
+      scheme: bearer
+      bearerFormat: JWT # optional, but indicates the format of the token
   schemas:
     AbortUploadBody:
       example:
