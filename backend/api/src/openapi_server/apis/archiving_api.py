@@ -41,12 +41,12 @@ for _, name, _ in pkgutil.iter_modules(ns_pkg.__path__, ns_pkg.__name__ + "."):
 @router.post(
     "/archiver/jobs",
     responses={
-        200: {"model": CreateJobResp, "description": "Successful Response"},
-        422: {"model": HTTPValidationError, "description": "Validation Error"},
+        201: {"model": CreateJobResp, "description": "Job Created"},
+        422: {"model": HTTPValidationError, "description": "Data Validation Error"},
         500: {"model": InternalError, "description": "Internal Server Error"},
     },
     tags=["archiving"],
-    summary="Job Created",
+    summary="Create Archiver Job",
     response_model_by_alias=True,
 )
 async def create_job(
@@ -60,7 +60,7 @@ async def create_job(
 @router.post(
     "/archiver/new_dataset",
     responses={
-        200: {"model": CreateDatasetResp, "description": "Successful Response"},
+        201: {"model": CreateDatasetResp, "description": "Dataset Created"},
         422: {"model": HTTPValidationError, "description": "Validation Error"},
         500: {"model": InternalError, "description": "Internal Server Error"},
     },
