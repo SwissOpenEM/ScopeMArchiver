@@ -12,13 +12,13 @@ Refer to the [Github pages](#github-pages) for more details.
 Build all the services:
 
 ```bash
-docker compose --env-file .prod.env --env-file .development.env build
+docker compose --env-file .env.prod --env-file .env.development build
 ```
 
 Starting up all services for development:
 
 ```bash
-docker compose --env-file .prod.env --env-file .development.env up -d
+docker compose --env-file .env.prod --env-file .env.development up -d
 ```
 
 ## Deploy Local Flows
@@ -54,5 +54,5 @@ docker run --rm -it -p 8000:8000 -v ${PWD}:/docs ghcr.io/swissopenem/scopemarchi
 Deploy documentation to GitHub Pages
 
 ```bash
-docker run --rm -it -v ~/.ssh:/root/.ssh -v ${PWD}:/docs ghcr.io/swissopenem/scopemarchiver-docs:latest gh-deploy 
+docker run --rm -it -v ~/.ssh:/root/.ssh -v ${PWD}:/docs ghcr.io/swissopenem/scopemarchiver-docs:latest gh-deploy
 ```
