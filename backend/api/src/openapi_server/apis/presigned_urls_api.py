@@ -43,7 +43,7 @@ for _, name, _ in pkgutil.iter_modules(ns_pkg.__path__, ns_pkg.__name__ + "."):
 @router.post(
     "/s3/abortMultipartUpload",
     responses={
-        200: {"model": AbortUploadResp, "description": "Successful Response"},
+        201: {"model": AbortUploadResp, "description": "Abort multipart upload requested"},
         422: {"model": HTTPValidationError, "description": "Validation Error"},
         500: {"model": InternalError, "description": "Internal Server Error"},
     },
@@ -62,7 +62,7 @@ async def abort_multipart_upload(
 @router.post(
     "/s3/completeUpload",
     responses={
-        200: {"model": CompleteUploadResp, "description": "Successful Response"},
+        201: {"model": CompleteUploadResp, "description": "Upload completed"},
         422: {"model": HTTPValidationError, "description": "Validation Error"},
         500: {"model": InternalError, "description": "Internal Server Error"},
     },
@@ -81,7 +81,7 @@ async def complete_upload(
 @router.post(
     "/s3/presignedUrls",
     responses={
-        200: {"model": PresignedUrlResp, "description": "Successful Response"},
+        201: {"model": PresignedUrlResp, "description": "Presigned URLs created"},
         422: {"model": HTTPValidationError, "description": "Validation Error"},
         500: {"model": InternalError, "description": "Internal Server Error"},
     },

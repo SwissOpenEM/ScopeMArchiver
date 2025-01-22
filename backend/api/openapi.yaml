@@ -16,12 +16,12 @@ paths:
               $ref: "#/components/schemas/CreateDatasetBody"
         required: true
       responses:
-        "200":
+        "201":
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/CreateDatasetResp"
-          description: Successful Response
+          description: Dataset Created
         "422":
           content:
             application/json:
@@ -47,25 +47,25 @@ paths:
               $ref: "#/components/schemas/CreateJobBody"
         required: true
       responses:
-        "200":
+        "201":
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/CreateJobResp"
-          description: Successful Response
+          description: Job Created
         "422":
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/HTTPValidationError"
-          description: Validation Error
+          description: Data Validation Error
         "500":
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/InternalError"
           description: Internal Server Error
-      summary: Job Created
+      summary: Create Archiver Job
       tags:
         - archiving
   /s3/presignedUrls:
@@ -78,12 +78,12 @@ paths:
               $ref: "#/components/schemas/PresignedUrlBody"
         required: true
       responses:
-        "200":
+        "201":
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/PresignedUrlResp"
-          description: Successful Response
+          description: Presigned URLs created
         "422":
           content:
             application/json:
@@ -109,12 +109,12 @@ paths:
               $ref: "#/components/schemas/CompleteUploadBody"
         required: true
       responses:
-        "200":
+        "201":
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/CompleteUploadResp"
-          description: Successful Response
+          description: Upload completed
         "422":
           content:
             application/json:
@@ -140,12 +140,12 @@ paths:
               $ref: "#/components/schemas/AbortUploadBody"
         required: true
       responses:
-        "200":
+        "201":
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/AbortUploadResp"
-          description: Successful Response
+          description: Abort multipart upload requested
         "422":
           content:
             application/json:
