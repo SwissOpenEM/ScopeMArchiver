@@ -10,7 +10,7 @@ from openapi_server.models.http_validation_error import HTTPValidationError
 from openapi_server.models.internal_error import InternalError
 from openapi_server.models.presigned_url_body import PresignedUrlBody
 from openapi_server.models.presigned_url_resp import PresignedUrlResp
-
+from openapi_server.security_api import get_token_BearerAuth
 
 class BasePresignedUrlsApi:
     subclasses: ClassVar[Tuple] = ()
