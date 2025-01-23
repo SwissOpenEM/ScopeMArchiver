@@ -12,10 +12,13 @@
 """  # noqa: E501
 
 
+import datetime
+from importlib.metadata import version
 import pathlib
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
+import jwt
 
 from openapi_server.apis.archiving_api import router as ArchivingApiRouter
 from openapi_server.apis.presigned_urls_api import router as PresignedUrlsApiRouter
@@ -23,18 +26,32 @@ from openapi_server.apis.presigned_urls_api import router as PresignedUrlsApiRou
 from .settings import Settings
 from logging import getLogger
 
+__version__ = version("archiver-service")
+print(f"Version: {__version__}")
 _LOGGER = getLogger("api")
 
 app = FastAPI(
     title="ETHZ Archiver Service",
     description="REST API endpoint provider for presigned S3 upload and archiving workflow scheduling",
-    version="0.1.0",
+    version=__version__,
 )
+
+settings = Settings()
+
+
+def generate_test_token():
+    payload = {
+        "sub": "user_id_123",  # Subject (e.g., user ID)
+        "name": "John Doe",  # Example custom claim
+        "exp": datetime.datetime.now(datetime.UTC)
+        + datetime.timedelta(days=365),  # Expiration time
+        "iss": settings.ISSUER,
+        "aud": settings.AUDIENCE,
+    }
+    return jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
 
 if __name__ == "__main__":
-
-    settings = Settings()
 
     _LOGGER.setLevel(settings.UVICORN_LOG_LEVEL.upper())
 
@@ -54,13 +71,16 @@ if __name__ == "__main__":
     app.include_router(ArchivingApiRouter)
     app.include_router(PresignedUrlsApiRouter)
 
-    uvi_config = uvicorn.Config(app,
-                                host="0.0.0.0",
-                                port=settings.UVICORN_PORT,
-                                root_path=settings.UVICORN_ROOT_PATH,
-                                reload=settings.UVICORN_RELOAD,
-                                log_level=settings.UVICORN_LOG_LEVEL,
-                                reload_dirs=[
-                                    str(pathlib.Path(__file__).parent)])
+    uvi_config = uvicorn.Config(
+        app,
+        host="0.0.0.0",
+        port=settings.UVICORN_PORT,
+        root_path=settings.UVICORN_ROOT_PATH,
+        reload=settings.UVICORN_RELOAD,
+        log_level=settings.UVICORN_LOG_LEVEL,
+        reload_dirs=[str(pathlib.Path(__file__).parent)],
+    )
+    print("Test token:", generate_test_token())
+    print("Valid for 365 days")
     server = uvicorn.Server(uvi_config)
     server.run()

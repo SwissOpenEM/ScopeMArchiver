@@ -15,5 +15,11 @@ class Settings(BaseSettings):
     MINIO_PASSWORD: SecretStr
     URL_EXPIRATION_SECONDS: int = 3600
 
+    # JWT Token
+    SECRET_KEY: str = "your_jwt_secret"
+    ALGORITHM: str = "HS256"
+    ISSUER: str = "OpenEMIssuer"
+    AUDIENCE: str = "SciCatUsers"
+
     class Config:
-        secrets_dir = os.environ.get('SECRETS_DIR', "/run/secrets")
+        secrets_dir = os.environ.get("SECRETS_DIR", "/run/secrets")
