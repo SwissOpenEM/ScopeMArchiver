@@ -2,29 +2,32 @@
 requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
-[tool.black]
-line-length = 88
-exclude = '''
-(
-  /(
-      \.eggs         # exclude a few common directories in the
-    | \.git          # root of the project
-    | \.hg
-    | \.mypy_cache
-    | \.tox
-    | \.venv
-    | _build
-    | buck-out
-    | build
-    | dist
-  )/
-)
-'''
-
-[tool.isort]
-profile = "black"
-skip = [
-    '.eggs', '.git', '.hg', '.mypy_cache', '.nox', '.pants.d', '.tox',
-    '.venv', '_build', 'buck-out', 'build', 'dist', 'node_modules', 'venv',
+[project]
+name = "archiver-service"
+version = "0.2.0"
+description = "REST API endpoint provider for presigned S3 upload and archiving workflow scheduling"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi",
+    "boto3",
+    "mypy",
+    "prefect==3.1.4",
+    "pyjwt",
+    "tool>=0.8.0",
+    "black>=24.10.0",
 ]
-skip_gitignore = true
+
+[tool.uv]
+dev-dependencies = [ "flake8", "autopep8", "pytest",]
+
+[[tool.uv.index]]
+name = "pypi"
+url = "https://pypi.org/simple"
+
+[tool.uv.sources]
+
+[dependency-groups]
+lint = [
+    "ruff>=0.9.2",
+]
