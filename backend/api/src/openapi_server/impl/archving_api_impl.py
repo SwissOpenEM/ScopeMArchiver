@@ -46,11 +46,17 @@ class BaseArchivingApiImpl(BaseArchivingApi):
         create_job_body: CreateJobBody,
     ) -> CreateJobResp:
         try:
+            job_id=UUID(create_job_body.id)
+        except ValueError as e:
+            _LOGGER.warning(e)
+            return JSONResponse(status_code=422, content={"message": "Failed to create job", "details": str(e)})
+
+        try:
             match create_job_body.type:
                 case "archive":
-                    flowRun = await run_archiving_deployment(job_id=UUID(create_job_body.id), dataset_list=[])
+                    flowRun = await run_archiving_deployment(job_id=job_id, dataset_list=[])
                 case "retrieve":
-                    flowRun = await run_retrieval_deployment(job_id=UUID(create_job_body.id), dataset_list=[])
+                    flowRun = await run_retrieval_deployment(job_id=job_id, dataset_list=[])
                 case _:
                     return JSONResponse(status_code=500, content={"message": f"unknown job type {type}"})
 
