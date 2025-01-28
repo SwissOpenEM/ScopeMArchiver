@@ -14,7 +14,6 @@ on:
       - main
   pull_request:
   workflow_dispatch:
-    
 
 jobs:
   detect_changes:
@@ -26,15 +25,15 @@ jobs:
     outputs:
       backend: ${{ steps.filter.outputs.backend }}
     steps:
-    # For pull requests it's not necessary to checkout the code
-    - uses: actions/checkout@v4
-      if: github.event_name != 'pull_request'
-    - uses: dorny/paths-filter@v3
-      id: filter
-      with:
-        filters: |
-          backend:
-            - 'backend/**'
+      # For pull requests it's not necessary to checkout the code
+      - uses: actions/checkout@v4
+        if: github.event_name != 'pull_request'
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
 
   # test_api_server:
   #   runs-on: ubuntu-latest
@@ -51,7 +50,7 @@ jobs:
   #         python -m pip install --upgrade pip
   #         python -m pip install pipenv
   #         pipenv sync
-  #         pipenv run pytest --junitxml=junit/test-results.xml --cov=. --cov-report=xml --cov-report=html 
+  #         pipenv run pytest --junitxml=junit/test-results.xml --cov=. --cov-report=xml --cov-report=html
   #     - name: Upload pytest test results
   #       uses: actions/upload-artifact@v4
   #       with:
@@ -69,7 +68,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: "3.11"
       - name: Install dependencies and run tests
         working-directory: ./backend/archiver
         run: |
@@ -85,7 +84,6 @@ jobs:
           # Use always() to always run this step to publish test results when there are test failures
         if: ${{ always() }}
 
-        
   build_runtime_image:
     runs-on: ubuntu-latest
     permissions:
@@ -94,35 +92,34 @@ jobs:
 
     needs: test_archiver_flows
     if: ${{ needs.detect_changes.outputs.backend == 'true' }} || github.event_name != 'pull_request'
-      
+
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Log into registry ${{ env.REGISTRY }}
-      # if: github.event_name != 'pull_request'
-      uses: docker/login-action@v3
-      with:
-        registry: ${{ env.REGISTRY }}
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Log into registry ${{ env.REGISTRY }}
+        # if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Extract Docker metadata
-      id: meta
-      uses: docker/metadata-action@v5
-      with:
-        images: ${{ env.REGISTRY }}/${{ env.OPENEM_FLOWS_IMAGE_NAME }}
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.OPENEM_FLOWS_IMAGE_NAME }}
 
-    - name: Build and push Docker image
-      id: build-and-push
-      uses: docker/build-push-action@v6
-      with:
-        context: ./
-        file: ./backend/prefect-runtime.Dockerfile
-        push: ${{ github.event_name != 'pull_request' }}
-        build-args: PREFECT_VERSION=3.0.4-python3.11
-        tags: ${{ steps.meta.outputs.tags }}
-        labels: ${{ steps.meta.outputs.labels }}
-
+      - name: Build and push Docker image
+        id: build-and-push
+        uses: docker/build-push-action@v6
+        with:
+          context: ./
+          file: ./backend/prefect-runtime.Dockerfile
+          push: ${{ github.event_name != 'pull_request' }}
+          build-args: PREFECT_VERSION=3.0.4-python3.11
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
 
   build_config_image:
     runs-on: ubuntu-latest
@@ -132,36 +129,35 @@ jobs:
 
     needs: test_archiver_flows
     if: ${{ needs.detect_changes.outputs.backend == 'true' }} || github.event_name != 'pull_request'
-      
+
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Log into registry ${{ env.REGISTRY }}
-      # if: github.event_name != 'pull_request'
-      uses: docker/login-action@v3
-      with:
-        registry: ${{ env.REGISTRY }}
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Log into registry ${{ env.REGISTRY }}
+        # if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Extract Docker metadata
-      id: meta
-      uses: docker/metadata-action@96383f45573cb7f253c731d3b3ab81c87ef81934 # v5.0.0
-      with:
-        images: ${{ env.REGISTRY }}/${{ env.OPENEM_CONFIG_IMAGE_NAME }}
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@96383f45573cb7f253c731d3b3ab81c87ef81934 # v5.0.0
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.OPENEM_CONFIG_IMAGE_NAME }}
 
+      - name: Build and push Docker image
+        id: build-and-push
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend/
+          file: ./backend/prefect-config.Dockerfile
+          push: ${{ github.event_name != 'pull_request' }}
+          build-args: PREFECT_VERSION=3.0.4-python3.11
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
 
-    - name: Build and push Docker image
-      id: build-and-push
-      uses: docker/build-push-action@v6
-      with:
-        context: ./backend/
-        file: ./backend/prefect-config.Dockerfile
-        push: ${{ github.event_name != 'pull_request' }}
-        build-args: PREFECT_VERSION=3.0.4-python3.11
-        tags: ${{ steps.meta.outputs.tags }}
-        labels: ${{ steps.meta.outputs.labels }} 
-          
   build_openem_backend:
     runs-on: ubuntu-latest
 
@@ -171,33 +167,32 @@ jobs:
 
     # needs: test_api_server
     if: ${{ needs.detect_changes.outputs.backend == 'true' }} || github.event_name != 'pull_request'
-      
+
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Log into registry ${{ env.REGISTRY }}
-      # if: github.event_name != 'pull_request'
-      uses: docker/login-action@v3
-      with:
-        registry: ${{ env.REGISTRY }}
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Log into registry ${{ env.REGISTRY }}
+        # if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Extract Docker metadata
-      id: meta
-      uses: docker/metadata-action@v5 # v5.0.0
-      with:
-        images: ${{ env.REGISTRY }}/${{ env.OPENEM_BACKEND_IMAGE_NAME }}
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5 # v5.0.0
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.OPENEM_BACKEND_IMAGE_NAME }}
 
-    - name: Build and push
-      uses: docker/bake-action@v6
-      id: build-and-push
-      with:
-        workdir: ./
-        targets: archiver-service-api
-        push: ${{ github.event_name != 'pull_request' }}
-        set: |
+      - name: Build and push
+        uses: docker/bake-action@v6
+        id: build-and-push
+        with:
+          workdir: ./
+          targets: archiver-service-api
+          push: ${{ github.event_name != 'pull_request' }}
+          set: |
             *.tags=${{ steps.meta.outputs.tags }}
-      env:
-        OPENEM_IMAGE_TAG: ${{ steps.meta.outputs.tags }}
-          
+        env:
+          OPENEM_IMAGE_TAG: ${{ steps.meta.outputs.tags }}
