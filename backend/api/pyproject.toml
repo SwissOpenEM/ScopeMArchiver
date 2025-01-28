@@ -3,7 +3,7 @@ requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "archiver-service"
+name = "archiver-service-api"
 version = "0.2.0"
 description = "REST API endpoint provider for presigned S3 upload and archiving workflow scheduling"
 readme = "README.md"
