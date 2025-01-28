@@ -1,13 +1,12 @@
 name: Docker Image CI
 
-
 env:
-    # Use docker.io for Docker Hub if empty
-    REGISTRY: ghcr.io
-    # github.repository as <account>/<repo>
-    OPENEM_FLOWS_IMAGE_NAME: ${{ github.repository }}-openem-flows
-    OPENEM_BACKEND_IMAGE_NAME: ${{ github.repository }}-openem-backend
-    OPENEM_CONFIG_IMAGE_NAME: ${{ github.repository }}-openem-config
+  # Use docker.io for Docker Hub if empty
+  REGISTRY: ghcr.io
+  # github.repository as <account>/<repo>
+  OPENEM_FLOWS_IMAGE_NAME: ${{ github.repository }}-archiver-service-workflow
+  OPENEM_BACKEND_IMAGE_NAME: ${{ github.repository }}-archiver-service-api
+  OPENEM_CONFIG_IMAGE_NAME: ${{ github.repository }}-archiver-service-config
 
 on:
   push:
@@ -195,7 +194,7 @@ jobs:
       id: build-and-push
       with:
         workdir: ./
-        targets: archiver-backend
+        targets: archiver-service-api
         push: ${{ github.event_name != 'pull_request' }}
         set: |
             *.tags=${{ steps.meta.outputs.tags }}
