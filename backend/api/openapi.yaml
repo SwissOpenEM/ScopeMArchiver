@@ -8,6 +8,31 @@ servers:
 security:
   - BearerAuth: []
 paths:
+  /token:
+    post:
+      operationId: create_new_service_token
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateServiceTokenResp"
+          description: Service Token created
+        "422":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HTTPValidationError"
+          description: Validation Error
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InternalError"
+          description: Internal Server Error
+      summary: Create New Service Token
+      tags:
+        - service_token
   /archiver/new_dataset:
     post:
       operationId: create_new_dataset
@@ -170,6 +195,42 @@ components:
       scheme: bearer
       bearerFormat: JWT # optional, but indicates the format of the token
   schemas:
+    CreateServiceTokenResp:
+      properties:
+        access_token:
+          type: string
+          description: The JWT access token
+        expires_in:
+          type: integer
+          description: The duration in seconds the access token is valid for
+          example: 300
+        refresh_token:
+          type: string
+          description: The JWT refresh token
+        refresh_expires_in:
+          type: integer
+          description: The duration in seconds the refresh token is valid for
+          example: 1800
+        token_type:
+          type: string
+          description: Bearer
+          example: Bearer
+        not-before-policy:
+          type: integer
+          description: Timestamp that indicates the time before which the JWT must not be accepted for processing
+          example: 0
+        session_state:
+          type: string
+          description: Session ID, identifier that uniquely ties the session to the authenticated user
+          example: ec313d7a-df9d-4390-865e-c6d606156fdc
+        scope:
+          type: string
+          description: Claim in a JWT defines the set of permissions or access rights granted
+          example: email profile
+      required:
+        - access_token
+        - refresh_token
+      title: CreateServiceTokenResp
     AbortUploadBody:
       example:
         UploadID: UploadID
