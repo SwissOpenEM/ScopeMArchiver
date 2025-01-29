@@ -15,11 +15,16 @@ class Settings(BaseSettings):
     MINIO_PASSWORD: SecretStr
     URL_EXPIRATION_SECONDS: int = 3600
 
-    # JWT Token
-    SECRET_KEY: str = "your_jwt_secret"
-    ALGORITHM: str = "HS256"
+    # JWT Token settings
+    IDP_URL: str = "https://scopem-openem.ethz.ch/keycloak"
+    REALM: str = "facility"
+    AUDIENCE: str = "account"
+    CLIENT_ID: str = "archiver-service-api"
+    CLIENT_SECRET: SecretStr
+    IDP_USERNAME: str = "archiver-service"
+    IDP_PASSWORD: SecretStr
+    ALGORITHM: str = "RS256"
     ISSUER: str = "OpenEMIssuer"
-    AUDIENCE: str = "SciCatUsers"
 
     class Config:
         secrets_dir = os.environ.get("SECRETS_DIR", "/run/secrets")
