@@ -9,17 +9,15 @@ description = "REST API endpoint provider for presigned S3 upload and archiving 
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    "fastapi",
-    "boto3",
-    "mypy",
+    "boto3>=1.36.6",
+    "fastapi[standard]>=0.115.7",
+    "gunicorn>=23.0.0",
     "prefect==3.1.4",
-    "pyjwt",
-    "tool>=0.8.0",
-    "black>=24.10.0",
+    "pyjwt>=2.10.1",
+    "requests>=2.32.3",
+    "uvicorn>=0.34.0",
 ]
 
-[tool.uv]
-dev-dependencies = [ "flake8", "autopep8", "pytest",]
 
 [[tool.uv.index]]
 name = "pypi"
@@ -29,5 +27,6 @@ url = "https://pypi.org/simple"
 
 [dependency-groups]
 lint = [
-    "ruff>=0.9.2",
+    "ruff>=0.9.3",
+    "mypy>=1.14.1",
 ]
