@@ -17,14 +17,13 @@ class Settings(BaseSettings):
 
     # JWT Token settings
     IDP_URL: str = "https://scopem-openem.ethz.ch/keycloak"
-    REALM: str = "facility"
-    AUDIENCE: str = "account"
-    CLIENT_ID: str = "archiver-service-api"
-    CLIENT_SECRET: SecretStr
     IDP_USERNAME: str = "archiver-service"
     IDP_PASSWORD: SecretStr
-    ALGORITHM: str = "RS256"
-    ISSUER: str = "OpenEMIssuer"
+    IDP_REALM: str = "facility"
+    IDP_AUDIENCE: str = "account"
+    IDP_CLIENT_ID: str = "archiver-service-api"
+    IDP_CLIENT_SECRET: SecretStr
+    IDP_ALGORITHM: str = "RS256"
 
     class Config:
         secrets_dir = os.environ.get("SECRETS_DIR", "/run/secrets")
