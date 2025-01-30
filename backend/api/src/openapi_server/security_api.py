@@ -37,7 +37,7 @@ def get_token_BearerAuth(
 def get_keycloak_public_key():
     try:
         response = requests.get(
-            f"{settings.IDP_URL}/realms/{settings.REALM}/protocol/openid-connect/certs"
+            f"{settings.IDP_URL}/realms/{settings.IDP_REALM}/protocol/openid-connect/certs"
         )
         response.raise_for_status()
         jwks = response.json()
@@ -107,9 +107,9 @@ def validate_token(token: str) -> dict:
         decoded_token = jwt.decode(
             token,
             public_key,
-            algorithms=[settings.ALGORITHM],
-            audience=settings.AUDIENCE,
-            issuer=f"{settings.IDP_URL}/realms/{settings.REALM}",
+            algorithms=[settings.IDP_ALGORITHM],
+            audience=settings.IDP_AUDIENCE,
+            issuer=f"{settings.IDP_URL}/realms/{settings.IDP_REALM}",
         )
         return decoded_token, None  # Successfully decoded
     except jwt.PyJWTError as e:
@@ -135,8 +135,8 @@ def validate_token(token: str) -> dict:
 def generate_token() -> dict:
     # Token request payload
     payload = {
-        "client_id": settings.CLIENT_ID,
-        "client_secret": settings.CLIENT_SECRET.get_secret_value(),
+        "client_id": settings.IDP_CLIENT_ID,
+        "client_secret": settings.IDP_CLIENT_SECRET.get_secret_value(),
         "grant_type": "password",
         "username": settings.IDP_USERNAME,
         "password": settings.IDP_PASSWORD.get_secret_value(),
@@ -145,7 +145,7 @@ def generate_token() -> dict:
     # Make the request to obtain a token
     try:
         response = requests.post(
-            f"{settings.IDP_URL}/realms/{settings.REALM}/protocol/openid-connect/token",
+            f"{settings.IDP_URL}/realms/{settings.IDP_REALM}/protocol/openid-connect/token",
             data=payload,
             timeout=5,
         )
