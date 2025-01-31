@@ -18,6 +18,39 @@ dependencies = [
     "uvicorn>=0.34.0",
 ]
 
+[tool.ruff]
+exclude = [
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".git-rewrite",
+    ".hg",
+    ".ipynb_checkpoints",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    ".pyenv",
+    ".pytest_cache",
+    ".pytype",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    ".vscode",
+    "__pypackages__",
+    "_build",
+    "buck-out",
+    "build",
+    "dist",
+    "node_modules",
+    "site-packages",
+    "venv",
+    "./src/openapi_server/apis/",
+    "./src/openapi_server/models/",
+]
+line-length = 130
+indent-width = 4
 
 [[tool.uv.index]]
 name = "pypi"

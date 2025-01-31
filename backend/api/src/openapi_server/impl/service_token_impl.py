@@ -14,6 +14,5 @@ _SETTINGS = Settings()
 
 
 class BaseServiceTokenImpl(BaseServiceTokenApi):
-
     async def create_new_service_token(self) -> CreateServiceTokenResp:
         return generate_token()

@@ -1,4 +1,3 @@
-
 import base64
 from typing import Any, List, Optional
 
@@ -22,18 +21,20 @@ _LOGGER = getLogger("api.archiving")
 
 
 class BaseArchivingApiImpl(BaseArchivingApi):
-
     async def create_new_dataset(
         self,
         create_dataset_body: CreateDatasetBody,
     ) -> CreateDatasetResp:
         try:
             import random
+
             data_set_id = create_dataset_body.data_set_id or str(random.randint(0, 10000))
-            flowRun = await run_create_dataset_deployment(file_size_MB=create_dataset_body.file_size_in_mb,
-                                                          num_files=create_dataset_body.number_of_files,
-                                                          datablock_size_MB=create_dataset_body.datablock_size_in_mb,
-                                                          dataset_id=data_set_id)
+            flowRun = await run_create_dataset_deployment(
+                file_size_MB=create_dataset_body.file_size_in_mb,
+                num_files=create_dataset_body.number_of_files,
+                datablock_size_MB=create_dataset_body.datablock_size_in_mb,
+                dataset_id=data_set_id,
+            )
 
             _LOGGER.debug("Flow run for dataset % created. Id=%d Name=%s", data_set_id, flowRun.id, flowRun.name)
             return CreateDatasetResp(Name=flowRun.name, Uuid=str(flowRun.id), DataSetId=data_set_id)
@@ -46,7 +47,7 @@ class BaseArchivingApiImpl(BaseArchivingApi):
         create_job_body: CreateJobBody,
     ) -> CreateJobResp:
         try:
-            job_id=UUID(create_job_body.id)
+            job_id = UUID(create_job_body.id)
         except ValueError as e:
             _LOGGER.warning(e)
             return JSONResponse(status_code=422, content={"message": "Failed to create job", "details": str(e)})
