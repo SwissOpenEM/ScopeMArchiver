@@ -5,7 +5,6 @@
 Main routine that starts the FastAPI server.
 """
 
-
 from importlib.metadata import version
 import pathlib
 from fastapi import FastAPI
@@ -35,7 +34,6 @@ settings = Settings()
 
 
 if __name__ == "__main__":
-
     _LOGGER.setLevel(settings.UVICORN_LOG_LEVEL.upper())
 
     origins = [

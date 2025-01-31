@@ -36,9 +36,7 @@ def get_token_BearerAuth(
 
 def get_keycloak_public_key():
     try:
-        response = requests.get(
-            f"{settings.IDP_URL}/realms/{settings.IDP_REALM}/protocol/openid-connect/certs"
-        )
+        response = requests.get(f"{settings.IDP_URL}/realms/{settings.IDP_REALM}/protocol/openid-connect/certs")
         response.raise_for_status()
         jwks = response.json()
         return jwks
@@ -150,9 +148,7 @@ def generate_token() -> dict:
             timeout=5,
         )
     except requests.exceptions.Timeout:
-        print(
-            f"Error requesting test-token. Could not reach {settings.IDP_URL} because of timeout"
-        )
+        print(f"Error requesting test-token. Could not reach {settings.IDP_URL} because of timeout")
         return
     except requests.exceptions.RequestException as e:
         print(f"Error requesting test-token: {e}")
