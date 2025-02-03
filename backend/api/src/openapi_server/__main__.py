@@ -20,7 +20,6 @@ from .settings import Settings
 from logging import getLogger
 
 __version__ = version("archiver-service")
-print(f"Version: {__version__}")
 
 _LOGGER = getLogger("api")
 
@@ -35,6 +34,7 @@ settings = Settings()
 
 if __name__ == "__main__":
     _LOGGER.setLevel(settings.UVICORN_LOG_LEVEL.upper())
+    _LOGGER.info(f"Version: {__version__}")
 
     origins = [
         "http://127.0.0.1*",
@@ -66,7 +66,9 @@ if __name__ == "__main__":
     # TODO: for testing purposes only. To be removed later.
     token = generate_token()
     if token:
-        print("Test Bearer token:", token.get("access_token", "No access_token found"))
+        _LOGGER.info(
+            f"Test Bearer token: {token.get('access_token', 'No access_token found')}"
+        )
 
     server = uvicorn.Server(uvi_config)
     server.run()

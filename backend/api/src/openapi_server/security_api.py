@@ -3,6 +3,7 @@ import jwt
 import requests
 
 from typing import List
+from logging import getLogger
 
 from fastapi import Depends, HTTPException, Security  # noqa: F401
 from fastapi.security import (  # noqa: F401
@@ -18,6 +19,7 @@ from fastapi import Depends, HTTPException, Security
 
 security = HTTPBearer()
 settings = Settings()
+_LOGGER = getLogger("api.security")
 
 
 def get_token_BearerAuth(
@@ -36,12 +38,14 @@ def get_token_BearerAuth(
 
 def get_keycloak_public_key():
     try:
-        response = requests.get(f"{settings.IDP_URL}/realms/{settings.IDP_REALM}/protocol/openid-connect/certs")
+        response = requests.get(
+            f"{settings.IDP_URL}/realms/{settings.IDP_REALM}/protocol/openid-connect/certs"
+        )
         response.raise_for_status()
         jwks = response.json()
         return jwks
     except requests.exceptions.RequestException as e:
-        print(f"Error fetching public keys from Keycloak: {e}")
+        _LOGGER.error(f"Error fetching public keys from Keycloak: {e}")
         return None
 
 
@@ -53,7 +57,7 @@ def get_jwk_from_token(token):
             raise Exception("Token is not a valid JWT")
         return unverified_header["kid"]
     except jwt.PyJWTError as e:
-        print(f"Error decoding JWT header: {e}")
+        _LOGGER.error(f"Error decoding JWT header: {e}")
         return None
 
 
@@ -148,13 +152,16 @@ def generate_token() -> dict:
             timeout=5,
         )
     except requests.exceptions.Timeout:
-        print(f"Error requesting test-token. Could not reach {settings.IDP_URL} because of timeout")
+        _LOGGER.error(
+            f"Error requesting test-token. Could not reach {settings.IDP_URL} because of timeout"
+        )
         return
     except requests.exceptions.RequestException as e:
-        print(f"Error requesting test-token: {e}")
+        _LOGGER.error(f"Error requesting test-token: {e}")
         return
 
     if response.status_code == 200:
+        _LOGGER.info("Successfully obtained access and refresh token")
         return response.json()
     else:
-        print("Failed to get token:", response.status_code, response.text)
+        _LOGGER.error("Failed to get token:", response.status_code, response.text)
