@@ -49,18 +49,6 @@ def get_keycloak_public_key():
         return None
 
 
-def get_jwk_from_token(token):
-    try:
-        # Decode JWT header to get 'kid' (Key ID) which identifies which public key to use
-        unverified_header = jwt.get_unverified_header(token)
-        if unverified_header is None:
-            raise Exception("Token is not a valid JWT")
-        return unverified_header["kid"]
-    except jwt.PyJWTError as e:
-        _LOGGER.error(f"Error decoding JWT header: {e}")
-        return None
-
-
 def get_public_key_from_jwks(kid, jwks):
     for key in jwks["keys"]:
         if key["kid"] == kid:
@@ -84,24 +72,23 @@ def validate_token(token: str) -> dict:
     # TODO: we might cache the jwks at some point, as this information does not change often
     jwks = get_keycloak_public_key()
     if not jwks:
-        raise HTTPException(
-            status_code=401,
-            detail="Failed to retrieve JWKS",
-        )
+        detail = "Failed to retrieve JWKS from Keycloak"
+        _LOGGER.error(detail)
+        raise HTTPException(status_code=401, detail=detail)
 
-    kid = get_jwk_from_token(token)
-    if not kid:
-        raise HTTPException(
-            status_code=401,
-            detail="Failed to extract Key ID (kid) from JWT",
-        )
+    try:
+        unverified_header = jwt.get_unverified_header(token)
+        kid = unverified_header["kid"]
+    except (jwt.DecodeError, KeyError) as e:
+        detail = f"Failed to retrieve 'kid' (Key ID) from JWT: {e}"
+        _LOGGER.error(detail)
+        raise HTTPException(status_code=401, detail=detail)
 
     key_data = get_public_key_from_jwks(kid, jwks)
     if not key_data:
-        raise HTTPException(
-            status_code=401,
-            detail="Public key not found in JWKS for the provided kid",
-        )
+        detail = "Public key not found in JWKS for the provided kid"
+        _LOGGER.error(detail)
+        raise HTTPException(status_code=401, detail=detail)
 
     try:
         # Verify the JWT using the public key from JWKS
@@ -114,24 +101,20 @@ def validate_token(token: str) -> dict:
             issuer=f"{settings.IDP_URL}/realms/{settings.IDP_REALM}",
         )
         return decoded_token, None  # Successfully decoded
-    except jwt.PyJWTError as e:
-        raise HTTPException(status_code=401, detail=f"Failed to verify JWT: {str(e)}")
-
     except jwt.ExpiredSignatureError:
-        raise HTTPException(
-            status_code=401,
-            detail="Token has expired",
-        )
-    except jwt.InvalidTokenError:
-        raise HTTPException(
-            status_code=401,
-            detail="Invalid token",
-        )
+        detail = f"Token has expired"
+        _LOGGER.warning(detail)
+        raise HTTPException(status_code=401, detail=detail)
+
     except jwt.PyJWTError as e:
-        raise HTTPException(
-            status_code=401,
-            detail=f"Token validation error: {str(e)}",
-        )
+        detail = f"Failed to verify JWT: {str(e)}"
+        _LOGGER.warning(detail)
+        raise HTTPException(status_code=401, detail=detail)
+
+    except jwt.InvalidTokenError as e:
+        detail = f"Invalid token: {str(e)}"
+        _LOGGER.warning(detail)
+        raise HTTPException(status_code=401, detail=detail)
 
 
 def generate_token() -> dict:
