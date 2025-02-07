@@ -56,7 +56,7 @@ def get_public_key_from_jwks(kid, jwks):
     return None
 
 
-def validate_token(token: str) -> dict:
+def validate_token(token: str, fallback_validator=None) -> dict:
     """
     Validates a JWT Bearer token.
 
@@ -80,9 +80,17 @@ def validate_token(token: str) -> dict:
         unverified_header = jwt.get_unverified_header(token)
         kid = unverified_header["kid"]
     except (jwt.DecodeError, KeyError) as e:
-        detail = f"Failed to retrieve 'kid' (Key ID) from JWT: {e}"
-        _LOGGER.error(detail)
-        raise HTTPException(status_code=401, detail=detail)
+        detail = "Failed to retrieve 'kid' (Key ID) from JWT."
+        if not fallback_validator:
+            _LOGGER.error(detail)
+            raise HTTPException(status_code=401, detail=detail)
+        
+        # we assume we got a SciCat token, not a token from Keycloak
+        if fallback_validator(token):
+            return {}, None
+        else:
+            detail = f"Not a valid SciCat token"
+            raise HTTPException(status_code=401, detail=detail)
 
     key_data = get_public_key_from_jwks(kid, jwks)
     if not key_data:
@@ -148,3 +156,52 @@ def generate_token() -> dict:
         return response.json()
     else:
         _LOGGER.error("Failed to get token:", response.status_code, response.text)
+
+def get_token_SciCatAuth(
+   credentials: HTTPAuthorizationCredentials = Security(security), 
+):
+    if not credentials:
+        raise HTTPException(
+            status_code=HTTP_401_UNAUTHORIZED,
+            detail="Authorization token is missing",
+        )
+    token = credentials.credentials
+    payload = validate_token(token, check_scicat_token)
+    return payload
+
+def get_scicat_user_info(token) -> dict:
+    try:
+        headers = {
+            "Authorization": f"Bearer {token}"
+        }
+        response = requests.get(
+            f"{settings.SCICAT_API}/users/my/identity",
+            headers=headers
+        )
+        response.raise_for_status()
+
+    except requests.exceptions.RequestException as e:
+        detail = "Provided token is not a valid SciCat token"
+        _LOGGER.error(detail)
+        raise HTTPException(status_code=401, detail=detail) from e
+    return response.json()
+
+def check_scicat_token(token)-> bool:
+    scicat_userinfo = get_scicat_user_info(token)
+    try:
+        groups = scicat_userinfo["profile"]["accessGroups"]
+    except KeyError as e:
+        detail = "Userinfo from SciCat does not contain the profile.accessGroups attribute"
+        _LOGGER.error(detail)
+        # return False
+        raise HTTPException(status_code=401, detail=detail) from e
+
+    if "ingestor" not in groups:
+        detail = "SciCat user does have ingestor role"
+        _LOGGER.error(detail)
+        # return False
+        raise HTTPException(status_code=401, detail=detail) from e
+    return True
+        
+        
+    
