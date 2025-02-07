@@ -25,5 +25,7 @@ class Settings(BaseSettings):
     IDP_CLIENT_SECRET: SecretStr
     IDP_ALGORITHM: str = "RS256"
 
+    SCICAT_API: str = "https://scopem-openem.ethz.ch/scicat/backend/api/v3"
+
     class Config:
         secrets_dir = os.environ.get("SECRETS_DIR", "/run/secrets")
