@@ -10,6 +10,8 @@ security:
 paths:
   /token:
     post:
+      security:
+        - SciCatAuth: []
       operationId: create_new_service_token
       responses:
         "201":
@@ -190,7 +192,11 @@ paths:
         - presignedUrls
 components:
   securitySchemes:
-    BearerAuth: # arbitrary name for the security scheme
+    BearerAuth: # RS256 tokens signed by Keycloak
+      type: http
+      scheme: bearer
+      bearerFormat: JWT # optional, but indicates the format of the token
+    SciCatAuth: # HS256 tokens signed by SciCat
       type: http
       scheme: bearer
       bearerFormat: JWT # optional, but indicates the format of the token
