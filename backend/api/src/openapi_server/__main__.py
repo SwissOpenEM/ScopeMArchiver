@@ -15,6 +15,7 @@ from openapi_server.apis.archiving_api import router as ArchivingApiRouter
 from openapi_server.apis.presigned_urls_api import router as PresignedUrlsApiRouter
 from openapi_server.apis.service_token_api import router as ServiceTokenRouter
 from openapi_server.security_api import generate_token
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from .settings import Settings
 from logging import getLogger
@@ -30,6 +31,16 @@ app = FastAPI(
 )
 
 settings = Settings()
+
+class Enforce201Middleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        response = await call_next(request)
+        
+        # Ensure POST /token returns 201
+        if request.method == "POST" and response.status_code == 200:
+            response.status_code = 201
+        
+        return response
 
 
 if __name__ == "__main__":
@@ -48,10 +59,14 @@ if __name__ == "__main__":
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    app.add_middleware(
+        Enforce201Middleware
+    )
 
     app.include_router(ArchivingApiRouter)
     app.include_router(PresignedUrlsApiRouter)
     app.include_router(ServiceTokenRouter)
+
 
     uvi_config = uvicorn.Config(
         app,
