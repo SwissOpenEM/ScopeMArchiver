@@ -48,6 +48,8 @@ exclude = [
     "venv",
     "./src/openapi_server/apis/",
     "./src/openapi_server/models/",
+    "./src/openapi_server/tests/",
+    "./tests/",
 ]
 line-length = 110
 indent-width = 4

@@ -171,10 +171,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: astral-sh/ruff-action@v3
+      - name: Ruff Format
+        uses: astral-sh/ruff-action@v3
         with:
           version: 0.8.0
           args: "format --check"
+          src: ./backend/api
+
+      - name: Ruff Check
+        uses: astral-sh/ruff-action@v3
+        with:
+          version: 0.8.0
+          args: "check"
           src: ./backend/api
 
       - name: Log into registry ${{ env.REGISTRY }}
