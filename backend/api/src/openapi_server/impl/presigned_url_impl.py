@@ -6,7 +6,6 @@ from openapi_server.models.complete_upload_body import CompleteUploadBody
 from openapi_server.models.complete_upload_resp import CompleteUploadResp
 from openapi_server.models.abort_upload_body import AbortUploadBody
 from openapi_server.models.abort_upload_resp import AbortUploadResp
-from openapi_server.models.internal_error import InternalError
 from openapi_server.models.presigned_url_body import PresignedUrlBody
 from openapi_server.models.presigned_url_resp import PresignedUrlResp
 

@@ -1,5 +1,3 @@
-from typing import List
-
 from openapi_server.models.create_service_token_resp import CreateServiceTokenResp
 
 from openapi_server.apis.service_token_api_base import BaseServiceTokenApi
