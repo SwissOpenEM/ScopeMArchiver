@@ -2,7 +2,6 @@
 import jwt
 import requests
 
-from typing import List
 from logging import getLogger
 
 from fastapi import Depends, HTTPException, Security  # noqa: F401
@@ -14,8 +13,6 @@ from fastapi.security import (  # noqa: F401
 from openapi_server.settings import Settings
 
 from starlette.status import HTTP_401_UNAUTHORIZED
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from fastapi import Depends, HTTPException, Security
 
 security = HTTPBearer()
 settings = Settings()
@@ -79,7 +76,7 @@ def validate_token(token: str, fallback_validator=None) -> dict:
     try:
         unverified_header = jwt.get_unverified_header(token)
         kid = unverified_header["kid"]
-    except (jwt.DecodeError, KeyError) as e:
+    except (jwt.DecodeError, KeyError):
         detail = "Failed to retrieve 'kid' (Key ID) from JWT."
         if not fallback_validator:
             _LOGGER.error(detail)
@@ -89,7 +86,7 @@ def validate_token(token: str, fallback_validator=None) -> dict:
         if fallback_validator(token):
             return {}, None
         else:
-            detail = f"Not a valid SciCat token"
+            detail = "Not a valid SciCat token"
             raise HTTPException(status_code=401, detail=detail)
 
     key_data = get_public_key_from_jwks(kid, jwks)
@@ -110,7 +107,7 @@ def validate_token(token: str, fallback_validator=None) -> dict:
         )
         return decoded_token, None  # Successfully decoded
     except jwt.ExpiredSignatureError:
-        detail = f"Token has expired"
+        detail = "Token has expired"
         _LOGGER.warning(detail)
         raise HTTPException(status_code=401, detail=detail)
 
@@ -196,5 +193,5 @@ def check_scicat_token(token) -> bool:
         detail = "SciCat user does have ingestor role"
         _LOGGER.error(detail)
         # return False
-        raise HTTPException(status_code=401, detail=detail) from e
+        raise HTTPException(status_code=401, detail=detail)
     return True
