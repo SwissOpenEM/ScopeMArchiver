@@ -84,7 +84,7 @@ def validate_token(token: str, fallback_validator=None) -> dict:
         if not fallback_validator:
             _LOGGER.error(detail)
             raise HTTPException(status_code=401, detail=detail)
-        
+
         # we assume we got a SciCat token, not a token from Keycloak
         if fallback_validator(token):
             return {}, None
@@ -143,9 +143,7 @@ def generate_token() -> dict:
             timeout=5,
         )
     except requests.exceptions.Timeout:
-        _LOGGER.error(
-            f"Error requesting test-token. Could not reach {settings.IDP_URL} because of timeout"
-        )
+        _LOGGER.error(f"Error requesting test-token. Could not reach {settings.IDP_URL} because of timeout")
         return
     except requests.exceptions.RequestException as e:
         _LOGGER.error(f"Error requesting test-token: {e}")
@@ -157,8 +155,9 @@ def generate_token() -> dict:
     else:
         _LOGGER.error("Failed to get token:", response.status_code, response.text)
 
+
 def get_token_SciCatAuth(
-   credentials: HTTPAuthorizationCredentials = Security(security), 
+    credentials: HTTPAuthorizationCredentials = Security(security),
 ):
     if not credentials:
         raise HTTPException(
@@ -169,15 +168,11 @@ def get_token_SciCatAuth(
     payload = validate_token(token, check_scicat_token)
     return payload
 
+
 def get_scicat_user_info(token) -> dict:
     try:
-        headers = {
-            "Authorization": f"Bearer {token}"
-        }
-        response = requests.get(
-            f"{settings.SCICAT_API}/users/my/identity",
-            headers=headers
-        )
+        headers = {"Authorization": f"Bearer {token}"}
+        response = requests.get(f"{settings.SCICAT_API}/users/my/identity", headers=headers)
         response.raise_for_status()
 
     except requests.exceptions.RequestException as e:
@@ -186,7 +181,8 @@ def get_scicat_user_info(token) -> dict:
         raise HTTPException(status_code=401, detail=detail) from e
     return response.json()
 
-def check_scicat_token(token)-> bool:
+
+def check_scicat_token(token) -> bool:
     scicat_userinfo = get_scicat_user_info(token)
     try:
         groups = scicat_userinfo["profile"]["accessGroups"]
@@ -202,6 +198,3 @@ def check_scicat_token(token)-> bool:
         # return False
         raise HTTPException(status_code=401, detail=detail) from e
     return True
-        
-        
-    

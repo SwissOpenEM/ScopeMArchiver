@@ -49,7 +49,7 @@ exclude = [
     "./src/openapi_server/apis/",
     "./src/openapi_server/models/",
 ]
-line-length = 130
+line-length = 110
 indent-width = 4
 
 [[tool.uv.index]]
