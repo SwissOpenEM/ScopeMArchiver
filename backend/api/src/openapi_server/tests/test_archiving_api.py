@@ -14,19 +14,18 @@ def test_create_new_dataset_new_dataset_post(client: TestClient):
 
     Create New Dataset
     """
-    params = [("file_size_mb", 10),     ("num_files", 10),     ("datablock_size_mb", 20)]
-    headers = {
-    }
+    params = [("file_size_mb", 10), ("num_files", 10), ("datablock_size_mb", 20)]
+    headers = {}
     # uncomment below to make a request
-    #response = client.request(
+    # response = client.request(
     #    "POST",
     #    "/new_dataset/",
     #    headers=headers,
     #    params=params,
-    #)
+    # )
 
     # uncomment below to assert the status code of the HTTP response
-    #assert response.status_code == 200
+    # assert response.status_code == 200
 
 
 def test_get_archivable_objects_archivable_objects_get(client: TestClient):
@@ -35,17 +34,16 @@ def test_get_archivable_objects_archivable_objects_get(client: TestClient):
     Get Archivable Objects
     """
 
-    headers = {
-    }
+    headers = {}
     # uncomment below to make a request
-    #response = client.request(
+    # response = client.request(
     #    "GET",
     #    "/archivable_objects",
     #    headers=headers,
-    #)
+    # )
 
     # uncomment below to assert the status code of the HTTP response
-    #assert response.status_code == 200
+    # assert response.status_code == 200
 
 
 def test_get_retrievable_objects_retrievable_objects_get(client: TestClient):
@@ -54,17 +52,16 @@ def test_get_retrievable_objects_retrievable_objects_get(client: TestClient):
     Get Retrievable Objects
     """
 
-    headers = {
-    }
+    headers = {}
     # uncomment below to make a request
-    #response = client.request(
+    # response = client.request(
     #    "GET",
     #    "/retrievable_objects",
     #    headers=headers,
-    #)
+    # )
 
     # uncomment below to assert the status code of the HTTP response
-    #assert response.status_code == 200
+    # assert response.status_code == 200
 
 
 def test_job_created_jobs_post(client: TestClient):
@@ -75,16 +72,15 @@ def test_job_created_jobs_post(client: TestClient):
     body = None
 
     headers = {
-        "storage_volume": 'storage_volume_example',
+        "storage_volume": "storage_volume_example",
     }
     # uncomment below to make a request
-    #response = client.request(
+    # response = client.request(
     #    "POST",
     #    "/jobs/",
     #    headers=headers,
     #    json=body,
-    #)
+    # )
 
     # uncomment below to assert the status code of the HTTP response
-    #assert response.status_code == 200
-
+    # assert response.status_code == 200

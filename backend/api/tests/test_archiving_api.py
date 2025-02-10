@@ -16,20 +16,19 @@ def test_create_job(client: TestClient):
 
     Job Created
     """
-    create_job_body = {"type":"archive","id":"046b6c7f-0b8a-43b9-b35d-6489e6daee91"}
+    create_job_body = {"type": "archive", "id": "046b6c7f-0b8a-43b9-b35d-6489e6daee91"}
 
-    headers = {
-    }
+    headers = {}
     # uncomment below to make a request
-    #response = client.request(
+    # response = client.request(
     #    "POST",
     #    "/jobs/",
     #    headers=headers,
     #    json=create_job_body,
-    #)
+    # )
 
     # uncomment below to assert the status code of the HTTP response
-    #assert response.status_code == 200
+    # assert response.status_code == 200
 
 
 def test_create_new_dataset(client: TestClient):
@@ -37,18 +36,16 @@ def test_create_new_dataset(client: TestClient):
 
     Create New Dataset
     """
-    create_dataset_body = {"file_size_in_mb":40,"number_of_files":20,"datablock_size_in_mb":400}
+    create_dataset_body = {"file_size_in_mb": 40, "number_of_files": 20, "datablock_size_in_mb": 400}
 
-    headers = {
-    }
+    headers = {}
     # uncomment below to make a request
-    #response = client.request(
+    # response = client.request(
     #    "POST",
     #    "/new_dataset/",
     #    headers=headers,
     #    json=create_dataset_body,
-    #)
+    # )
 
     # uncomment below to assert the status code of the HTTP response
-    #assert response.status_code == 200
-
+    # assert response.status_code == 200

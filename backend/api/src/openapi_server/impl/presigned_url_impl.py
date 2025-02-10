@@ -13,7 +13,12 @@ from openapi_server.models.presigned_url_resp import PresignedUrlResp
 from openapi_server.apis.presigned_urls_api_base import BasePresignedUrlsApi
 from openapi_server.settings import Settings
 
-from .s3 import complete_multipart_upload, abort_multipart_upload, create_presigned_url, create_presigned_urls_multipart
+from .s3 import (
+    complete_multipart_upload,
+    abort_multipart_upload,
+    create_presigned_url,
+    create_presigned_urls_multipart,
+)
 
 from logging import getLogger
 
@@ -31,7 +36,9 @@ class BasePresignedUrlsApiImpl(BasePresignedUrlsApi):
             return complete_multipart_upload(_SETTINGS.MINIO_LANDINGZONE_BUCKET, complete_upload_body)
         except Exception as e:
             _LOGGER.error(str(e))
-            return JSONResponse(status_code=500, content={"message": "Failed to complete upload", "details": str(e)})
+            return JSONResponse(
+                status_code=500, content={"message": "Failed to complete upload", "details": str(e)}
+            )
 
     async def abort_multipart_upload(
         self,
@@ -50,7 +57,9 @@ class BasePresignedUrlsApiImpl(BasePresignedUrlsApi):
             )
         except Exception as e:
             _LOGGER.error(str(e))
-            return JSONResponse(status_code=500, content={"message": "Failed to abort multipart upload", "details": str(e)})
+            return JSONResponse(
+                status_code=500, content={"message": "Failed to abort multipart upload", "details": str(e)}
+            )
 
     async def get_presigned_urls(
         self,
@@ -75,4 +84,6 @@ class BasePresignedUrlsApiImpl(BasePresignedUrlsApi):
                 return PresignedUrlResp(UploadID=uploadId, Urls=b64urls)
         except Exception as e:
             _LOGGER.error(str(e))
-            return JSONResponse(status_code=500, content={"message": "Failed to get presigned urls", "details": str(e)})
+            return JSONResponse(
+                status_code=500, content={"message": "Failed to get presigned urls", "details": str(e)}
+            )

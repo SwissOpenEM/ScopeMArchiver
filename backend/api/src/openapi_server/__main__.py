@@ -32,14 +32,15 @@ app = FastAPI(
 
 settings = Settings()
 
+
 class Enforce201Middleware(BaseHTTPMiddleware):
     async def dispatch(self, request, call_next):
         response = await call_next(request)
-        
+
         # Ensure POST /token returns 201
         if request.method == "POST" and response.status_code == 200:
             response.status_code = 201
-        
+
         return response
 
 
@@ -59,14 +60,11 @@ if __name__ == "__main__":
         allow_methods=["*"],
         allow_headers=["*"],
     )
-    app.add_middleware(
-        Enforce201Middleware
-    )
+    app.add_middleware(Enforce201Middleware)
 
     app.include_router(ArchivingApiRouter)
     app.include_router(PresignedUrlsApiRouter)
     app.include_router(ServiceTokenRouter)
-
 
     uvi_config = uvicorn.Config(
         app,
@@ -81,9 +79,7 @@ if __name__ == "__main__":
     # TODO: for testing purposes only. To be removed later.
     token = generate_token()
     if token:
-        _LOGGER.info(
-            f"Test Bearer token: {token.get('access_token', 'No access_token found')}"
-        )
+        _LOGGER.info(f"Test Bearer token: {token.get('access_token', 'No access_token found')}")
 
     server = uvicorn.Server(uvi_config)
     server.run()

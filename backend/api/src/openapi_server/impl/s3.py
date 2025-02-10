@@ -39,10 +39,14 @@ def create_presigned_url(bucket_name, object_name) -> str:
         raise e
 
 
-def create_presigned_urls_multipart(bucket_name, object_name, part_count) -> tuple[str, List[tuple[int, str]]]:
+def create_presigned_urls_multipart(
+    bucket_name, object_name, part_count
+) -> tuple[str, List[tuple[int, str]]]:
     # Create a multipart upload
     try:
-        response = s3_client.create_multipart_upload(Bucket=bucket_name, Key=object_name, ChecksumAlgorithm="SHA256")
+        response = s3_client.create_multipart_upload(
+            Bucket=bucket_name, Key=object_name, ChecksumAlgorithm="SHA256"
+        )
         upload_id = response["UploadId"]
         _LOGGER.info(f"Upload ID: {upload_id}")
     except ClientError as e:
@@ -55,7 +59,12 @@ def create_presigned_urls_multipart(bucket_name, object_name, part_count) -> tup
         try:
             presigned_url = s3_client.generate_presigned_url(
                 "upload_part",
-                Params={"Bucket": bucket_name, "Key": object_name, "UploadId": upload_id, "PartNumber": part_number},
+                Params={
+                    "Bucket": bucket_name,
+                    "Key": object_name,
+                    "UploadId": upload_id,
+                    "PartNumber": part_number,
+                },
                 HttpMethod="PUT",
                 ExpiresIn=_SETTINGS.URL_EXPIRATION_SECONDS,
             )

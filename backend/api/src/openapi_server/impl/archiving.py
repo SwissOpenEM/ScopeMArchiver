@@ -23,13 +23,17 @@ async def run_create_dataset_deployment(
 
 async def run_archiving_deployment(job_id: UUID, dataset_list: List[str]):
     a = await run_deployment(
-        "archive_datasetlist/datasets_archival", parameters={"dataset_ids": dataset_list, "job_id": job_id}, timeout=0
+        "archive_datasetlist/datasets_archival",
+        parameters={"dataset_ids": dataset_list, "job_id": job_id},
+        timeout=0,
     )  # type: ignore
     return a
 
 
 async def run_retrieval_deployment(job_id: UUID, dataset_list: List[str]):
     a = await run_deployment(
-        "retrieve_datasetlist/datasets_retrieval", parameters={"dataset_ids": dataset_list, "job_id": job_id}, timeout=0
+        "retrieve_datasetlist/datasets_retrieval",
+        parameters={"dataset_ids": dataset_list, "job_id": job_id},
+        timeout=0,
     )  # type: ignore
     return a

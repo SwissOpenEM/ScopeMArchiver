@@ -36,11 +36,15 @@ class BaseArchivingApiImpl(BaseArchivingApi):
                 dataset_id=data_set_id,
             )
 
-            _LOGGER.debug("Flow run for dataset % created. Id=%d Name=%s", data_set_id, flowRun.id, flowRun.name)
+            _LOGGER.debug(
+                "Flow run for dataset % created. Id=%d Name=%s", data_set_id, flowRun.id, flowRun.name
+            )
             return CreateDatasetResp(Name=flowRun.name, Uuid=str(flowRun.id), DataSetId=data_set_id)
         except Exception as e:
             _LOGGER.error(e)
-            return JSONResponse(status_code=500, content={"message": "Failed to create new dataset", "details": str(e)})
+            return JSONResponse(
+                status_code=500, content={"message": "Failed to create new dataset", "details": str(e)}
+            )
 
     async def create_job(
         self,
@@ -50,7 +54,9 @@ class BaseArchivingApiImpl(BaseArchivingApi):
             job_id = UUID(create_job_body.id)
         except ValueError as e:
             _LOGGER.warning(e)
-            return JSONResponse(status_code=422, content={"message": "Failed to create job", "details": str(e)})
+            return JSONResponse(
+                status_code=422, content={"message": "Failed to create job", "details": str(e)}
+            )
 
         try:
             match create_job_body.type:
@@ -61,8 +67,12 @@ class BaseArchivingApiImpl(BaseArchivingApi):
                 case _:
                     return JSONResponse(status_code=500, content={"message": f"unknown job type {type}"})
 
-            _LOGGER.debug("Flow run for job %s created. Id=%d Name=%s", create_job_body.id, flowRun.id, flowRun.name)
+            _LOGGER.debug(
+                "Flow run for job %s created. Id=%d Name=%s", create_job_body.id, flowRun.id, flowRun.name
+            )
             return CreateJobResp(Uuid=str(flowRun.id), Name=flowRun.name)
         except Exception as e:
             _LOGGER.error(e)
-            return JSONResponse(status_code=500, content={"message": "Failed to create job", "details": str(e)})
+            return JSONResponse(
+                status_code=500, content={"message": "Failed to create job", "details": str(e)}
+            )

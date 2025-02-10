@@ -16,20 +16,19 @@ def test_abort_multipart_upload_abort_multipart_upload_post(client: TestClient):
 
     Abort Multipart Upload
     """
-    abort_upload_body = {"upload_id":"UploadID","object_name":"ObjectName"}
+    abort_upload_body = {"upload_id": "UploadID", "object_name": "ObjectName"}
 
-    headers = {
-    }
+    headers = {}
     # uncomment below to make a request
-    #response = client.request(
+    # response = client.request(
     #    "POST",
     #    "/abortMultipartUpload",
     #    headers=headers,
     #    json=abort_upload_body,
-    #)
+    # )
 
     # uncomment below to assert the status code of the HTTP response
-    #assert response.status_code == 200
+    # assert response.status_code == 200
 
 
 def test_complete_upload_complete_upload_post(client: TestClient):
@@ -37,20 +36,27 @@ def test_complete_upload_complete_upload_post(client: TestClient):
 
     Complete Upload
     """
-    complete_upload_body = {"parts":[{"part_number":0,"e_tag":"ETag","checksum_sha256":"ChecksumSHA256"},{"part_number":0,"e_tag":"ETag","checksum_sha256":"ChecksumSHA256"}],"upload_id":"UploadID","object_name":"ObjectName","checksum_sha256":"ChecksumSHA256"}
-
-    headers = {
+    complete_upload_body = {
+        "parts": [
+            {"part_number": 0, "e_tag": "ETag", "checksum_sha256": "ChecksumSHA256"},
+            {"part_number": 0, "e_tag": "ETag", "checksum_sha256": "ChecksumSHA256"},
+        ],
+        "upload_id": "UploadID",
+        "object_name": "ObjectName",
+        "checksum_sha256": "ChecksumSHA256",
     }
+
+    headers = {}
     # uncomment below to make a request
-    #response = client.request(
+    # response = client.request(
     #    "POST",
     #    "/completeUpload",
     #    headers=headers,
     #    json=complete_upload_body,
-    #)
+    # )
 
     # uncomment below to assert the status code of the HTTP response
-    #assert response.status_code == 200
+    # assert response.status_code == 200
 
 
 def test_get_presigned_urls_presigned_urls_post(client: TestClient):
@@ -58,18 +64,16 @@ def test_get_presigned_urls_presigned_urls_post(client: TestClient):
 
     Get Presigned Urls
     """
-    presigned_url_body = {"parts":0,"object_name":"ObjectName"}
+    presigned_url_body = {"parts": 0, "object_name": "ObjectName"}
 
-    headers = {
-    }
+    headers = {}
     # uncomment below to make a request
-    #response = client.request(
+    # response = client.request(
     #    "POST",
     #    "/presignedUrls",
     #    headers=headers,
     #    json=presigned_url_body,
-    #)
+    # )
 
     # uncomment below to assert the status code of the HTTP response
-    #assert response.status_code == 200
-
+    # assert response.status_code == 200
