@@ -20,7 +20,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from .settings import Settings
 from logging import getLogger
 
-__version__ = version("archiver-service")
+__version__ = version("archiver-service-api")
 
 _LOGGER = getLogger("api")
 
