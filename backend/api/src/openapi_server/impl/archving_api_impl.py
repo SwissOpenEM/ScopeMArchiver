@@ -11,7 +11,7 @@ from .archiving import run_create_dataset_deployment, run_archiving_deployment, 
 
 from logging import getLogger
 
-_LOGGER = getLogger("api.archiving")
+_LOGGER = getLogger("uvicorn.archiving")
 
 
 class BaseArchivingApiImpl(BaseArchivingApi):

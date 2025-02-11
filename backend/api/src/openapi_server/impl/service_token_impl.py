@@ -6,7 +6,7 @@ from openapi_server.security_api import generate_token
 
 from logging import getLogger
 
-_LOGGER = getLogger("api.service_token")
+_LOGGER = getLogger("uvicorn.service_token")
 
 _SETTINGS = Settings()
 

@@ -22,7 +22,6 @@ from logging import getLogger
 
 __version__ = version("archiver-service-api")
 
-_LOGGER = getLogger("api")
 
 app = FastAPI(
     title="ETHZ Archiver Service",
@@ -31,6 +30,7 @@ app = FastAPI(
 )
 
 settings = Settings()
+_LOGGER = getLogger("uvicorn")
 
 
 class Enforce201Middleware(BaseHTTPMiddleware):
@@ -45,9 +45,6 @@ class Enforce201Middleware(BaseHTTPMiddleware):
 
 
 if __name__ == "__main__":
-    _LOGGER.setLevel(settings.UVICORN_LOG_LEVEL.upper())
-    _LOGGER.info(f"Version: {__version__}")
-
     origins = [
         "http://127.0.0.1*",
         "http://localhost:5173",
@@ -66,23 +63,26 @@ if __name__ == "__main__":
     app.include_router(PresignedUrlsApiRouter)
     app.include_router(ServiceTokenRouter)
 
+    log_config = uvicorn.config.LOGGING_CONFIG
+    log_config["loggers"]["uvicorn"]["level"] = settings.UVICORN_LOG_LEVEL.upper()
     uvi_config = uvicorn.Config(
         app,
         host="0.0.0.0",
         port=settings.UVICORN_PORT,
         root_path=settings.UVICORN_ROOT_PATH,
         reload=settings.UVICORN_RELOAD,
-        log_level=settings.UVICORN_LOG_LEVEL,
+        log_config=log_config,
         reload_dirs=[str(pathlib.Path(__file__).parent)],
     )
+
+    _LOGGER.info(f"Version: {__version__}")
 
     # TODO: for testing purposes only. To be removed later.
     try:
         token = generate_token()
-        if token:
-            _LOGGER.info(f"Test Bearer token: {token.access_token}")
-    except:
-        _LOGGER.error("failed to get test bearer token")
+        _LOGGER.debug(f"Test Bearer token: {token.access_token}")
+    except Exception as e:
+        _LOGGER.error(f"failed to get test bearer token: {e}")
 
     server = uvicorn.Server(uvi_config)
     server.run()
