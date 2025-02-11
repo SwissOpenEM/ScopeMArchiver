@@ -17,7 +17,7 @@ from starlette.status import HTTP_401_UNAUTHORIZED
 
 security = HTTPBearer()
 settings = Settings()
-_LOGGER = getLogger("api.security")
+_LOGGER = getLogger("uvicorn.security")
 
 
 def get_token_BearerAuth(
@@ -151,7 +151,7 @@ def generate_token() -> CreateServiceTokenResp:
 
     if response.status_code == 200:
         _LOGGER.info("Successfully obtained access and refresh token")
-        return response.json()
+        return CreateServiceTokenResp.from_dict(response.json())
     else:
         detail = f"Failed to get token: {response.status_code}, {response.text}"
         _LOGGER.error(detail)
