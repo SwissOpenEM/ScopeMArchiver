@@ -10,6 +10,7 @@ from fastapi.security import (  # noqa: F401
     HTTPBearer,
 )
 
+from openapi_server.models.create_service_token_resp import CreateServiceTokenResp
 from openapi_server.settings import Settings
 
 from starlette.status import HTTP_401_UNAUTHORIZED
@@ -122,7 +123,7 @@ def validate_token(token: str, fallback_validator=None) -> dict:
         raise HTTPException(status_code=401, detail=detail)
 
 
-def generate_token() -> dict:
+def generate_token() -> CreateServiceTokenResp:
     # Token request payload
     payload = {
         "client_id": settings.IDP_CLIENT_ID,
@@ -140,17 +141,21 @@ def generate_token() -> dict:
             timeout=5,
         )
     except requests.exceptions.Timeout:
-        _LOGGER.error(f"Error requesting test-token. Could not reach {settings.IDP_URL} because of timeout")
-        return
+        detail = f"Error requesting test-token. Could not reach {settings.IDP_URL} because of timeout"
+        _LOGGER.error(detail)
+        raise HTTPException(status_code=500, detail=detail)
     except requests.exceptions.RequestException as e:
-        _LOGGER.error(f"Error requesting test-token: {e}")
-        return
+        detail = f"Error requesting test-token: {e}"
+        _LOGGER.error(detail)
+        raise HTTPException(status_code=500, detail=detail)
 
     if response.status_code == 200:
         _LOGGER.info("Successfully obtained access and refresh token")
         return response.json()
     else:
-        _LOGGER.error("Failed to get token:", response.status_code, response.text)
+        detail = f"Failed to get token: {response.status_code}, {response.text}"
+        _LOGGER.error(detail)
+        raise HTTPException(status_code=500, detail=detail)
 
 
 def get_token_SciCatAuth(
