@@ -77,9 +77,12 @@ if __name__ == "__main__":
     )
 
     # TODO: for testing purposes only. To be removed later.
-    token = generate_token()
-    if token:
-        _LOGGER.info(f"Test Bearer token: {token.get('access_token', 'No access_token found')}")
+    try:
+        token = generate_token()
+        if token:
+            _LOGGER.info(f"Test Bearer token: {token.access_token}")
+    except:
+        _LOGGER.error("failed to get test bearer token")
 
     server = uvicorn.Server(uvi_config)
     server.run()
