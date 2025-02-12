@@ -37,6 +37,8 @@ paths:
         - service_token
   /archiver/new_dataset:
     post:
+      # https://github.com/SwissOpenEM/ScopeMArchiver/issues/151
+      security: []
       operationId: create_new_dataset
       requestBody:
         content:
@@ -68,6 +70,8 @@ paths:
         - archiving
   /archiver/jobs:
     post:
+      # https://github.com/SwissOpenEM/ScopeMArchiver/issues/151
+      security: []
       operationId: create_job
       requestBody:
         content:

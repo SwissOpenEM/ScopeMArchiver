@@ -16,7 +16,9 @@
         "UVICORN_ROOT_PATH": "",
         "UVICORN_RELOAD": "true",
         "UVICORN_LOG_LEVEL": "debug",
-        "UVICORN_PORT": "8888"
+        "UVICORN_PORT": "8888",
+        "IDP_CLIENT_SECRET":"ASFD",
+        "IDP_PASSWORD":"ASFD",
       },
       "cwd": "${workspaceFolder}/src",
       "module": "openapi_server",

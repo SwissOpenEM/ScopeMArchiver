@@ -11,7 +11,7 @@ from openapi_server.models.complete_upload_resp import CompleteUploadResp
 
 from logging import getLogger
 
-_LOGGER = getLogger("api.s3")
+_LOGGER = getLogger("uvicorn.s3")
 _SETTINGS = Settings()
 
 boto3.set_stream_logger("api.s3.boto3", _LOGGER.level)

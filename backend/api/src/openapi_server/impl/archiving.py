@@ -1,6 +1,7 @@
 from typing import List
 from uuid import UUID
 from prefect.client.schemas.objects import FlowRun
+from prefect import flow  # noqa: F401 # required do to https://github.com/PrefectHQ/prefect/issues/16105
 from prefect.deployments import run_deployment
 
 

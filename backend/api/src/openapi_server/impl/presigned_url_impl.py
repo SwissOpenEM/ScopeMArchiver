@@ -21,7 +21,7 @@ from .s3 import (
 
 from logging import getLogger
 
-_LOGGER = getLogger("api.presignedurls")
+_LOGGER = getLogger("uvicorn.presignedurls")
 
 _SETTINGS = Settings()
 

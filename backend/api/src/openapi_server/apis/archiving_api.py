@@ -29,7 +29,7 @@ from openapi_server.models.create_job_body import CreateJobBody
 from openapi_server.models.create_job_resp import CreateJobResp
 from openapi_server.models.http_validation_error import HTTPValidationError
 from openapi_server.models.internal_error import InternalError
-from openapi_server.security_api import get_token_BearerAuth
+
 
 router = APIRouter()
 
@@ -51,9 +51,6 @@ for _, name, _ in pkgutil.iter_modules(ns_pkg.__path__, ns_pkg.__name__ + "."):
 )
 async def create_job(
     create_job_body: CreateJobBody = Body(None, description=""),
-    token_BearerAuth: TokenModel = Security(
-        get_token_BearerAuth
-    ),
 ) -> CreateJobResp:
     if not BaseArchivingApi.subclasses:
         raise HTTPException(status_code=500, detail="Not implemented")
@@ -73,9 +70,6 @@ async def create_job(
 )
 async def create_new_dataset(
     create_dataset_body: CreateDatasetBody = Body(None, description=""),
-    token_BearerAuth: TokenModel = Security(
-        get_token_BearerAuth
-    ),
 ) -> CreateDatasetResp:
     if not BaseArchivingApi.subclasses:
         raise HTTPException(status_code=500, detail="Not implemented")

@@ -16,6 +16,8 @@ services:
     secrets:
       - minio_user
       - minio_password
+      - idp_client_secret
+      - idp_password
     expose:
       - 8000
     labels:
@@ -203,3 +205,7 @@ secrets:
     file: ./.secrets/miniouser.txt
   minio_password:
     file: ./.secrets/miniopass.txt
+  idp_client_secret:
+    file: ./.secrets/idpclientsecret.txt
+  idp_password:
+    file: ./.secrets/idppassword.txt
