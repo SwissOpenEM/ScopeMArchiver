@@ -80,7 +80,7 @@ if __name__ == "__main__":
     # TODO: for testing purposes only. To be removed later.
     try:
         token = generate_token()
-        _LOGGER.debug(f"Test Bearer token: {token.access_token}")
+        _LOGGER.info(f"Test Bearer token: {token.access_token}")
     except Exception as e:
         _LOGGER.error(f"failed to get test bearer token: {e}")
 
