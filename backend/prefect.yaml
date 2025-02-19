@@ -5,15 +5,15 @@
 # Generic metadata about this project
 name: ScopeMArchiver
 
-build:
-- prefect_docker.deployments.steps.build_docker_image:
-    id: build_image
-    requires: prefect-docker>=0.6.1
-    image_name: ghcr.io/swissopenem/scopemarchiver-openem-runtime
-    tag: "latest"
-    dockerfile: ./backend/archiver/prefect-runtime.Dockerfile
-    buildargs:
-      LTS_ROOT_FOLDER: "{{ $LTS_ROOT_FOLDER }}"
+# build:
+# - prefect_docker.deployments.steps.build_docker_image:
+#     id: build_image
+#     requires: prefect-docker>=0.6.1
+#     image_name: ghcr.io/swissopenem/scopemarchiver-openem-runtime
+#     tag: "latest"
+#     dockerfile: ./backend/archiver/prefect-runtime.Dockerfile
+#     buildargs:
+#       LTS_ROOT_FOLDER: "{{ $LTS_ROOT_FOLDER }}"
 
 pull:
   # required see https://github.com/PrefectHQ/prefect/issues/10285
@@ -32,7 +32,7 @@ deployments:
     name: archival-docker-workpool
     work_queue_name: default
     job_variables:
-      image: '{{ build_image.image }}'
+      image: ghcr.io/swissopenem/scopemarchiver-openem-runtime
       registry_credentials:
         registry_url: ghcr.io
         username: "{{ prefect.blocks.secret.github-user }}"
@@ -50,13 +50,13 @@ deployments:
   version: 1.0.0
   tags: []
   description:
-  entrypoint: ./flows/archive_datasets_flow.py:archive_datasets_flow
+  entrypoint: ./archiver/flows/archive_datasets_flow.py:archive_datasets_flow
   parameters: {}
   work_pool:
     name: archival-docker-workpool
     work_queue_name: default
     job_variables:
-      image: '{{ build_image.image }}'
+      image: ghcr.io/swissopenem/scopemarchiver-openem-runtime
       registry_credentials:
         registry_url: ghcr.io
         username: "{{ prefect.blocks.secret.github-user }}"
@@ -77,13 +77,13 @@ deployments:
   version: 1.0.0
   tags: []
   description:
-  entrypoint: ./flows/retrieve_datasets_flow.py:retrieve_datasets_flow
+  entrypoint: ./archiver/flows/retrieve_datasets_flow.py:retrieve_datasets_flow
   parameters: {}
   work_pool:
     name: retrieval-docker-workpool
     work_queue_name: default
     job_variables:
-      image: '{{ build_image.image }}'
+      image: ghcr.io/swissopenem/scopemarchiver-openem-runtime
       registry_credentials:
         registry_url: ghcr.io
         username: "{{ prefect.blocks.secret.github-user }}"

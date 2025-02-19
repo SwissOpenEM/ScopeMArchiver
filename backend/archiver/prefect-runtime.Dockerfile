@@ -3,9 +3,10 @@ FROM prefecthq/prefect:${PREFECT_VERSION} AS builder
 
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
-RUN mkdir /app
 
-WORKDIR /app
+RUN mkdir -p /app/backend/archiver
+
+WORKDIR /app/backend/archiver
 
 # Install dependencies
 RUN --mount=type=cache,target=/root/.cache/uv \
@@ -13,7 +14,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
     uv sync --frozen --no-install-project --no-editable
 
-COPY ./flows /app/flows
+COPY ./ /app/backend/archiver/
 
 FROM prefecthq/prefect:${PREFECT_VERSION} AS test_runner
 RUN mkdir -p /app/backend/archiver

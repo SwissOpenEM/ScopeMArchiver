@@ -1,36 +1,34 @@
-ARG PREFECT_VERSION=latest
-FROM prefecthq/prefect:${PREFECT_VERSION}
+FROM python:3.12-slim AS builder
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
-# Keeps Python from generating .pyc files in the container
-ENV PYTHONDONTWRITEBYTECODE=1
+WORKDIR /archiver/
 
-# Turns off buffering for easier container logging
-ENV PYTHONUNBUFFERED=1
+# Enable bytecode compilation
+ENV UV_COMPILE_BYTECODE=1
 
-RUN apt-get update -y && apt-get upgrade -y
+# Copy from the cache instead of linking since it's a mounted volume
+ENV UV_LINK_MODE=copy
 
-RUN pip3 install pipenv --upgrade pip
+# Install dependencies
+RUN --mount=type=cache,target=/root/.cache/uv \
+    --mount=type=bind,source=archiver/uv.lock,target=uv.lock \
+    --mount=type=bind,source=archiver/pyproject.toml,target=pyproject.toml \
+    uv sync --frozen --no-install-project --no-editable
 
-ARG USER=dev
+ADD archiver /archiver/
 
-RUN useradd -rm -d /home/${USER} -s /bin/bash -g root -G sudo -u 1000 ${USER}
-USER ${USER}
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen --no-editable
 
-WORKDIR /home/${USER}
 
-RUN mkdir /tmp/archiving
-RUN mkdir archiver
+FROM python:3.12-slim AS runtime
+# # Copy the environment, but not the source code
+COPY --from=builder --chown=app:app /archiver /archiver
 
-COPY ./archiver ./archiver
-COPY prefect-config.py ./
+COPY ./prefect-config.py /archiver/
 
-RUN echo 'export PATH="${HOME}/.local/bin:$PATH"' >> ~/.bashrc
-RUN PATH="${HOME}/.local/bin:$PATH"
+ENTRYPOINT []
 
-RUN cp ./archiver/Pipfile ./
-RUN cp ./archiver/Pipfile.lock ./
-RUN PIPENV_VENV_IN_PROJECT=1 pipenv install --deploy
-
+ENV PATH="/archiver/.venv/bin:$PATH"
 # Run our flow script when the container starts
-CMD ["pipenv", "run", "python", "prefect-config.py"]
-ENTRYPOINT ["pipenv", "run", "python", "prefect-config.py"]
+CMD ["python", "/archiver/prefect-config.py"]

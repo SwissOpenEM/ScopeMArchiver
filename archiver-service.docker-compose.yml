@@ -146,6 +146,13 @@ services:
       - github_pass
       - scicat_user
       - scicat_pass
+  prefect-runtime-image:
+    image: ghcr.io/swissopenem/scopemarchiver-openem-runtime:latest
+    build:
+      context: ./backend/archiver
+      dockerfile: ./prefect-runtime.Dockerfile
+      args:
+        LTS_ROOT_FOLDER: ${LTS_ROOT_FOLDER}
   prefect-flows-deployment:
     image: prefecthq/prefect:${PREFECT_VERSION}
     container_name: prefect-flows-deployment
@@ -162,11 +169,11 @@ services:
       - LTS_ROOT_FOLDER=${LTS_ROOT_FOLDER}
       - PREFECT_NETWORK=scopemarchiver_network
     command: prefect --no-prompt deploy --all --prefect-file /home/dev/backend/prefect.yaml
-    working_dir: /home/dev/
+    working_dir: /home/dev/backend
     volumes:
       - type: bind
         source: ./
-        target: /home/dev/
+        target: /home/dev
         read_only: true
       - /usr/bin/docker:/usr/bin/docker
       - /var/run/docker.sock:/var/run/docker.sock
