@@ -4,30 +4,28 @@
 
 # Generic metadata about this project
 name: ScopeMArchiver
-prefect-version: 3.0.4
 
 build:
 - prefect_docker.deployments.steps.build_docker_image:
     id: build_image
     requires: prefect-docker>=0.6.1
-    image_name: ghcr.io/swissopenem/scopemarchiver-openem-runtime-new
+    image_name: ghcr.io/swissopenem/scopemarchiver-openem-runtime
     tag: "latest"
-    dockerfile: ./backend/prefect-runtime.Dockerfile
+    dockerfile: ./backend/archiver/prefect-runtime.Dockerfile
     buildargs:
-      PREFECT_VERSION: "{{ $PREFECT_VERSION }}"
       LTS_ROOT_FOLDER: "{{ $LTS_ROOT_FOLDER }}"
 
 pull:
   # required see https://github.com/PrefectHQ/prefect/issues/10285
   - prefect.deployments.steps.set_working_directory:
-      directory: /opt/prefect
+      directory: /app
 
 deployments:
 - name: dataset_creation
   version: 1.0.0
   tags: []
   description:
-  entrypoint: ./backend/archiver/flows/mock_flows.py:create_test_dataset_flow
+  entrypoint: ./flows/mock_flows.py:create_test_dataset_flow
   parameters: {}
   work_pool:
     name: archival-docker-workpool
@@ -51,7 +49,7 @@ deployments:
   version: 1.0.0
   tags: []
   description:
-  entrypoint: ./backend/archiver/flows/archive_datasets_flow.py:archive_datasets_flow
+  entrypoint: ./flows/archive_datasets_flow.py:archive_datasets_flow
   parameters: {}
   work_pool:
     name: archival-docker-workpool
@@ -78,7 +76,7 @@ deployments:
   version: 1.0.0
   tags: []
   description:
-  entrypoint: ./backend/archiver/flows/retrieve_datasets_flow.py:retrieve_datasets_flow
+  entrypoint: ./flows/retrieve_datasets_flow.py:retrieve_datasets_flow
   parameters: {}
   work_pool:
     name: retrieval-docker-workpool

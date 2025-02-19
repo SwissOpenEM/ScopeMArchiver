@@ -114,10 +114,9 @@ jobs:
         id: build-and-push
         uses: docker/build-push-action@v6
         with:
-          context: ./
-          file: ./backend/prefect-runtime.Dockerfile
+          context: ./backend/archiver
+          file: ./backend/archiver/prefect-runtime.Dockerfile
           push: ${{ github.event_name != 'pull_request' }}
-          build-args: PREFECT_VERSION=3.0.4-python3.11
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
@@ -154,7 +153,7 @@ jobs:
           context: ./backend/
           file: ./backend/prefect-config.Dockerfile
           push: ${{ github.event_name != 'pull_request' }}
-          build-args: PREFECT_VERSION=3.0.4-python3.11
+          build-args: PREFECT_VERSION=3.1.11-python3.11
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
