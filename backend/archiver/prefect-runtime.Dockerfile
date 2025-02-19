@@ -1,4 +1,6 @@
-FROM python:3.12-slim
+ARG PREFECT_VERSION=3.1.11-python3.11
+FROM prefecthq/prefect:${PREFECT_VERSION} AS builder
+
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 RUN mkdir /app
@@ -12,6 +14,20 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-install-project --no-editable
 
 COPY ./flows /app/flows
+
+FROM prefecthq/prefect:${PREFECT_VERSION} AS test_runner
+RUN mkdir -p /app/backend/archiver
+
+WORKDIR /app/backend/archiver
+
+COPY --from=builder --chown=app:app /app/backend/archiver /app/backend/archiver
+
+RUN uv add pytest
+
+RUN uv run pytest tests --junitxml=junit/test-results.xml --cov=. --cov-report=xml --cov-report=html
+
+FROM prefecthq/prefect:${PREFECT_VERSION} AS runtime
+COPY --from=builder --chown=app:app /app/backend/archiver /app/backend/archiver
 
 RUN apt-get update -y && apt-get upgrade -y
 

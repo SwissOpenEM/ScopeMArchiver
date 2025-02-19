@@ -25,7 +25,8 @@ deployments:
   version: 1.0.0
   tags: []
   description:
-  entrypoint: ./flows/mock_flows.py:create_test_dataset_flow
+   # This entrypoint needs to match the folder structure as well as the path in the image with prefect.deployments.steps.set_working_directory prepended
+  entrypoint: ./archiver/flows/mock_flows.py:create_test_dataset_flow
   parameters: {}
   work_pool:
     name: archival-docker-workpool
