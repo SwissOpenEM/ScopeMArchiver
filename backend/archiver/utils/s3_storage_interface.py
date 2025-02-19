@@ -17,7 +17,7 @@ from archiver.config.blocks import Blocks
 
 
 @dataclass
-class Bucket():
+class Bucket:
     name: str
 
     @staticmethod
@@ -33,8 +33,7 @@ class Bucket():
         return Bucket(Variables().MINIO_LANDINGZONE_BUCKET)
 
 
-class S3Storage():
-
+class S3Storage:
     def __init__(self, url: str, user: str, password: SecretStr, region: str):
         self._URL = url
         self._USER = user
@@ -46,12 +45,12 @@ class S3Storage():
         self.LANDINGZONE_BUCKET: Bucket = Bucket.landingzone_bucket()
 
         self._minio = boto3.client(
-            's3',
-            endpoint_url=f"https://{self._URL}" if self._URL is not None and self._URL != '' else None,
+            "s3",
+            endpoint_url=f"https://{self._URL}" if self._URL is not None and self._URL != "" else None,
             aws_access_key_id=self._USER.strip(),
             aws_secret_access_key=self._PASSWORD.get_secret_value().strip(),
             region_name=self._REGION,
-            config=Config(signature_version="s3v4")
+            config=Config(signature_version="s3v4"),
         )
 
     def __eq__(self, value: object) -> bool:
@@ -66,9 +65,9 @@ class S3Storage():
     @log
     def get_presigned_url(self, bucket: Bucket, filename: str) -> str:
         presigned_url = self._minio.generate_presigned_url(
-            'get_object',
-            Params={'Bucket': bucket.name, 'Key': filename},
-            ExpiresIn=3600  # URL expiration time in seconds
+            "get_object",
+            Params={"Bucket": bucket.name, "Key": filename},
+            ExpiresIn=3600,  # URL expiration time in seconds
         )
         return presigned_url
 
@@ -78,19 +77,12 @@ class S3Storage():
 
     @log
     def stat_object(self, bucket: Bucket, filename: str) -> StatInfo:
-        object = self._minio.head_object(
-            Bucket=bucket.name,
-            Key=filename
-        )
-        return S3Storage.StatInfo(Size=object['ContentLength'])
+        object = self._minio.head_object(Bucket=bucket.name, Key=filename)
+        return S3Storage.StatInfo(Size=object["ContentLength"])
 
     @log
     def fget_object(self, bucket: Bucket, folder: str, object_name: str, target_path: Path):
-        self._minio.download_file(
-            Bucket=bucket.name,
-            Key=object_name,
-            Filename=str(target_path.absolute())
-        )
+        self._minio.download_file(Bucket=bucket.name, Key=object_name, Filename=str(target_path.absolute()))
 
     @dataclass
     class ListedObject:
@@ -99,21 +91,17 @@ class S3Storage():
     @log
     def list_objects(self, bucket: Bucket, folder: str | None = None) -> List[S3Storage.ListedObject]:
         f = folder or ""
-        response = self._minio.list_objects(
-            Bucket=bucket.name,
-            Prefix=f,
-            Marker=f"{f}/"
-        )
+        response = self._minio.list_objects(Bucket=bucket.name, Prefix=f, Marker=f"{f}/")
 
         objects: List[S3Storage.ListedObject] = []
-        if response is not None and 'Contents' in response.keys():
-            for c in response['Contents']:
-                objects.append(S3Storage.ListedObject(Name=c['Key']))
+        if response is not None and "Contents" in response.keys():
+            for c in response["Contents"]:
+                objects.append(S3Storage.ListedObject(Name=c["Key"]))
             return objects
 
         return objects
 
-    @ log
+    @log
     def fput_object(self, source_file: Path, destination_file: Path, bucket: Bucket):
         self._minio.upload_file(
             Bucket=bucket.name,
@@ -122,27 +110,17 @@ class S3Storage():
             ExtraArgs={},
             Config=TransferConfig(
                 multipart_threshold=64 * 1024 * 1024,
-                multipart_chunksize=64 * 1024 * 1024
-            )
+                multipart_chunksize=64 * 1024 * 1024,
+            ),
         )
 
-    @ log
+    @log
     def delete_objects(self, minio_prefix: Path, bucket: Bucket) -> None:
-        response = self._minio.list_objects(
-            Bucket=bucket.name,
-            Prefix=str(minio_prefix)
-        )
-        delete_object_list: Iterable[str] = list(
-            map(
-                lambda x: x['Key'],
-                response['Contents']
-            )
-        )
+        response = self._minio.list_objects(Bucket=bucket.name, Prefix=str(minio_prefix))
+        delete_object_list: Iterable[str] = list(map(lambda x: x["Key"], response["Contents"]))
 
         for obj in delete_object_list:
-            response = self._minio.delete_object(
-                Bucket=bucket.name,
-                Key=obj)
+            response = self._minio.delete_object(Bucket=bucket.name, Key=obj)
 
 
 @functools.cache
@@ -151,5 +129,5 @@ def get_s3_client() -> S3Storage:
         url=Variables().MINIO_ENDPOINT,
         user=Blocks().MINIO_USER,
         password=Blocks().MINIO_PASSWORD,
-        region=Variables().MINIO_REGION
+        region=Variables().MINIO_REGION,
     )
