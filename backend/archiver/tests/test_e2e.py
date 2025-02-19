@@ -12,7 +12,7 @@ from pydantic import SecretStr
 from archiver.utils.model import Job, DatasetListEntry
 from archiver.utils.s3_storage_interface import S3Storage, Bucket
 
-from prefect import flow, State
+from prefect import State
 from prefect.client.schemas.objects import FlowRun, State
 from prefect.client.orchestration import PrefectClient
 

@@ -8,7 +8,7 @@ import time
 import datetime
 import hashlib
 
-from typing import Dict, Iterator, List
+from typing import Dict, List
 from pathlib import Path
 
 from archiver.utils.s3_storage_interface import S3Storage, Bucket

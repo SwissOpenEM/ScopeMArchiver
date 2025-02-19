@@ -95,7 +95,7 @@ def test_scicat_api_retrieval(
     ):
         try:
             retrieve_datasets_flow(job_id=job_id, dataset_ids=[dataset_id])
-        except Exception as e:
+        except Exception:
             pass
 
         assert m.jobs_matcher.call_count == 2
@@ -196,7 +196,7 @@ def test_datablock_not_found(
     ):
         try:
             retrieve_datasets_flow(job_id=job_id, dataset_ids=[dataset_id])
-        except Exception as e:
+        except Exception:
             pass
 
         assert m.jobs_matcher.call_count == 2

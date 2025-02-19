@@ -80,7 +80,7 @@ def test_scicat_api_archiving(
     ):
         try:
             archive_datasets_flow(job_id=job_id, dataset_ids=[dataset_id])
-        except Exception as e:
+        except Exception:
             pass
 
         assert m.jobs_matcher.call_count == 2

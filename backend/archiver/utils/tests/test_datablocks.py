@@ -3,7 +3,7 @@ import shutil
 import pytest
 import os
 import tarfile
-from typing import Dict, List
+from typing import List
 from pathlib import Path
 import tempfile
 from unittest.mock import patch

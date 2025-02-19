@@ -1,4 +1,4 @@
-from typing import List, Sequence
+from typing import List
 from prefect import task
 from uuid import UUID
 from pydantic import SecretStr
