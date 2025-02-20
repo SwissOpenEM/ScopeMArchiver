@@ -1,6 +1,6 @@
 import argparse
-from config.variables import register_variables_from_config, PrefectVariablesModel
-from config.concurrency_limits import ConcurrencyLimits, register_concurrency_limits
+from archiver.config.variables import register_variables_from_config, PrefectVariablesModel
+from archiver.config.concurrency_limits import ConcurrencyLimits, register_concurrency_limits
 from prefect.blocks.system import Secret
 from pathlib import Path
 import os

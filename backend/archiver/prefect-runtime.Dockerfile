@@ -40,4 +40,5 @@ RUN systemctl --system enable rpcbind.service
 ARG LTS_ROOT_FOLDER=/tmp/LTS
 RUN mkdir ${LTS_ROOT_FOLDER}
 
+ENV PATH="/app/backend/archiver/.venv/bin:$PATH"
 CMD ["/bin/bash"]
