@@ -129,7 +129,7 @@ def test_scicat_api_retrieval(
 
         mock_upload_datablock.assert_called()
         mock_cleanup_s3_staging.assert_not_called()
-        mock_cleanup_s3_retrieval.not_called()
+        mock_cleanup_s3_retrieval.assert_not_called()
         mock_cleanup_s3_landingzone.assert_not_called()
         mock_cleanup_s3_staging.assert_not_called()
         mock_cleanup_scratch.assert_called_once_with(dataset_id)
