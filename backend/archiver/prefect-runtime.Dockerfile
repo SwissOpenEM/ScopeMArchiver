@@ -16,6 +16,9 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 COPY ./ /app/backend/archiver/
 
+# docker executor needs prefect-docker
+RUN uv add prefect-docker==0.6.1
+
 FROM prefecthq/prefect:${PREFECT_VERSION} AS test_runner
 RUN mkdir -p /app/backend/archiver
 
@@ -26,6 +29,7 @@ COPY --from=builder --chown=app:app /app/backend/archiver /app/backend/archiver
 RUN uv add pytest
 
 RUN uv run pytest tests --junitxml=junit/test-results.xml --cov=. --cov-report=xml --cov-report=html
+
 
 FROM prefecthq/prefect:${PREFECT_VERSION} AS runtime
 COPY --from=builder --chown=app:app /app/backend/archiver /app/backend/archiver
@@ -39,6 +43,14 @@ RUN systemctl --system enable rpcbind.service
 # LTS mount folder
 ARG LTS_ROOT_FOLDER=/tmp/LTS
 RUN mkdir ${LTS_ROOT_FOLDER}
+
+ARG UID=999
+ARG GID=999
+RUN chown -R ${UID}:${GID} /app
+
+ARG USER=app
+RUN useradd -rm -d /home/${USER} -s /bin/bash  -u ${UID} ${USER}
+USER ${USER}
 
 ENV PATH="/app/backend/archiver/.venv/bin:$PATH"
 CMD ["/bin/bash"]

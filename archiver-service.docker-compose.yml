@@ -155,6 +155,8 @@ services:
       args:
         LTS_ROOT_FOLDER: ${LTS_ROOT_FOLDER}
         PREFECT_VERSION: ${PREFECT_VERSION}
+        UID: 123
+        GID: 123
     container_name: prefect-flows-deployment
     networks:
       - scopemarchiver_network
@@ -162,7 +164,6 @@ services:
       ### Prefect specific values
       - PREFECT_LOGGING_LEVEL=${PREFECT_LOGGING_LEVEL}
       - PREFECT_API_URL=http://prefect-server:4200/api
-      - EXTRA_PIP_PACKAGES=prefect-docker==0.6.1
       ### Deployment values for interpolation in prefect.yaml
       - PREFECT_VERSION=${PREFECT_VERSION}
       - PREFECT_WORKER_LTS_VOLUME_NAME=scopemarchiver_${PREFECT_WORKER_LTS_VOLUME_NAME}
