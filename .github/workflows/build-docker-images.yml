@@ -89,18 +89,36 @@ jobs:
           python-version-file: backend/archiver/pyproject.toml
 
       - name: Install the project
-        run: uv sync --all-extras --dev
+        run: |
+          uv sync --all-extras --dev
+          uv add pytest-md-report
   
       - name: Run tests
-        run: uv run pytest --junitxml=junit/test-results.xml --cov=. --cov-report=xml --cov-report=html
+        env:
+          REPORT_OUTPUT: md_report.md
+        shell: bash
+        run: |
+          echo "REPORT_FILE=${REPORT_OUTPUT}" >> "$GITHUB_ENV"
+          uv run pytest --md-report --md-report-flavor gfm --md-report-exclude-outcomes passed skipped xpassed --md-report-output "$REPORT_OUTPUT" --cov=. --cov-report=xml --cov-report=html
 
-      - name: Test Report
-        uses: dorny/test-reporter@v1
-        if: success() || failure()    
+      - name: Render the report to the PR when tests fail
+        uses: marocchino/sticky-pull-request-comment@v2
+        if: failure()
         with:
-          name: Archive Flows Test         
-          path: ./backend/archiver/junit/test-results.xml
-          reporter: jest-junit      
+          header: test-report
+          recreate: true
+          path: ${{ env.REPORT_FILE }}
+
+      - name: Output reports to the job summary when tests fail
+        shell: bash
+        run: |
+          if [ -f "$REPORT_FILE" ]; then
+            echo "<details><summary>Failed Test Report</summary>" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            cat "$REPORT_FILE" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "</details>" >> $GITHUB_STEP_SUMMARY
+          fi
 
   build_runtime_image:
     runs-on: ubuntu-latest
