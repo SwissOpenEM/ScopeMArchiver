@@ -34,6 +34,14 @@ jobs:
           filters: |
             backend:
               - 'backend/**'
+            api:
+              - 'backend/api/**'
+            archiver:
+              - 'backend/archiver/**'
+            config:
+              - 'backend/prefect-config*'
+
+
 
   # test_api_server:
   #   runs-on: ubuntu-latest
@@ -63,6 +71,7 @@ jobs:
   test_archiver_flows:
     runs-on: ubuntu-latest
     needs: detect_changes
+    if: ${{ needs.detect_changes.outputs.archiver == 'true' }} || github.event_name != 'pull_request'
     defaults:
       run:
         working-directory: ./backend/archiver
@@ -72,7 +81,6 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v5
         with:
-          # Install a specific version of uv.
           version: "0.6.1"
 
       - name: "Set up Python"
@@ -81,19 +89,36 @@ jobs:
           python-version-file: backend/archiver/pyproject.toml
 
       - name: Install the project
-        run: uv sync --all-extras --dev
+        run: |
+          uv sync --all-extras --dev
+          uv add pytest-md-report
   
       - name: Run tests
-        # For example, using `pytest`
-        run: uv run pytest --junitxml=junit/test-results.xml --cov=. --cov-report=xml --cov-report=html
+        env:
+          REPORT_OUTPUT: md_report.md
+        shell: bash
+        run: |
+          echo "REPORT_FILE=${REPORT_OUTPUT}" >> "$GITHUB_ENV"
+          uv run pytest --md-report --md-report-flavor gfm --md-report-exclude-outcomes passed skipped xpassed --md-report-output "$REPORT_OUTPUT" --cov=. --cov-report=xml --cov-report=html
 
-      - name: Upload pytest test results
-        uses: actions/upload-artifact@v4
+      - name: Render the report to the PR when tests fail
+        uses: marocchino/sticky-pull-request-comment@v2
+        if: failure()
         with:
-          name: archiver-test-results
-          path: ./junit/test-results.xml
-          # Use always() to always run this step to publish test results when there are test failures
-        if: ${{ always() }}
+          header: test-report
+          recreate: true
+          path: ${{ env.REPORT_FILE }}
+
+      - name: Output reports to the job summary when tests fail
+        shell: bash
+        run: |
+          if [ -f "$REPORT_FILE" ]; then
+            echo "<details><summary>Failed Test Report</summary>" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            cat "$REPORT_FILE" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "</details>" >> $GITHUB_STEP_SUMMARY
+          fi
 
   build_runtime_image:
     runs-on: ubuntu-latest
@@ -102,7 +127,7 @@ jobs:
       contents: read
 
     needs: test_archiver_flows
-    if: ${{ needs.detect_changes.outputs.backend == 'true' }} || github.event_name != 'pull_request'
+    if: ${{ needs.detect_changes.outputs.archiver == 'true' }} || github.event_name != 'pull_request'
 
     steps:
       - uses: actions/checkout@v4
@@ -138,7 +163,7 @@ jobs:
       contents: read
 
     needs: test_archiver_flows
-    if: ${{ needs.detect_changes.outputs.backend == 'true' }} || github.event_name != 'pull_request'
+    if: ${{ needs.detect_changes.outputs.config == 'true' }} || github.event_name != 'pull_request'
 
     steps:
       - uses: actions/checkout@v4
@@ -175,7 +200,7 @@ jobs:
       packages: write
       contents: read
 
-    # needs: test_api_server
+    needs: detect_changes 
     if: ${{ needs.detect_changes.outputs.backend == 'true' }} || github.event_name != 'pull_request'
 
     steps:
