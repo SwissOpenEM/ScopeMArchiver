@@ -147,7 +147,16 @@ services:
       - scicat_user
       - scicat_pass
   prefect-flows-deployment:
-    image: prefecthq/prefect:${PREFECT_VERSION}
+    # Uses the runtime image: prefect will import the code and there it needs all packages installed
+    image: ${PREFECT_RUNTIME_IMAGE_NAME}:${OPENEM_IMAGE_TAG:-latest}
+    build:
+      context: ./backend/archiver
+      dockerfile: ./prefect-runtime.Dockerfile
+      args:
+        LTS_ROOT_FOLDER: ${LTS_ROOT_FOLDER}
+        PREFECT_VERSION: ${PREFECT_VERSION}
+        UID: 123
+        GID: 123
     container_name: prefect-flows-deployment
     networks:
       - scopemarchiver_network
@@ -155,18 +164,18 @@ services:
       ### Prefect specific values
       - PREFECT_LOGGING_LEVEL=${PREFECT_LOGGING_LEVEL}
       - PREFECT_API_URL=http://prefect-server:4200/api
-      - EXTRA_PIP_PACKAGES=prefect-docker==0.6.1
       ### Deployment values for interpolation in prefect.yaml
       - PREFECT_VERSION=${PREFECT_VERSION}
       - PREFECT_WORKER_LTS_VOLUME_NAME=scopemarchiver_${PREFECT_WORKER_LTS_VOLUME_NAME}
       - LTS_ROOT_FOLDER=${LTS_ROOT_FOLDER}
       - PREFECT_NETWORK=scopemarchiver_network
-    command: prefect --no-prompt deploy --all --prefect-file /home/dev/backend/prefect.yaml
-    working_dir: /home/dev/
+      - PREFECT_RUNTIME_IMAGE=${PREFECT_RUNTIME_IMAGE_NAME}:${OPENEM_IMAGE_TAG:-latest}
+    command: prefect --no-prompt deploy --all --prefect-file /prefect.yaml
+    working_dir: /app/backend
     volumes:
       - type: bind
-        source: ./
-        target: /home/dev/
+        source: ./backend/prefect.yaml
+        target: /prefect.yaml
         read_only: true
       - /usr/bin/docker:/usr/bin/docker
       - /var/run/docker.sock:/var/run/docker.sock

@@ -12,8 +12,7 @@ def mock_scicat_get_token() -> str:
 
 
 def mock_scicat_client() -> SciCatClient:
-    scicat_instance = SciCatClient(endpoint=ScicatMock.ENDPOINT,
-                                   prefix=ScicatMock.API_PREFIX)
+    scicat_instance = SciCatClient(endpoint=ScicatMock.ENDPOINT, prefix=ScicatMock.API_PREFIX)
     setattr(scicat_instance, "get_token", mock_scicat_get_token)
     return scicat_instance
 
@@ -22,35 +21,47 @@ class ScicatMock(requests_mock.Mocker):
     ENDPOINT = "mock://scicat.example.com"
     API_PREFIX = "/"
 
-    def __init__(self, job_id: UUID, dataset_id: str, origDataBlocks: List[OrigDataBlock], datablocks: List[DataBlock]):
+    def __init__(
+        self,
+        job_id: UUID,
+        dataset_id: str,
+        origDataBlocks: List[OrigDataBlock],
+        datablocks: List[DataBlock],
+    ):
         super().__init__()
 
-        safe_dataset_url = urllib.parse.quote(dataset_id, safe='', encoding=None, errors=None)
+        safe_dataset_url = urllib.parse.quote(dataset_id, safe="", encoding=None, errors=None)
 
         self.matchers: dict[str, requests_mock.Request.matcher] = {}
 
-        self.matchers["jobs"] = self.patch(
-            f"{self.ENDPOINT}{self.API_PREFIX}jobs/{job_id}", json=None)
+        self.matchers["jobs"] = self.patch(f"{self.ENDPOINT}{self.API_PREFIX}jobs/{job_id}", json=None)
 
         self.matchers["datasets"] = self.patch(
-            f"{self.ENDPOINT}{self.API_PREFIX}datasets/{safe_dataset_url}", json=None)
+            f"{self.ENDPOINT}{self.API_PREFIX}datasets/{safe_dataset_url}", json=None
+        )
 
         self.matchers["post_datablocks"] = self.post(
-            f"{self.ENDPOINT}{self.API_PREFIX}datasets/{safe_dataset_url}/datablocks", json=None)
+            f"{self.ENDPOINT}{self.API_PREFIX}datasets/{safe_dataset_url}/datablocks",
+            json=None,
+        )
 
         json_list = []
         for o in origDataBlocks:
             json_list.append(o.model_dump_json())
 
         self.matchers["origdatablocks"] = self.get(
-            f"{self.ENDPOINT}{self.API_PREFIX}datasets/{safe_dataset_url}/origdatablocks", json=json_list)
+            f"{self.ENDPOINT}{self.API_PREFIX}datasets/{safe_dataset_url}/origdatablocks",
+            json=json_list,
+        )
 
         json_list = []
         for o in datablocks:
             json_list.append(o.model_dump_json())
 
         self.matchers["get_datablocks"] = self.get(
-            f"{self.ENDPOINT}{self.API_PREFIX}datasets/{safe_dataset_url}/datablocks", json=json_list)
+            f"{self.ENDPOINT}{self.API_PREFIX}datasets/{safe_dataset_url}/datablocks",
+            json=json_list,
+        )
 
     @property
     def jobs_matcher(self):

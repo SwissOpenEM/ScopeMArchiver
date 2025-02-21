@@ -27,7 +27,6 @@ def register_concurrency_limits(limits: ConcurrencyLimits):
         tag = str(model.get(stub + "_TAG"))
         limit = int(model.get(stub + "_LIMIT"))
         try:
-            concurrency_limit.create(tag=tag,
-                                     concurrency_limit=limit)
+            concurrency_limit.create(tag=tag, concurrency_limit=limit)
         except Exception as e:
             print(f"failed to apply concurrency limit {tag}: {e}")

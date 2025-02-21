@@ -14,9 +14,7 @@ def getLogger():
         return prefect_logger
 
 
-__attributes__ = [
-    "getLogger"
-]
+__attributes__ = ["getLogger"]
 
 
 def log(func):
@@ -29,4 +27,5 @@ def log(func):
         value = func(*args, **kwargs)
         getLogger().info(f"Function {func.__name__}() - returned {repr(value)}")
         return value
+
     return wrapper_decorator
