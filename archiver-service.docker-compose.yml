@@ -108,7 +108,7 @@ services:
     container_name: prefect-config
     build:
       context: ./backend/
-      dockerfile: ./prefect-config.Dockerfile
+      dockerfile: ./prefect/config.Dockerfile
       args:
         PREFECT_VERSION: ${PREFECT_VERSION}
       tags:
@@ -130,12 +130,12 @@ services:
       - SCICAT_PASSWORD_FILE=/run/secrets/scicat_pass
     volumes:
       - type: bind
-        source: ./backend/prefect-vars.toml
-        target: /var/local/prefect-vars.toml
+        source: ./backend/prefect/vars.toml
+        target: /var/local/vars.toml
       - type: bind
-        source: ./backend/concurrency-limits.toml
+        source: ./backend/prefect/concurrency-limits.toml
         target: /var/local/concurrency-limits.toml
-    command: "-v /var/local/prefect-vars.toml -s MINIO_USER_FILE MINIO_PASSWORD_FILE GITHUB_USER_FILE GITHUB_PASSWORD_FILE SCICAT_USER_FILE SCICAT_PASSWORD_FILE -l /var/local/concurrency-limits.toml"
+    command: "-v /var/local/vars.toml -s MINIO_USER_FILE MINIO_PASSWORD_FILE GITHUB_USER_FILE GITHUB_PASSWORD_FILE SCICAT_USER_FILE SCICAT_PASSWORD_FILE -l /var/local/concurrency-limits.toml"
     depends_on:
       prefect-server:
         condition: service_healthy
@@ -151,7 +151,7 @@ services:
     image: ${PREFECT_RUNTIME_IMAGE_NAME}:${OPENEM_IMAGE_TAG:-latest}
     build:
       context: ./backend/archiver
-      dockerfile: ./prefect-runtime.Dockerfile
+      dockerfile: ../prefect/runtime.Dockerfile
       args:
         LTS_ROOT_FOLDER: ${LTS_ROOT_FOLDER}
         PREFECT_VERSION: ${PREFECT_VERSION}
@@ -173,7 +173,7 @@ services:
     working_dir: /app/backend
     volumes:
       - type: bind
-        source: ./backend/prefect.yaml
+        source: ./backend/prefect/prefect.yaml
         target: /prefect.yaml
         read_only: true
       - /usr/bin/docker:/usr/bin/docker

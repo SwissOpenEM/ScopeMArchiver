@@ -25,8 +25,8 @@ FROM python:3.12-slim AS runtime
 # # Copy the environment, but not the source code
 COPY --from=builder --chown=app:app /archiver /archiver
 
-COPY ./prefect-config.py /
+COPY ./prefect/config.py /
 
 ENV PATH="/archiver/.venv/bin:$PATH"
 # Run our flow script when the container starts
-ENTRYPOINT ["python", "prefect-config.py"]
+ENTRYPOINT ["python", "config.py"]
