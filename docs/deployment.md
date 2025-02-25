@@ -44,7 +44,7 @@ to create containers at runtime in which the flows run. The flows are baked into
 | Prefect Server    | Workflow orchestration <https://www.prefect.io>                                                                          |             | <http://localhost/prefect-ui/dashboard> |
 | Postgres Database | Database for Prefect                                                                                                     |             | n/a                                     |
 | Prefect Worker    | <https://docs.prefect.io/3.0/deploy/infrastructure-concepts/workers>                                                     |             | n/a                                     |
-| Runtime Container | [prefect-runtime.Dockerfile](https://github.com/SwissOpenEM/ScopeMArchiver/blob/main/backend/prefect-runtime.Dockerfile) |             | n/a                                     |
+| Runtime Container | [runtime.Dockerfile](https://github.com/SwissOpenEM/ScopeMArchiver/blob/main/backend/runtime.Dockerfile) |             | n/a                                     |
 
 ### Prefect Server
 
@@ -63,7 +63,7 @@ with the appropriate PREFECT_API_URL set.
 Variables are used at runtime and are fetched from the server by the flow. External endpoints and other parameters of the flow belong here:
 
 ```toml
-{!../backend/prefect-vars.toml!}
+{!../backend/prefect/vars.toml!}
 ```
 
 ##### Concurrrency Limits
@@ -71,7 +71,7 @@ Variables are used at runtime and are fetched from the server by the flow. Exter
 There are certain sections of the code (tasks) that can only run in a limited manner concurrently (i.e. writing to the LTS), see <https://docs.prefect.io/3.0/develop/task-run-limits#limit-concurrent-task-runs-with-tags>.
 
 ```toml
-{!../backend/concurrency-limits.toml!}
+{!../backend/prefect/concurrency-limits.toml!}
 ```
 
 ##### Internal Secrets

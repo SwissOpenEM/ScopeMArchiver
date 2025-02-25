@@ -17,6 +17,7 @@ class PrefectVariablesModel(BaseSettings):
         BaseSettings (_type_): _description_
 
     """
+
     model_config = SettingsConfigDict(
         env_file_encoding="utf-8",
         case_sensitive=True,
@@ -42,9 +43,8 @@ class PrefectVariablesModel(BaseSettings):
 
 
 class Variables:
-    """Singleton abstracting access to all Variables expected to be defined in Prefect
+    """Singleton abstracting access to all Variables expected to be defined in Prefect"""
 
-    """
     _instance = None
 
     def __new__(cls):
@@ -64,8 +64,7 @@ class Variables:
             c = Variable.get(name)
         finally:
             if c is None:
-                getLogger().warning(
-                    f"Value {name} not found in config, returning empty string")
+                getLogger().warning(f"Value {name} not found in config, returning empty string")
                 return ""
             return c
 
@@ -125,6 +124,6 @@ class Variables:
 def register_variables_from_config(config: PrefectVariablesModel) -> None:
     model = config.model_dump()
     print(model)
-    for s in [s for s in dir(Variables()) if not s.startswith('__') and not s.startswith('_')]:
+    for s in [s for s in dir(Variables()) if not s.startswith("__") and not s.startswith("_")]:
         if s in model.keys():
             Variable.set(s.lower(), str(model[s]), overwrite=True)

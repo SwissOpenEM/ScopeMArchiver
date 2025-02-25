@@ -20,24 +20,7 @@
       },
       "module": "archiver.flows",
       "jinja": true
-    },
-    {
-      "name": "Prefect Config",
-      "type": "debugpy",
-      "request": "launch",
-      "cwd": "${workspaceFolder}",
-      "env": {
-        "PREFECT_API_URL": "http://localhost:4200/api",
-        "MINIO_PASSWORD_FILE": "${workspaceFolder}/../.secrets/miniopass.txt"
-      },
-      "program": "prefect-config.py",
-      "args": [
-        "-s",
-        "MINIO_PASSWORD_FILE",
-        "-l",
-        "${workspaceFolder}/concurrency-limits.toml"
-      ]
-    },
+    }
   ],
   "compounds": [
     {
