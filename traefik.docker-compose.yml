@@ -14,7 +14,6 @@ services:
     ports:
       - "443:443"
       - "80:80"
-      - 8080:8080
     volumes:
       - ${CERTIFICATE_FILE:-/dev/null}:/opt/certs/cert_scopem-openem.ethz.ch.pem
       - ${CERTIFICATE_KEY_FILE:-/dev/null}:/opt/certs/cert_scopem-openem.ethz.ch.key
