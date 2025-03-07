@@ -78,6 +78,7 @@ services:
       - "traefik.http.routers.prefect-server.entrypoints=websecure"
       - "traefik.http.routers.prefect-server.tls"
       - "traefik.http.services.prefect-server.loadbalancer.server.port=4200"
+      - "traefik.http.routers.prefect-server.middlewares=${PREFECT_UI_MIDDLEWARES}"
 
       - "traefik.http.routers.prefect-api-server.rule=Host(`${HOST}`) && PathPrefix(`/archiver/prefect/api`)"
       - "traefik.http.routers.prefect-api-server.entrypoints=websecure"
