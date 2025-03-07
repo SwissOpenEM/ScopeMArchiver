@@ -46,3 +46,6 @@ configs:
             defaultCertificate:
               certFile: /opt/certs/cert_scopem-openem.ethz.ch.pem
               keyFile: /opt/certs/cert_scopem-openem.ethz.ch.key
+secrets:
+  authentik_token:
+    file: ./.secrets/authentik_token
