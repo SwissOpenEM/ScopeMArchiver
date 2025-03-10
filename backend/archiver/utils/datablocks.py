@@ -292,7 +292,7 @@ def find_object_in_s3(client: S3Storage, dataset_id, datablock_name):
 
 
 @log
-def move_data_to_LTS(client: S3Storage, dataset_id: str, datablock: DataBlock):
+def move_data_to_LTS(client: S3Storage, dataset_id: str, datablock: DataBlock) -> str:
     # mount target dir and check access
     if not Variables().LTS_STORAGE_ROOT.exists():
         raise FileNotFoundError(f"Can't open LTS root {Variables().LTS_STORAGE_ROOT}")
@@ -335,20 +335,27 @@ def move_data_to_LTS(client: S3Storage, dataset_id: str, datablock: DataBlock):
     # Copy to LTS
     copy_file_to_folder(src_file=datablock_full_path.absolute(), dst_folder=lts_target_dir.absolute())
 
-    # Wait before recalling the file for checksum verification
-    time.sleep(10)
+    return checksum_source
 
-    destination = lts_target_dir / datablock_name
+@log
+def verify_checksum(dataset_id: str, datablock: DataBlock, checksum: str):
 
-    getLogger().info("Verifying checksum")
+    lts_target_dir = StoragePaths.lts_datablocks_folder(dataset_id)
+    datablock_name = Path(datablock.archiveId).name
 
+    lts_datablock_path = lts_target_dir / datablock_name
+
+    asyncio.run(
+        wait_for_file_accessible(lts_datablock_path.absolute(), Variables().ARCHIVER_LTS_FILE_TIMEOUT_S)
+    )
+    
     # Copy back from LTS to scratch
     verification_path = StoragePaths.scratch_archival_datablocks_folder(dataset_id) / "verification"
     verification_path.mkdir(exist_ok=True)
-    copy_file_to_folder(src_file=destination, dst_folder=verification_path)
+    copy_file_to_folder(src_file=lts_datablock_path, dst_folder=verification_path)
     checksum_destination = calculate_md5_checksum(verification_path / datablock_name)
 
-    if checksum_destination != checksum_source:
+    if checksum_destination != checksum:
         raise SystemError("Datablock verification failed")
 
 
