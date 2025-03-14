@@ -1,3 +1,4 @@
+import time
 from typing import List
 from functools import partial
 import asyncio
@@ -75,7 +76,7 @@ def move_data_to_LTS(dataset_id: str, datablock: DataBlock):
     s3_client = get_s3_client()
     return datablocks_operations.move_data_to_LTS(s3_client, dataset_id, datablock)
 
-@task(task_run_name=generate_task_name_dataset, tags=[ConcurrencyLimits().MOVE_TO_LTS_TAG], retries=5, retry_delay_seconds=[60, 120, 240, 480, 480])
+@task(task_run_name=generate_task_name_dataset, tags=[ConcurrencyLimits().MOVE_TO_LTS_TAG], retries=5, retry_delay_seconds=[60, 120, 240, 480, 940])
 def verify_checksum(dataset_id: str, datablock: DataBlock, checksum: str):
     """Prefect task to move a datablock (.tar.gz file) to the LTS. Concurrency of this task is limited to 2 instances
     at the same time.

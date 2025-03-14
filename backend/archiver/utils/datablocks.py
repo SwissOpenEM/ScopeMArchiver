@@ -348,6 +348,10 @@ def verify_checksum(dataset_id: str, datablock: DataBlock, checksum: str):
     asyncio.run(
         wait_for_file_accessible(lts_datablock_path.absolute(), Variables().ARCHIVER_LTS_FILE_TIMEOUT_S)
     )
+
+    
+    getLogger().info("Wait 300s");
+    time.wait(300)
     
     # Copy back from LTS to scratch
     verification_path = StoragePaths.scratch_archival_datablocks_folder(dataset_id) / "verification"
