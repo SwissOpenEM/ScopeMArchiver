@@ -349,10 +349,9 @@ def verify_checksum(dataset_id: str, datablock: DataBlock, checksum: str):
         wait_for_file_accessible(lts_datablock_path.absolute(), Variables().ARCHIVER_LTS_FILE_TIMEOUT_S)
     )
 
-    
-    getLogger().info("Wait 300s");
-    time.wait(300)
-    
+    getLogger().info(f"Wait {Variables().ARCHIVER_LTS_WAIT_BEFORE_VERIFY_S}s before verifying datablock")
+    time.sleep(Variables().ARCHIVER_LTS_WAIT_BEFORE_VERIFY_S)
+
     # Copy back from LTS to scratch
     verification_path = StoragePaths.scratch_archival_datablocks_folder(dataset_id) / "verification"
     verification_path.mkdir(exist_ok=True)
@@ -639,6 +638,8 @@ async def wait_for_file_accessible(file: Path, timeout_s=360):
         total_time_waited_s += seconds_to_wait
         if total_time_waited_s > timeout_s:
             raise SystemError(f"File f{file} was not accessible within {timeout_s} seconds")
+    
+    getLogger().info(f"File {file} accessible.")
 
     return True
 

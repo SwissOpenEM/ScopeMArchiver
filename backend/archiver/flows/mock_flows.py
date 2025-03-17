@@ -363,7 +363,7 @@ def ASSERT(expression: bool):
 
 @flow(name="end_to_end_test_flow")
 def end_to_end_test_flow(
-    file_size_MB: int = 10,
+    file_size_MB: int = 100,
     num_files: int = 10,
     orig_datablock_size_MB: int = 200,
 ):
