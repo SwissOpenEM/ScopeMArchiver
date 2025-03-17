@@ -22,8 +22,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.minio.rule=Host(`${HOST}`) && PathPrefix(`/minio`)"
-      # authentik added to middlewares protects admin console
-      - "traefik.http.routers.minio.middlewares=${MINIO_MIDDLEWARES}"
+      - "traefik.http.routers.minio.middlewares=minio-stripprefix,minio-headers,minio-cors"
       - "traefik.http.routers.minio.entrypoints=web"
       - "traefik.http.routers.minio.service=minio-web"
       - "traefik.http.services.minio-web.loadbalancer.server.port=9001"
