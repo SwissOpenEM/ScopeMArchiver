@@ -681,7 +681,7 @@ def copy_from_LTS_to_retrieval(client: S3Storage, dataset_id: str, datablock: Da
     copy_file_to_folder(src_file=datablock_in_lts, dst_folder=scratch_destination_folder)
 
     # TODO: verify checksum
-    # for each single file?
+    # https://github.com/SwissOpenEM/ScopeMArchiver/issues/166
     getLogger().warning("Checksum verification missing!")
     file_on_scratch = scratch_destination_folder / Path(datablock.archiveId).name
     upload_datablock(client=client, file=file_on_scratch, datablock=datablock)
