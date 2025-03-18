@@ -83,14 +83,14 @@ def move_data_to_LTS(dataset_id: str, datablock: DataBlock):
     retries=5,
     retry_delay_seconds=[60, 120, 240, 480, 960],
 )
-def verify_checksum(dataset_id: str, datablock: DataBlock, checksum: str):
+def verify_checksum(dataset_id: str, datablock: DataBlock, checksum: str) -> None:
     """Prefect task to move a datablock (.tar.gz file) to the LTS. Concurrency of this task is limited to 2 instances
     at the same time.
 
     Exponential backoff for retries is implemented:  1*60s, 2*60s, 4*60s, 8*60s
     """
     return datablocks_operations.verify_checksum(
-        dataset_id=dataset_id, datablock=datablock, checksum=checksum
+        dataset_id=dataset_id, datablock=datablock, expected_checksum=checksum
     )
 
 

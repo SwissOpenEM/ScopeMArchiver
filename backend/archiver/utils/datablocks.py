@@ -337,9 +337,9 @@ def move_data_to_LTS(client: S3Storage, dataset_id: str, datablock: DataBlock) -
 
     return checksum_source
 
-@log
-def verify_checksum(dataset_id: str, datablock: DataBlock, checksum: str):
 
+@log
+def verify_checksum(dataset_id: str, datablock: DataBlock, expected_checksum: str) -> None:
     lts_target_dir = StoragePaths.lts_datablocks_folder(dataset_id)
     datablock_name = Path(datablock.archiveId).name
 
@@ -356,10 +356,12 @@ def verify_checksum(dataset_id: str, datablock: DataBlock, checksum: str):
     verification_path = StoragePaths.scratch_archival_datablocks_folder(dataset_id) / "verification"
     verification_path.mkdir(exist_ok=True)
     copy_file_to_folder(src_file=lts_datablock_path, dst_folder=verification_path)
-    checksum_destination = calculate_md5_checksum(verification_path / datablock_name)
+    datablock_checksum = calculate_md5_checksum(verification_path / datablock_name)
 
-    if checksum_destination != checksum:
-        raise SystemError("Datablock verification failed")
+    if datablock_checksum != expected_checksum:
+        raise SystemError(
+            f"Datablock verification failed. Expected: {expected_checksum},  got: {datablock_checksum}"
+        )
 
 
 @log
@@ -638,7 +640,7 @@ async def wait_for_file_accessible(file: Path, timeout_s=360):
         total_time_waited_s += seconds_to_wait
         if total_time_waited_s > timeout_s:
             raise SystemError(f"File f{file} was not accessible within {timeout_s} seconds")
-    
+
     getLogger().info(f"File {file} accessible.")
 
     return True
