@@ -526,7 +526,7 @@ def cleanup_lts_folder(dataset_id: str) -> None:
     suffix = "".join(random.choice(string.ascii_uppercase) for _ in range(6))
 
     lts_folder_new = lts_folder.rename(str(lts_folder) + "_failed_" + suffix)
-    getLogger().info(f"Move LTS folder from {lts_folder} to {lts_folder_new}")
+    getLogger().warning(f"Move LTS folder from '{lts_folder}' to '{lts_folder_new}'")
 
 
 @log
@@ -571,12 +571,14 @@ def verify_objects(
     return missing_files
 
 
+def on_rmtree_error(func, path, _):
+    getLogger().error(f"Failed to remove: {path}")
+
+
 @log
 def cleanup_scratch(dataset_id: str):
-    getLogger().debug(f"Cleaning up objects in scratch folder: {StoragePaths.scratch_folder(dataset_id)}")
-    shutil.rmtree(StoragePaths.scratch_folder(dataset_id))
-
-    getLogger().debug(f"Cleaning up objects in scratch folder: {StoragePaths.scratch_folder(dataset_id)}")
+    getLogger().info(f"Cleaning up objects in scratch folder: {StoragePaths.scratch_folder(dataset_id)}")
+    shutil.rmtree(StoragePaths.scratch_folder(dataset_id), ignore_errors=True, onerror=on_rmtree_error)
 
 
 @log
@@ -621,7 +623,7 @@ async def wait_for_file_accessible(file: Path, timeout_s=360):
     total_time_waited_s = 0
     while not os.access(path=file, mode=os.R_OK):
         seconds_to_wait = 30
-        getLogger().info(f"File {file} currently not available. Try again in {seconds_to_wait} seconds.")
+        getLogger().info(f"File {file} currently not available. Trying again in {seconds_to_wait} seconds.")
         await asyncio.sleep(seconds_to_wait)
         total_time_waited_s += seconds_to_wait
         if total_time_waited_s > timeout_s:
