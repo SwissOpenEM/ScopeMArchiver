@@ -3,13 +3,13 @@
 Archival is split into two subflows, `Create Datablocks` and  `Move Datablocks to LTS`, which can be triggered separately. An archival task can contain multiple datasets; for simplicity the case with only one is depicted here.
 
 | Identifier   | Description                                   |
-| ------------ | --------------------------------------------- |
+|--------------|-----------------------------------------------|
 | Flow         | Sequence of tasks necessary for archiving     |
 | Subflow      | Flow triggered by a parent flow               |
 | Job          | Schedules flow for multiple datasets          |
 | Archive Flow | Subflow that runs archiving for one dataset   |
-| User Error   | Dataset is incomplete, not found, ...         |
-| System Error | unrecoverable (transient) error in the system |
+| user error   | Dataset is incomplete, not found, ...         |
+| system error | unrecoverable (transient) error in the system |
 
 ```mermaid
 sequenceDiagram
@@ -28,13 +28,13 @@ sequenceDiagram
   activate AS
   Note right of AS: Job {"id" : "id", "type":"archive", "datasetlist": [], ... } as defined in Scicat
 
-  AS --) J: Create Archival Flow for All Dataset
+  AS --) J: Create archival flow for each dataset
   activate S
   AS -->> S: 
   S -->> S: Reply? scheduleForArchiving status? Already set?
   deactivate S
 
-  loop Retry: Exponential backoff
+  loop Retry: exponential backoff
     activate J
       activate S
         J --) S: PATCH /api/v4/Jobs/{JobId}
@@ -45,9 +45,10 @@ sequenceDiagram
   deactivate AS
   
   critical Job for datasetlist
-    critical Subflow for {DatasetIf}
+    Note over L,LTS: Move dataset to LTS
+  critical Subflow for {DatasetId}
       activate J
-        loop Retry: Exponential backoff
+        loop Retry: exponential backoff
           activate J
             activate S
               J --) S:  PATCH /api/v4/Dataset/{DatasetId}
@@ -55,84 +56,83 @@ sequenceDiagram
             deactivate S
           deactivate J
         end
-        loop Retry: Exponential backoff
+        loop Retry: exponential backoff
           activate J
             activate S
               J --> S: GET /api/v4/Datasets/{dataset_id}/origdatablocks
-              S --) J:sdf
-              Note right of J: {""}, 
             deactivate S
           deactivate J
         end
-        J -->> L: Create Datablocks
-        L -->> A: Move Datablocks to Staging
+        J -->> L: Create datablocks
+        L -->> A: Move datablocks to staging
         loop Retry: Exponential backoff
           activate J
-          J -->> S: Register datablocks POST /api/v4/Datasets/{DatasetID}
-          Note left of S: ?
+          J -->> S: Register datablocks POST /api/v4/Datasets/{DatasetId}/datablocks
           deactivate J
         end
-        J -->> L: Cleanup Dataset files, Datablocks
+        J -->> L: Cleanup dataset files, datablocks
         Note right of L: Dataset files only get cleaned up when everythings succeeds
       deactivate J
-    option Failure User Error
+    option Failure user error
       activate J
-        %% J --) S: Report Error: PATCH /api/v4/Jobs/{JobId}
-        %% Note left of S: {"jobStatusMessage": "finishedWithDatasetErrors" ,<br>  "updatedAt": "...",<br>  "updatedBy": "..."}
-        J --) S: Report Error: PATCH /api/v4/Dataset/{DatasetId}
-        Note left of S: {"datasetlifecycle:{"archiveStatusMessage": "missingFilesError", "archivable": False, "retrievable":False}}
+        %% J --) S: Report error: PATCH /api/v4/Jobs/{JobId}
+        %% Note left of S: {"jobStatusMessage": "finishedWithDataseterrors" ,<br>  "updatedAt": "...",<br>  "updatedBy": "..."}
+        J --) S: Report error: PATCH /api/v4/Dataset/{DatasetId}
+        Note left of S: {"datasetlifecycle:{"archiveStatusMessage": "missingFileserror", "archivable": False, "retrievable":False}}
         J -->> A: Cleanup Datablocks
         J -->> L: Cleanup Datablocks
         Note right of L: No cleanup of dataset files
       deactivate J
-    option Failure System Error
+    option Failure system error
       activate J
-        %% J --) S: Report Error: PATCH /api/v4/Jobs/{JobId}
+        %% J --) S: Report error: PATCH /api/v4/Jobs/{JobId}
         %% Note left of S: {"jobStatusMessage": "finishedUnsuccessful",<br>  "updatedAt": "...",<br>  "updatedBy": "..."}
-        J --) S: Report Error: PATCH /api/v4/Dataset/{DatasetId}
+        J --) S: Report error: PATCH /api/v4/Dataset/{DatasetId}
         Note left of S: {"datasetlifecycle:{"archiveStatusMessage": "scheduleArchiveJobFailed", "archivable": "false", "retrievable":"false"}}
-        J -->> A: Cleanup Datablocks
-        J -->> L: Cleanup Datablocks
+        J -->> A: Cleanup datablocks
+        J -->> L: Cleanup datablocks
         Note right of L: No cleanup of dataset files
       deactivate J
     end
-    option Failure User Error
+    option Failure user error
       activate J
-        J --) S: Report Error: PATCH /api/v4/Jobs/{JobId}
-        Note left of S: {"jobStatusMessage": "finishedWithDatasetErrors"}
+        J --) S: Report error: PATCH /api/v4/Jobs/{JobId}
+        Note left of S: {"jobStatusMessage": "finishedWithDataseterrors"}
       deactivate J
-    option Failure System Error
+    option Failure system error
       activate J
-        J --) S: Report Error: PATCH /api/v4/Jobs/{JobId}
+        J --) S: Report error: PATCH /api/v4/Jobs/{JobId}
         Note left of S: {"jobStatusMessage": "finishedUnsuccessful"}
       deactivate J
   end
-  
-
-  Note over J, LTS: Subflow `Move Datablocks to LTS`
-    S -->> AS: Optional re-trigger from Scicat
-    AS --) J: Create `Move datablock to LTS` Pipeline
+Note over J, LTS: Subflow `Move Datablocks to LTS`
+loop for each datablock 
   critical
     activate J
-    A -->> LTS: Move Datablocks to LTS
+      A -->> LTS: Move datablock to LTS
+      A -->> A: Sleep for ARCHIVER_LTS_WAIT_BEFORE_VERIFY_S seconds
+      loop Retry: Exponential backoff
+        A -->> LTS: Verify checksum of datablock to LTS
+      end
     deactivate J
-  option Move to LTS Failure
-    activate J
-    J -->> LTS: Cleanup LTS folder
-    J -->> S: Report Error
-    Note left of S: ?
-    deactivate J
+  option Moving datablock to LTS Failed
+      activate J
+      J -->> LTS: Cleanup LTS folder
+      J -->> S: Report error
+      Note left of S: {"jobStatusMessage": "scheduleArchiveJobFailed"}
+      deactivate J
   end
   critical
-    J -->> LTS:  Validate Datablocks in LTS
-    J -->> L: Cleanup Dataset files, Datablocks
-  option Validation Failure
-    activate J
-    J -->> S: Report Error
-    Note left of S: ?
-    J -->> LTS: Cleanup Datablocks
-    deactivate J
+      J -->> LTS: Verify datablock in LTS
+      J -->> L: Cleanup dataset files, datablock
+  option Datablock validation failed
+      activate J
+      J -->> S: Report error
+      Note left of S: {"jobStatusMessage": "scheduleArchiveJobFailed"}
+      J -->> LTS: Cleanup datablocks
+      deactivate J
   end
+end
   loop Retry: Exponential backoff
     activate J
     J -->> S:  PATCH /api/v4/Datasets/{DatasetId}
