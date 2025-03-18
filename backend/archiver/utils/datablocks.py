@@ -667,7 +667,7 @@ def upload_datablock(client: S3Storage, file: Path, datablock: DataBlock):
 
 
 @log
-def copy_from_LTS_to_retrieval(client: S3Storage, dataset_id: str, datablock: DataBlock):
+def copy_from_LTS_to_scratch_retrieval(dataset_id: str, datablock: DataBlock) -> None:
     datablock_in_lts = get_datablock_path_in_LTS(datablock)
 
     # copy to local folder
@@ -680,8 +680,18 @@ def copy_from_LTS_to_retrieval(client: S3Storage, dataset_id: str, datablock: Da
 
     copy_file_to_folder(src_file=datablock_in_lts, dst_folder=scratch_destination_folder)
 
-    # TODO: verify checksum
-    # https://github.com/SwissOpenEM/ScopeMArchiver/issues/166
-    getLogger().warning("Checksum verification missing!")
-    file_on_scratch = scratch_destination_folder / Path(datablock.archiveId).name
-    upload_datablock(client=client, file=file_on_scratch, datablock=datablock)
+
+@log
+def verify_data_on_scratch(dataset_id: str, datablock: DataBlock) -> None:
+    scratch_destination_folder = StoragePaths.scratch_archival_datablocks_folder(dataset_id)
+    assert scratch_destination_folder.exists()
+    datablock_on_scratch = scratch_destination_folder / Path(datablock.archiveId).name
+    verify_datablock(datablock=datablock, datablock_path=datablock_on_scratch)
+
+
+@log
+def upload_data_to_retrieval_bucket(client: S3Storage, dataset_id: str, datablock: DataBlock) -> None:
+    scratch_destination_folder = StoragePaths.scratch_archival_datablocks_folder(dataset_id)
+    assert scratch_destination_folder.exists()
+    datablock_on_scratch = scratch_destination_folder / Path(datablock.archiveId).name
+    upload_datablock(client=client, file=datablock_on_scratch, datablock=datablock)
