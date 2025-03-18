@@ -8,7 +8,7 @@ import time
 import datetime
 import hashlib
 
-from typing import Dict, List
+from typing import Dict, Generator, List
 from pathlib import Path
 
 from archiver.utils.s3_storage_interface import S3Storage, Bucket
@@ -42,20 +42,51 @@ class TarInfo:
     path: Path
 
 
+def partition_files_flat(folder: Path, target_size_bytes: int) -> Generator[List[Path], None, None]:
+    """Partitions files in folder into groups such that all the files in a group combined
+    have a target_size_bytes size at maximum. Folders are not treated recursively
+
+    Args:
+        folder (Path): Folder to partition files in
+        target_size_bytes (int): maximum size of grouped files
+
+    Yields:
+        Generator[List[Path], None, None]: List of paths with maximum size
+    """
+
+    if not folder.is_dir():
+        yield None
+
+    part: List[Path] = []
+    size = 0
+    idx = 0
+    for file in folder.iterdir():
+        if size + file.stat().st_size > target_size_bytes:
+            yield part
+            part = []
+            size = 0
+            idx = idx + 1
+        part.append(file)
+        size = size + file.stat().st_size
+
+    yield part
+
+
 @log
-def create_tarballs(
+def create_tarfiles_flat(
     dataset_id: str,
     src_folder: Path,
     dst_folder: Path,
-    target_size: int = 300 * (1024**2),
+    target_size: int,
 ) -> List[TarInfo]:
-    """Create datablocks, i.e. .tar.gz files, from files in a folder. The files will be named according to
-    the dataset they belong to. The target size of the created files is 300 MB by default
+    """Create datablocks, i.e. .tar.gz files, from files in a folder. Nested folders are not recursively. The created tar
+    files will be named according to the dataset they belong to.
 
     Args:
-        dataset_id (str):
-        folder (Path): _description_
-        target_size (int, optional): _description_. Defaults to 300*(1024**2).
+        dataset_id (str): dataset identifier
+        src_folder (Path): source fodler to find files to create tars from
+        dst_folder (Path): destination folder to write the tar files to
+        target_size (int, optional): Target size of the tar file. This is the unpacked size of the files.
 
     Returns:
         List[Path]: _description_
@@ -65,40 +96,22 @@ def create_tarballs(
     tarballs: List[TarInfo] = []
     tar_name = dataset_id.replace("/", "--")
 
-    current_tar_info = TarInfo(
-        unpackedSize=0,
-        packedSize=0,
-        path=Path(dst_folder / Path(f"{tar_name}_{len(tarballs)}.tar.gz")),
-    )
-
-    current_tarfile: tarfile.TarFile = tarfile.open(current_tar_info.path, "w")
-
     if not any(Path(src_folder).iterdir()):
         raise SystemError(f"Empty folder {src_folder} found.")
 
-    for file in src_folder.iterdir():
-        if file.stat().st_size > target_size:
-            raise SystemError(
-                f"Size of {file} is larger than target size {target_size}. Increase target_size."
-            )
-        if current_tar_info.path.stat().st_size + file.stat().st_size > target_size:
-            current_tar_info.packedSize = current_tar_info.path.stat().st_size
-            current_tarfile.close()
-            tarballs.append(current_tar_info)
-
-            current_tar_info = TarInfo(
-                unpackedSize=0,
-                packedSize=0,
-                path=Path(dst_folder / Path(f"{tar_name}_{len(tarballs)}.tar.gz")),
-            )
-            current_tarfile = tarfile.open(current_tar_info.path, "w")
-
-        current_tar_info.unpackedSize += file.stat().st_size
-        current_tarfile.add(name=file, arcname=file.name, recursive=False)
-
-    current_tar_info.packedSize = current_tar_info.path.stat().st_size
-    current_tarfile.close()
-    tarballs.append(current_tar_info)
+    for files in partition_files_flat(src_folder, target_size):
+        current_tar_info = TarInfo(
+            unpackedSize=0,
+            packedSize=0,
+            path=Path(dst_folder / Path(f"{tar_name}_{len(tarballs)}.tar.gz")),
+        )
+        current_tarfile: tarfile.TarFile = tarfile.open(current_tar_info.path, "w")
+        for file in files:
+            current_tar_info.unpackedSize += file.stat().st_size
+            current_tarfile.add(name=file, arcname=file.name, recursive=False)
+        current_tarfile.close()
+        current_tar_info.packedSize = current_tar_info.path.stat().st_size
+        tarballs.append(current_tar_info)
 
     return tarballs
 
@@ -489,7 +502,7 @@ def create_datablocks(
     datablocks_scratch_folder = StoragePaths.scratch_archival_datablocks_folder(dataset_id)
     datablocks_scratch_folder.mkdir(parents=True, exist_ok=True)
 
-    tar_infos = create_tarballs(
+    tar_infos = create_tarfiles_flat(
         dataset_id=dataset_id,
         src_folder=raw_files_scratch_folder,
         dst_folder=datablocks_scratch_folder,
