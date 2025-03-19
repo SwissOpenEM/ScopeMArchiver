@@ -16,16 +16,12 @@ from archiver.flows.utils import StoragePaths, SystemError
 
 
 test_dataset_id = "testprefix/1234.4567"
-num_raw_files = 10
-file_size_in_bytes = 1024 * 1024
-
-expected_num_compressed_files = 5
+MB = 1024 * 1024
 
 
-@pytest.fixture()
-def create_raw_files_fixture(storage_paths_fixture):
+def create_raw_files_fixture(storage_paths_fixture, num_raw_files, file_size_in_bytes):
     folder: Path = StoragePaths.scratch_archival_raw_files_folder(test_dataset_id)
-    folder.mkdir(parents=True)
+    folder.mkdir(parents=True, exist_ok=True)
     for n in range(num_raw_files):
         filename = folder / f"img_{n}.png"
         with open(filename, "wb") as fout:
@@ -35,27 +31,51 @@ def create_raw_files_fixture(storage_paths_fixture):
 
 
 @pytest.fixture()
-def dst_folder_fixtrue(storage_paths_fixture):
+def dst_folder_fixture(storage_paths_fixture):
     folder: Path = StoragePaths.scratch_archival_datablocks_folder(test_dataset_id)
     folder.mkdir(parents=True)
     return folder
 
 
-def test_create_tarballs(create_raw_files_fixture: Path, dst_folder_fixtrue: Path):
-    target_size = int(2.5 * file_size_in_bytes)
+FILE_SIZE = MB  # 1 MB files
 
-    tar_infos = datablock_operations.create_tarballs(
+
+@pytest.mark.parametrize(
+    "target_size,num_raw_files,file_size_in_bytes,expected_num_compressed_files",
+    [
+        (2.5 * FILE_SIZE, 10, FILE_SIZE, 5),  # total size > target size
+        (10 * FILE_SIZE, 10, FILE_SIZE, 1),  # total size == target size
+        (11 * FILE_SIZE, 10, FILE_SIZE, 1),  # total size < target size
+    ],
+)
+def test_create_tarfiles_flat(
+    target_size: int,
+    num_raw_files,
+    file_size_in_bytes,
+    expected_num_compressed_files,
+    dst_folder_fixture: Path,
+    storage_paths_fixture,
+):
+    raw_files_path = create_raw_files_fixture(storage_paths_fixture, num_raw_files, file_size_in_bytes)
+
+    tar_infos = datablock_operations.create_tarfiles_flat(
         str(test_dataset_id),
-        create_raw_files_fixture,
-        dst_folder_fixtrue,
+        raw_files_path,
+        dst_folder_fixture,
         target_size=target_size,
     )
 
-    tars = [t for t in dst_folder_fixtrue.iterdir()]
-    assert len(tars) == expected_num_compressed_files
+    for info in tar_infos:
+        assert info.unpackedSize >= file_size_in_bytes
+        assert info.unpackedSize <= num_raw_files / expected_num_compressed_files * file_size_in_bytes
+        assert info.packedSize >= file_size_in_bytes
+        assert info.packedSize <= target_size * 1.05  # a tarfile might be "a little" larger than
+
+    tars = [t for t in dst_folder_fixture.iterdir()]
+    assert expected_num_compressed_files == len(tars)
     assert len(tar_infos) == len(tars)
 
-    verify_tar_content(create_raw_files_fixture, dst_folder_fixtrue, tars)
+    verify_tar_content(raw_files_path, dst_folder_fixture, tars)
 
 
 def verify_tar_content(raw_file_folder, datablock_folder, tars):
@@ -75,8 +95,9 @@ def verify_tar_content(raw_file_folder, datablock_folder, tars):
 
 
 @pytest.fixture()
-def tar_infos_fixture(create_raw_files_fixture: Path) -> List[TarInfo]:
-    files = list(create_raw_files_fixture.iterdir())
+def tar_infos_fixture(storage_paths_fixture) -> List[TarInfo]:
+    folder = create_raw_files_fixture(storage_paths_fixture, 10, 1 * MB)
+    files = list(folder.iterdir())
 
     tar_folder = StoragePaths.scratch_archival_datablocks_folder(test_dataset_id)
     tar_folder.mkdir(parents=True)
@@ -95,7 +116,7 @@ def tar_infos_fixture(create_raw_files_fixture: Path) -> List[TarInfo]:
     if not tar1_path.exists():
         tar1 = tarfile.open(tar1_path, "w")
         for f in files[:2]:
-            p = Path(create_raw_files_fixture) / f
+            p = Path(folder) / f
 
             tar_infos[0].unpackedSize += p.stat().st_size
             tar1.add(name=p, arcname=f.name, recursive=False)
@@ -110,7 +131,7 @@ def tar_infos_fixture(create_raw_files_fixture: Path) -> List[TarInfo]:
     if not tar2_path.exists():
         tar2 = tarfile.open(tar2_path, "w")
         for f in files[2:]:
-            p = Path(create_raw_files_fixture) / f
+            p = Path(folder) / f
             tar_infos[1].unpackedSize += p.stat().st_size
             tar2.add(name=p, arcname=f.name, recursive=False)
         tar2.close()
@@ -121,12 +142,14 @@ def tar_infos_fixture(create_raw_files_fixture: Path) -> List[TarInfo]:
 
 
 @pytest.fixture()
-def origDataBlocks_fixture(create_raw_files_fixture: Path) -> List[OrigDataBlock]:
+def origDataBlocks_fixture(storage_paths_fixture) -> List[OrigDataBlock]:
     import uuid
 
+    folder = create_raw_files_fixture(storage_paths_fixture, 10, 1 * MB)
+
     blocks: List[OrigDataBlock] = []
-    for f in create_raw_files_fixture.iterdir():
-        p = create_raw_files_fixture / f
+    for f in folder.iterdir():
+        p = folder / f
         blocks.append(
             OrigDataBlock(
                 id=str(uuid.uuid4()),
@@ -274,13 +297,13 @@ def create_files_in_scratch(dataset: str):
 
 def test_create_datablock_entries(
     storage_paths_fixture,
-    create_raw_files_fixture: Path,
     tar_infos_fixture: List[TarInfo],
     origDataBlocks_fixture: List[OrigDataBlock],
 ):
+    folder = create_raw_files_fixture(storage_paths_fixture, 10, 1 * MB)
     datablocks: List[DataBlock] = datablock_operations.create_datablock_entries(
         test_dataset_id,
-        create_raw_files_fixture,
+        folder,
         origDataBlocks_fixture,
         tar_infos_fixture,
     )
@@ -290,9 +313,7 @@ def test_create_datablock_entries(
     for datablock in datablocks:
         assert datablock.chkAlg == "md5"
         for datafile in datablock.dataFileList or []:
-            expected_checksum = datablock_operations.calculate_md5_checksum(
-                create_raw_files_fixture / datafile.path
-            )
+            expected_checksum = datablock_operations.calculate_md5_checksum(folder / datafile.path)
             assert expected_checksum == datafile.chk
 
 
@@ -409,13 +430,13 @@ def mock_verify_objects(*args, **kwargs):
 @patch("archiver.utils.datablocks.upload_objects_to_s3", mock_upload_objects_to_s3)
 @patch("archiver.utils.datablocks.verify_objects", mock_verify_objects)
 def test_create_datablocks(
-    create_raw_files_fixture,
     storage_paths_fixture,
     origDataBlocks_fixture: List[OrigDataBlock],
 ):
     dataset_id = "testprefix/11.111"
+    folder = create_raw_files_fixture(storage_paths_fixture, 10, 10 * MB)
 
-    for raw_file in create_raw_files_fixture.iterdir():
+    for raw_file in folder.iterdir():
         StoragePaths.scratch_archival_raw_files_folder(dataset_id).mkdir(parents=True, exist_ok=True)
         shutil.copy(
             raw_file,
@@ -434,7 +455,7 @@ def test_create_datablocks(
     created_tars = [(StoragePaths.scratch_archival_root() / d.archiveId) for d in datablocks]
 
     verify_tar_content(
-        create_raw_files_fixture,
+        folder,
         StoragePaths.scratch_archival_datablocks_folder(dataset_id),
         created_tars,
     )

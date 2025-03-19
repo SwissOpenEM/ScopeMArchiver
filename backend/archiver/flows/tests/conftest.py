@@ -33,7 +33,8 @@ def config_fixture():
         "SCICAT_API_PREFIX": "/",
         "LTS_STORAGE_ROOT": "/tmp/LTS",
         "ARCHIVER_SCRATCH_FOLDER": "/tmp/data/scratch",
-        "ARCHIVER_LTS_FILE_TIMEOUT_S": "30",
+        "ARCHIVER_LTS_FILE_TIMEOUT_S": "3",
+        "ARCHIVER_LTS_WAIT_BEFORE_VERIFY_S": "3",
     }
 
     Path("/tmp/LTS").mkdir(exist_ok=True)
