@@ -133,8 +133,7 @@ def retrieve_datasets_flow(job_id: UUID, dataset_ids: List[str] | None = None):
 
     try:
         for id in dataset_ids:
-            f = retrieve_single_dataset_flow(dataset_id=id, job_id=job_id, scicat_token=access_token)
-            print(f)
+            retrieve_single_dataset_flow(dataset_id=id, job_id=job_id, scicat_token=access_token)
     except Exception as e:
         raise e
 
@@ -147,4 +146,4 @@ def retrieve_datasets_flow(job_id: UUID, dataset_ids: List[str] | None = None):
         status=SciCatClient.JOBSTATUS.FINISHED_SUCCESSFULLY,
         jobResultObject=job_results_object,
         token=access_token,
-    ).result()
+    ).wait()

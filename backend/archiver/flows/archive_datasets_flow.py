@@ -1,3 +1,4 @@
+import time
 from typing import List
 from functools import partial
 import asyncio
@@ -76,6 +77,23 @@ def move_data_to_LTS(dataset_id: str, datablock: DataBlock):
     return datablocks_operations.move_data_to_LTS(s3_client, dataset_id, datablock)
 
 
+@task(
+    task_run_name=generate_task_name_dataset,
+    tags=[ConcurrencyLimits().MOVE_TO_LTS_TAG],
+    retries=5,
+    retry_delay_seconds=[60, 120, 240, 480, 960],
+)
+def verify_checksum(dataset_id: str, datablock: DataBlock, checksum: str) -> None:
+    """Prefect task to move a datablock (.tar.gz file) to the LTS. Concurrency of this task is limited to 2 instances
+    at the same time.
+
+    Exponential backoff for retries is implemented:  1*60s, 2*60s, 4*60s, 8*60s
+    """
+    return datablocks_operations.verify_checksum(
+        dataset_id=dataset_id, datablock=datablock, expected_checksum=checksum
+    )
+
+
 @task(task_run_name=generate_task_name_dataset, tags=[ConcurrencyLimits().VERIFY_LTS_TAG])
 def verify_data_in_LTS(dataset_id: str, datablock: DataBlock) -> None:
     """Prefect Task to verify a datablock in the LTS against a checksum. Task of this type run with no concurrency since the LTS
@@ -100,9 +118,15 @@ def move_datablock_to_lts_flow(dataset_id: str, datablock: DataBlock):
 
     wait = check_free_space_in_LTS.submit()
 
-    move_data = move_data_to_LTS.submit(dataset_id=dataset_id, datablock=datablock, wait_for=[wait])  # type: ignore
+    checksum = move_data_to_LTS.submit(dataset_id=dataset_id, datablock=datablock, wait_for=[wait])  # type: ignore
 
-    verify_data_in_LTS.submit(dataset_id=dataset_id, datablock=datablock, wait_for=[move_data]).result()  # type: ignore
+    checksum_verification = verify_checksum.submit(
+        dataset_id=dataset_id, datablock=datablock, checksum=checksum
+    )
+
+    verify_data_in_LTS.submit(
+        dataset_id=dataset_id, datablock=datablock, wait_for=[checksum_verification]
+    ).result()  # type: ignore
 
 
 @flow(name="create_datablocks", flow_run_name=generate_subflow_run_name_job_id_dataset_id)
@@ -178,9 +202,6 @@ def archive_single_dataset_flow(dataset_id: str, scicat_token: SecretStr):
     except Exception as e:
         raise e
 
-    if Variables().SCICAT_API_PREFIX.endswith("/"):
-        print("f")
-
     try:
         for datablock in datablocks:
             move_datablock_to_lts_flow(dataset_id=dataset_id, datablock=datablock)
@@ -197,7 +218,6 @@ def archive_single_dataset_flow(dataset_id: str, scicat_token: SecretStr):
 
 
 def on_job_flow_failure(flow: Flow, flow_run: FlowRun, state: State):
-    # Getting the token here should just fetch it from the cache
     token = get_scicat_access_token()
     # TODO: differrentiate user error
     report_job_failure_system_error(
@@ -221,7 +241,6 @@ def on_job_flow_cancellation(flow: Flow, flow_run: FlowRun, state: State):
         datablocks_operations.cleanup_lts_folder(dataset_id)
         datablocks_operations.cleanup_scratch(dataset_id)
 
-    # Getting the token here should just fetch it from the cache
     token = get_scicat_access_token()
 
     report_job_failure_system_error(

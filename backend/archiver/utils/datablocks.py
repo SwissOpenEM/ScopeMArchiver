@@ -292,7 +292,7 @@ def find_object_in_s3(client: S3Storage, dataset_id, datablock_name):
 
 
 @log
-def move_data_to_LTS(client: S3Storage, dataset_id: str, datablock: DataBlock):
+def move_data_to_LTS(client: S3Storage, dataset_id: str, datablock: DataBlock) -> str:
     # mount target dir and check access
     if not Variables().LTS_STORAGE_ROOT.exists():
         raise FileNotFoundError(f"Can't open LTS root {Variables().LTS_STORAGE_ROOT}")
@@ -335,21 +335,33 @@ def move_data_to_LTS(client: S3Storage, dataset_id: str, datablock: DataBlock):
     # Copy to LTS
     copy_file_to_folder(src_file=datablock_full_path.absolute(), dst_folder=lts_target_dir.absolute())
 
-    # Wait before recalling the file for checksum verification
-    time.sleep(10)
+    return checksum_source
 
-    destination = lts_target_dir / datablock_name
 
-    getLogger().info("Verifying checksum")
+@log
+def verify_checksum(dataset_id: str, datablock: DataBlock, expected_checksum: str) -> None:
+    lts_target_dir = StoragePaths.lts_datablocks_folder(dataset_id)
+    datablock_name = Path(datablock.archiveId).name
+
+    lts_datablock_path = lts_target_dir / datablock_name
+
+    asyncio.run(
+        wait_for_file_accessible(lts_datablock_path.absolute(), Variables().ARCHIVER_LTS_FILE_TIMEOUT_S)
+    )
+
+    getLogger().info(f"Wait {Variables().ARCHIVER_LTS_WAIT_BEFORE_VERIFY_S}s before verifying datablock")
+    time.sleep(Variables().ARCHIVER_LTS_WAIT_BEFORE_VERIFY_S)
 
     # Copy back from LTS to scratch
     verification_path = StoragePaths.scratch_archival_datablocks_folder(dataset_id) / "verification"
     verification_path.mkdir(exist_ok=True)
-    copy_file_to_folder(src_file=destination, dst_folder=verification_path)
-    checksum_destination = calculate_md5_checksum(verification_path / datablock_name)
+    copy_file_to_folder(src_file=lts_datablock_path, dst_folder=verification_path)
+    datablock_checksum = calculate_md5_checksum(verification_path / datablock_name)
 
-    if checksum_destination != checksum_source:
-        raise SystemError("Datablock verification failed")
+    if datablock_checksum != expected_checksum:
+        raise SystemError(
+            f"Datablock verification failed. Expected: {expected_checksum},  got: {datablock_checksum}"
+        )
 
 
 @log
@@ -629,6 +641,8 @@ async def wait_for_file_accessible(file: Path, timeout_s=360):
         if total_time_waited_s > timeout_s:
             raise SystemError(f"File f{file} was not accessible within {timeout_s} seconds")
 
+    getLogger().info(f"File {file} accessible.")
+
     return True
 
 
@@ -667,7 +681,7 @@ def copy_from_LTS_to_retrieval(client: S3Storage, dataset_id: str, datablock: Da
     copy_file_to_folder(src_file=datablock_in_lts, dst_folder=scratch_destination_folder)
 
     # TODO: verify checksum
-    # for each single file?
+    # https://github.com/SwissOpenEM/ScopeMArchiver/issues/166
     getLogger().warning("Checksum verification missing!")
     file_on_scratch = scratch_destination_folder / Path(datablock.archiveId).name
     upload_datablock(client=client, file=file_on_scratch, datablock=datablock)
