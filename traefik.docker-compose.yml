@@ -43,6 +43,7 @@ services:
       AUTHENTIK_HOST: ${AUTHENTIK_HOST}
       AUTHENTIK_INSECURE: ${AUTHENTIK_INSECURE}
       AUTHENTIK_TOKEN:
+      AUTHENTIK_LOG_LEVEL: info
     entrypoint: ["/bin/sh", "-c", "export AUTHENTIK_TOKEN=$(cat /run/secrets/authentik_token) && ./proxy"]
 
     networks:
@@ -51,8 +52,10 @@ services:
       - authentik_token
     labels:
       traefik.enable: true
-      traefik.port: 9002
+      traefik.port: 9000
       traefik.http.routers.authentik.rule: (Host(`host.docker.internal`) || Host(`${HOST}`)) && PathPrefix(`/outpost.goauthentik.io/`)
+      traefik.http.routers.authentik.entrypoints: websecure
+      traefik.http.routers.authentik.tls: ""
       # `authentik-proxy` refers to the service name in the compose file.
       traefik.http.middlewares.authentik.forwardauth.address: http://authentik-proxy:9000/outpost.goauthentik.io/auth/traefik
       traefik.http.middlewares.authentik.forwardauth.trustForwardHeader: true
