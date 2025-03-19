@@ -36,6 +36,31 @@ deployments:
       collision_strategy: ENQUEUE
   schedules: []
 
+- name: end_to_end_test 
+  version: 1.0.0
+  tags: []
+  description:
+   # This entrypoint needs to match the folder structure as well as the path in the image with prefect.deployments.steps.set_working_directory prepended
+  entrypoint: ./archiver/flows/mock_flows.py:end_to_end_test_flow
+  parameters: {}
+  work_pool:
+    name: archival-docker-workpool
+    work_queue_name: default
+    job_variables:
+      image: "{{ $PREFECT_RUNTIME_IMAGE }}"
+      registry_credentials:
+        registry_url: ghcr.io
+        username: "{{ prefect.blocks.secret.github-user }}"
+        password: "{{ prefect.blocks.secret.github-password }}"
+      image_pull_policy: Never
+      networks:
+        - "{{ $PREFECT_NETWORK }}"
+    # There is a bug and this does not work as described
+    concurrency_limit:
+      limit: 2
+      collision_strategy: ENQUEUE
+  schedules: []
+
 - name: datasets_archival 
   version: 1.0.0
   tags: []

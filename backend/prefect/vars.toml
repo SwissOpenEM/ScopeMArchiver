@@ -1,7 +1,9 @@
 
 [archiver]
-ARCHIVER_SCRATCH_FOLDER = "/tmp/scratch" #string
-ARCHIVER_TARGET_SIZE_MB = 200            # target size of datablocks that are stored in the LTS
+ARCHIVER_SCRATCH_FOLDER = "/tmp/scratch"
+ARCHIVER_TARGET_SIZE_MB = 500
+ARCHIVER_LTS_FILE_TIMEOUT_S = 300
+ARCHIVER_LTS_WAIT_BEFORE_VERIFY_S = 60
 
 [lts]
 LTS_STORAGE_ROOT = "/tmp/LTS"  # Root path where LTS share is mounted
@@ -15,4 +17,5 @@ MINIO_STAGING_BUCKET = "staging"                  # S3 internally used bucket wh
 MINIO_ENDPOINT = "scopem-openemdata.ethz.ch:9090" # S3 endpoint of storage server
 
 [scicat]
+SCICAT_ENDPOINT = "https://scopem-openem.ethz.ch/scicat/backend"
 SCICAT_API_PREFIX = "/api/v3/" # Route prefix of Scicat instance
