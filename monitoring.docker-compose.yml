@@ -15,7 +15,7 @@ services:
       - "traefik.http.routers.grafana.rule=Host(`${HOST}`) && PathPrefix(`/grafana`)"
       - "traefik.http.middlewares.grafana-stripprefix.stripprefix.prefixes=/grafana"
       - "traefik.http.routers.grafana.entrypoints=web"
-      - "traefik.http.routers.grafana.middlewares=grafana-stripprefix"
+      - "traefik.http.routers.grafana.middlewares=grafana-stripprefix,{AUTH_MIDDLEWARE}"
       - "traefik.http.services.grafana.loadbalancer.server.port=3000"
 
   prometheus:

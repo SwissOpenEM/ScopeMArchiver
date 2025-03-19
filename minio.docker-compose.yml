@@ -22,10 +22,12 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.minio.rule=Host(`${HOST}`) && PathPrefix(`/minio`)"
-      - "traefik.http.middlewares.minio-stripprefix.stripprefix.prefixes=/minio"
+      - "traefik.http.routers.minio.middlewares=minio-stripprefix,minio-headers,minio-cors"
       - "traefik.http.routers.minio.entrypoints=web"
       - "traefik.http.routers.minio.service=minio-web"
       - "traefik.http.services.minio-web.loadbalancer.server.port=9001"
+
+      - "traefik.http.middlewares.minio-stripprefix.stripprefix.prefixes=/minio"
       - "traefik.http.middlewares.minio-cors.headers.accesscontrolallowmethods=*"
       - "traefik.http.middlewares.minio-cors.headers.accesscontrolallowheaders=*"
       - "traefik.http.middlewares.minio-cors.headers.accessControlExposeHeaders=ETag,Location,Authorization,Origin,X-Requested-With,X-Request-ID,X-HTTP-Method-Override,Content-Type,Upload-Length,Upload-Offset,Tus-Resumable,Upload-Metadata,Upload-Defer-Length,Upload-Concat,Upload-Complete,Upload-Draft-Interop-Version,x-token"
@@ -34,7 +36,6 @@ services:
       - "traefik.http.middlewares.minio-cors.headers.addvaryheader=true"
       - "traefik.http.middlewares.minio-headers.headers.customrequestheaders.X-Forwarded-Proto=http"
       - "traefik.http.middlewares.minio-headers.headers.customrequestheaders.X-Forwarded-Host=${HOST}/minio"
-      - "traefik.http.routers.minio.middlewares=minio-stripprefix,minio-headers,minio-cors"
 
       - "traefik.http.routers.minio-api.rule=Host(`${HOST}/minio-api`) && PathPrefix(`/minio-api`)"
       - "traefik.http.middlewares.minio-api-stripprefix.stripprefix.prefixes=/minio-api"
