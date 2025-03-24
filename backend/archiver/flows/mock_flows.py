@@ -241,7 +241,7 @@ def get_scicat_job2(job_id: uuid.UUID, token: SecretStr) -> Dict[str, Any]:
     )
     return response.json()
 
-PREFECT_SERVER_URL = "https://scopem-openem.ethz.ch/archiver/prefect/api"
+PREFECT_SERVER_URL = "http://prefect-server:4200/api"
 
 @log
 async def get_flow_result(flow_run_id: uuid.UUID) -> Optional[State]:
