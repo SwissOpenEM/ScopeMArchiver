@@ -1,5 +1,6 @@
 from enum import StrEnum
 import requests
+from requests.adapters import HTTPAdapter, Retry
 from typing import List
 from uuid import UUID
 from pydantic import SecretStr
@@ -47,6 +48,10 @@ class SciCatClient:
             raise ValueError("Api prefix needs to end with '/'")
         self._API = prefix
 
+        self._session = requests.Session()
+        retries = Retry(total=5, backoff_factor=1, status_forcelist=[502, 503, 504])
+        self._session.mount("https://", HTTPAdapter(max_retries=retries))
+
     def _headers(self, token: SecretStr):
         return {
             "Authorization": f"Bearer {token.get_secret_value()}",
@@ -60,7 +65,7 @@ class SciCatClient:
         user = Blocks().SCICAT_USER
         password = Blocks().SCICAT_PASSWORD
 
-        resp = requests.post(
+        resp = self._session.post(
             url=f"{self._ENDPOINT}{self._API}auth/login",
             data={"username": user, "password": password.get_secret_value()},
         )
@@ -84,7 +89,7 @@ class SciCatClient:
 
         headers = self._headers(token)
 
-        result = requests.patch(
+        result = self._session.patch(
             f"{self._ENDPOINT}{self.API}jobs/{job_id}",
             data=job.model_dump_json(exclude_none=True),
             headers=headers,
@@ -112,7 +117,7 @@ class SciCatClient:
 
         headers = self._headers(token)
         safe_dataset_id = self._safe_dataset_id(dataset_id)
-        result = requests.patch(
+        result = self._session.patch(
             f"{self._ENDPOINT}{self.API}datasets/{safe_dataset_id}",
             data=dataset.model_dump_json(exclude_none=True),
             headers=headers,
@@ -138,7 +143,7 @@ class SciCatClient:
         )
         headers = self._headers(token)
         safe_dataset_id = self._safe_dataset_id(dataset_id)
-        result = requests.patch(
+        result = self._session.patch(
             f"{self._ENDPOINT}{self.API}datasets/{safe_dataset_id}",
             data=dataset.model_dump_json(exclude_none=True),
             headers=headers,
@@ -151,7 +156,7 @@ class SciCatClient:
         headers = self._headers(token)
         safe_dataset_id = self._safe_dataset_id(dataset_id)
         for d in data_blocks:
-            result = requests.post(
+            result = self._session.post(
                 f"{self._ENDPOINT}{self.API}datasets/{safe_dataset_id}/datablocks",
                 data=d.model_dump_json(exclude_none=True),
                 headers=headers,
@@ -163,7 +168,7 @@ class SciCatClient:
     def get_origdatablocks(self, dataset_id: str, token: SecretStr) -> List[OrigDataBlock]:
         headers = self._headers(token)
         safe_dataset_id = self._safe_dataset_id(dataset_id)
-        result = requests.get(
+        result = self._session.get(
             f"{self._ENDPOINT}{self.API}datasets/{safe_dataset_id}/origdatablocks",
             headers=headers,
         )
@@ -181,7 +186,7 @@ class SciCatClient:
     @log
     def get_job_datasetlist(self, job_id: UUID, token: SecretStr) -> List[str]:
         headers = self._headers(token)
-        result = requests.get(f"{self._ENDPOINT}{self.API}jobs/{job_id}", headers=headers)
+        result = self._session.get(f"{self._ENDPOINT}{self.API}jobs/{job_id}", headers=headers)
         # returns none if status_code is 200
         result.raise_for_status()
         datasets = result.json()["jobParams"]["datasetList"]
@@ -192,7 +197,7 @@ class SciCatClient:
     def get_datablocks(self, dataset_id: str, token: SecretStr) -> List[DataBlock]:
         headers = self._headers(token)
         safe_dataset_id = self._safe_dataset_id(dataset_id)
-        result = requests.get(
+        result = self._session.get(
             f"{self._ENDPOINT}{self.API}datasets/{safe_dataset_id}/datablocks",
             headers=headers,
         )

@@ -13,6 +13,7 @@ from archiver.utils.model import (
     JobResultEntry,
     JobResultObject,
 )
+from archiver.utils.log import log
 from archiver.flows.task_utils import generate_task_name_dataset, generate_task_name_job
 from archiver.utils.s3_storage_interface import Bucket, S3Storage, get_s3_client
 
@@ -204,6 +205,7 @@ def create_presigned_url(client: S3Storage, datablock: DataBlock):
     return url
 
 
+@log
 def create_job_result_object(dataset_id: str, datablocks: List[DataBlock]) -> List[JobResultEntry]:
     s3_client = get_s3_client()
     job_result_entries: List[JobResultEntry] = []
