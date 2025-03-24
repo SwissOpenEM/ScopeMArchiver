@@ -58,13 +58,13 @@ def create_datablocks(num_blocks: int = 10, num_files_per_block: int = 10) -> Li
 def expected_job_status(job_type: str, status: SciCatClient.JOBSTATUS) -> Dict[str, Any]:
     match status:
         case SciCatClient.JOBSTATUS.IN_PROGRESS:
-            return Job(statusCode="1", statusMessage="inProgress").model_dump(exclude_none=True)
+            return Job(statusCode=str(1), statusMessage="inProgress").model_dump(exclude_none=True)
         case SciCatClient.JOBSTATUS.FINISHED_SUCCESSFULLY:
-            return Job(statusCode="1", statusMessage="finishedSuccessful").model_dump(exclude_none=True)
+            return Job(statusCode=str(1), statusMessage="finishedSuccessful").model_dump(exclude_none=True)
         case SciCatClient.JOBSTATUS.FINISHED_UNSUCCESSFULLY:
-            return Job(statusCode="1", statusMessage="finishedUnsuccessful").model_dump(exclude_none=True)
+            return Job(statusCode=str(1), statusMessage="finishedUnsuccessful").model_dump(exclude_none=True)
         case SciCatClient.JOBSTATUS.FINISHED_WITHDATASET_ERRORS:
-            return Job(statusCode="1", statusMessage="finishedWithDatasetErrors").model_dump(
+            return Job(statusCode=str(1), statusMessage="finishedWithDatasetErrors").model_dump(
                 exclude_none=True
             )
 

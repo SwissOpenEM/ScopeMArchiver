@@ -27,7 +27,9 @@ def scicat_client() -> SciCatClient:
     global scicat_instance
     if scicat_instance is None:  # type: ignore
         scicat_instance = SciCatClient(
-            endpoint=Variables().SCICAT_ENDPOINT, prefix=Variables().SCICAT_API_PREFIX
+            endpoint=Variables().SCICAT_ENDPOINT, 
+            api_prefix=Variables().SCICAT_API_PREFIX,
+            jobs_api_prefix=Variables().SCICAT_JOBS_API_PREFIX
         )
     return scicat_instance
 

@@ -175,7 +175,7 @@ def scicat_create_retrieval_job(dataset: str, token: SecretStr) -> uuid.UUID:
     host =  Variables().SCICAT_ENDPOINT
     api =  Variables().SCICAT_API_PREFIX
     response = requests.post(
-        url=f"{host}{api}{SCICAT_JOB_PATH}",
+        url=f"{host}/api/v4/{SCICAT_JOB_PATH}",
         data=job.model_dump_json(exclude_none=True),
         headers=headers(token),
     )
@@ -201,7 +201,7 @@ def scicat_create_archival_job(dataset: str, token: SecretStr) -> uuid.UUID:
     host =  Variables().SCICAT_ENDPOINT
     api =  Variables().SCICAT_API_PREFIX
     response = requests.post(
-        url=f"{host}{api}{SCICAT_JOB_PATH}",
+        url=f"{host}/api/v4/{SCICAT_JOB_PATH}",
         data=j,
         headers=headers(token),
     )
@@ -226,7 +226,7 @@ def get_scicat_job(job_id: uuid.UUID, token: SecretStr) -> Dict[str, Any]:
     host =  Variables().SCICAT_ENDPOINT
     api =  Variables().SCICAT_API_PREFIX
     response = requests.get(
-        url=f"{host}{api}{SCICAT_JOB_PATH}/{job_id}",
+        url=f"{host}/api/v4/{SCICAT_JOB_PATH}/{job_id}",
         headers=headers(token),
     )
     return response.json()
@@ -236,7 +236,7 @@ def get_scicat_job2(job_id: uuid.UUID, token: SecretStr) -> Dict[str, Any]:
     host =  Variables().SCICAT_ENDPOINT
     api =  Variables().SCICAT_API_PREFIX
     response = requests.get(
-        url=f"{host}{api}{SCICAT_JOB_PATH}/{job_id}",
+        url=f"{host}/api/v4/{SCICAT_JOB_PATH}/{job_id}",
         headers=headers(token),
     )
     return response.json()
