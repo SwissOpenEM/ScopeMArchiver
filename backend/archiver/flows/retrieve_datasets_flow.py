@@ -39,9 +39,23 @@ def on_get_datablocks_error(dataset_id: str, task: Task, task_run: TaskRun, stat
     task_run_name=generate_task_name_dataset,
     tags=[ConcurrencyLimits().LTS_TO_RETRIEVAL_TAG],
 )
-def copy_datablock_from_LTS_to_S3(dataset_id: str, datablock: DataBlock):
+def copy_datablock_from_LTS_to_scratch(dataset_id: str, datablock: DataBlock):
+    datablocks_operations.copy_from_LTS_to_scratch_retrieval(dataset_id, datablock)
+
+
+@task(
+    task_run_name=generate_task_name_dataset,
+)
+def verify_data_on_scratch(dataset_id: str, datablock: DataBlock):
+    datablocks_operations.verify_data_on_scratch(dataset_id, datablock)
+
+
+@task(
+    task_run_name=generate_task_name_dataset,
+)
+def upload_data_to_s3(dataset_id: str, datablock: DataBlock):
     s3_client = get_s3_client()
-    datablocks_operations.copy_from_LTS_to_retrieval(s3_client, dataset_id, datablock)
+    datablocks_operations.upload_data_to_retrieval_bucket(s3_client, dataset_id, datablock)
 
 
 def on_dataset_flow_failure(flow: Flow, flow_run: FlowRun, state: State):
@@ -81,19 +95,27 @@ def retrieve_single_dataset_flow(dataset_id: str, job_id: UUID, scicat_token: Se
     ).submit(dataset_id=dataset_id, token=scicat_token, wait_for=[dataset_update])  # type: ignore
 
     # TODO: check if on retrieval bucket
+    # https://github.com/SwissOpenEM/ScopeMArchiver/issues/170
     datablocks_not_in_retrieval_bucket = datablocks.result()
 
     # TODO: check if enough space available in bucket
+    # https://github.com/SwissOpenEM/ScopeMArchiver/issues/169
     retrieval_tasks = []
     for d in datablocks_not_in_retrieval_bucket:
-        retrieval_tasks.append(copy_datablock_from_LTS_to_S3.submit(dataset_id=dataset_id, datablock=d))
+        copy_to_scratch = copy_datablock_from_LTS_to_scratch.submit(dataset_id=dataset_id, datablock=d)
+
+        verify_datablock = verify_data_on_scratch.submit(
+            dataset_id=dataset_id, datablock=d, wait_for=[copy_to_scratch]
+        )
+        upload_data = upload_data_to_s3.submit(
+            dataset_id=dataset_id, datablock=d, wait_for=[verify_datablock]
+        )
+        retrieval_tasks.append(upload_data)
 
     done, not_done = wait(retrieval_tasks)
     r = [d.result() for d in done]
     update_scicat_retrieval_dataset_lifecycle.submit(
-        dataset_id=dataset_id,
-        status=SciCatClient.RETRIEVESTATUSMESSAGE.DATASET_RETRIEVED,
-        token=scicat_token,
+        dataset_id=dataset_id, status=SciCatClient.RETRIEVESTATUSMESSAGE.DATASET_RETRIEVED, token=scicat_token
     ).result()  # type: ignore
 
 

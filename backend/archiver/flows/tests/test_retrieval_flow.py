@@ -56,6 +56,7 @@ async def mock_wait_for_file_accessible(file, timeout_s=360) -> bool:
 @patch("archiver.utils.datablocks.wait_for_file_accessible", mock_wait_for_file_accessible)
 @patch("archiver.utils.datablocks.copy_file_to_folder")
 @patch("archiver.scicat.scicat_tasks.create_presigned_url", mock_create_presigned_url)
+@patch("archiver.utils.datablocks.verify_datablock")
 @patch("archiver.utils.datablocks.upload_datablock")
 @patch("archiver.utils.datablocks.cleanup_lts_folder")
 @patch("archiver.utils.datablocks.cleanup_scratch")
@@ -69,6 +70,7 @@ def test_scicat_api_retrieval(
     mock_cleanup_scratch: MagicMock,
     mock_cleanup_lts: MagicMock,
     mock_upload_datablock: MagicMock,
+    mock_verify_datablock: MagicMock,
     mock_copy_file_to_folder: MagicMock,
     job_id: UUID,
     dataset_id: str,
@@ -158,6 +160,7 @@ def test_scicat_api_retrieval(
 @patch("archiver.utils.datablocks.wait_for_file_accessible", mock_wait_for_file_accessible)
 @patch("archiver.utils.datablocks.copy_file_to_folder")
 @patch("archiver.scicat.scicat_tasks.create_presigned_url", mock_create_presigned_url)
+@patch("archiver.utils.datablocks.verify_datablock")
 @patch("archiver.utils.datablocks.upload_datablock")
 @patch("archiver.utils.datablocks.cleanup_lts_folder")
 @patch("archiver.utils.datablocks.cleanup_scratch")
@@ -171,6 +174,7 @@ def test_datablock_not_found(
     mock_cleanup_scratch: MagicMock,
     mock_cleanup_lts: MagicMock,
     mock_upload_datablock: MagicMock,
+    mock_verify_datablock: MagicMock,
     mock_copy_file_to_folder: MagicMock,
     job_id,
     dataset_id,
