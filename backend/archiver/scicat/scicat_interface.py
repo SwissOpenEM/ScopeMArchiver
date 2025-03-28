@@ -42,14 +42,11 @@ class SciCatClient:
         ARCHIVE = "archive"
         RETRIEVE = "retrieve"
 
-    def __init__(self, endpoint: str = "http://scicat.example.com", api_prefix: str = "/", jobs_api_prefix: str = "/"):
+    def __init__(
+        self, endpoint: str = "http://scicat.example.com", api_prefix: str = "", jobs_api_prefix: str = ""
+    ):
         self._ENDPOINT = endpoint
-        if not api_prefix.endswith("/"):
-            raise ValueError("Api prefix needs to end with '/'")
         self._API_PREFIX = api_prefix
-
-        if not jobs_api_prefix.endswith("/"):
-            raise ValueError("jobs_api_prefixpi prefix needs to end with '/'")
         self._JOBS_API_PREFIX = jobs_api_prefix
 
         self._session = requests.Session()
@@ -70,7 +67,7 @@ class SciCatClient:
         password = Blocks().SCICAT_PASSWORD
 
         resp = self._session.post(
-            url=f"{self._ENDPOINT}{self._API_PREFIX}auth/login",
+            url=f"{self._ENDPOINT}{self._API_PREFIX}/auth/login",
             data={"username": user, "password": password.get_secret_value()},
         )
         resp.raise_for_status()
@@ -99,7 +96,7 @@ class SciCatClient:
         headers = self._headers(token)
 
         result = self._session.patch(
-            f"{self._ENDPOINT}{self.JOBS_API_PREFIX}jobs/{job_id}",
+            f"{self._ENDPOINT}{self.JOBS_API_PREFIX}/jobs/{job_id}",
             data=job.model_dump_json(exclude_none=True),
             headers=headers,
         )
@@ -127,7 +124,7 @@ class SciCatClient:
         headers = self._headers(token)
         safe_dataset_id = self._safe_dataset_id(dataset_id)
         result = self._session.patch(
-            f"{self._ENDPOINT}{self.API}datasets/{safe_dataset_id}",
+            f"{self._ENDPOINT}{self.API}/datasets/{safe_dataset_id}",
             data=dataset.model_dump_json(exclude_none=True),
             headers=headers,
         )
@@ -153,7 +150,7 @@ class SciCatClient:
         headers = self._headers(token)
         safe_dataset_id = self._safe_dataset_id(dataset_id)
         result = self._session.patch(
-            f"{self._ENDPOINT}{self.API}datasets/{safe_dataset_id}",
+            f"{self._ENDPOINT}{self.API}/datasets/{safe_dataset_id}",
             data=dataset.model_dump_json(exclude_none=True),
             headers=headers,
         )
@@ -166,7 +163,7 @@ class SciCatClient:
         safe_dataset_id = self._safe_dataset_id(dataset_id)
         for d in data_blocks:
             result = self._session.post(
-                f"{self._ENDPOINT}{self.API}datasets/{safe_dataset_id}/datablocks",
+                f"{self._ENDPOINT}{self.API}/datasets/{safe_dataset_id}/datablocks",
                 data=d.model_dump_json(exclude_none=True),
                 headers=headers,
             )
@@ -178,7 +175,7 @@ class SciCatClient:
         headers = self._headers(token)
         safe_dataset_id = self._safe_dataset_id(dataset_id)
         result = self._session.get(
-            f"{self._ENDPOINT}{self.API}datasets/{safe_dataset_id}/origdatablocks",
+            f"{self._ENDPOINT}{self.API}/datasets/{safe_dataset_id}/origdatablocks",
             headers=headers,
         )
         # returns none if status_code is 200
@@ -195,7 +192,7 @@ class SciCatClient:
     @log
     def get_job_datasetlist(self, job_id: UUID, token: SecretStr) -> List[str]:
         headers = self._headers(token)
-        result = self._session.get(f"{self._ENDPOINT}{self.JOBS_API_PREFIX}jobs/{job_id}", headers=headers)
+        result = self._session.get(f"{self._ENDPOINT}{self.JOBS_API_PREFIX}/jobs/{job_id}", headers=headers)
         # returns none if status_code is 200
         result.raise_for_status()
         datasets = result.json()["jobParams"]["datasetList"]
@@ -207,7 +204,7 @@ class SciCatClient:
         headers = self._headers(token)
         safe_dataset_id = self._safe_dataset_id(dataset_id)
         result = self._session.get(
-            f"{self._ENDPOINT}{self.API}datasets/{safe_dataset_id}/datablocks",
+            f"{self._ENDPOINT}{self.API}/datasets/{safe_dataset_id}/datablocks",
             headers=headers,
         )
         # returns none if status_code is 200
