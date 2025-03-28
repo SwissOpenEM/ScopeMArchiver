@@ -55,16 +55,20 @@ def create_datablocks(num_blocks: int = 10, num_files_per_block: int = 10) -> Li
     return blocks
 
 
-def expected_job_status(job_type: str, status: SciCatClient.JOBSTATUS) -> Dict[str, Any]:
+def expected_job_status(job_type: str, status: SciCatClient.JOBSTATUSMESSAGE) -> Dict[str, Any]:
     match status:
-        case SciCatClient.JOBSTATUS.IN_PROGRESS:
-            return Job(statusCode=str(1), statusMessage="inProgress").model_dump(exclude_none=True)
-        case SciCatClient.JOBSTATUS.FINISHED_SUCCESSFULLY:
-            return Job(statusCode=str(1), statusMessage="finishedSuccessful").model_dump(exclude_none=True)
-        case SciCatClient.JOBSTATUS.FINISHED_UNSUCCESSFULLY:
-            return Job(statusCode=str(1), statusMessage="finishedUnsuccessful").model_dump(exclude_none=True)
-        case SciCatClient.JOBSTATUS.FINISHED_WITHDATASET_ERRORS:
-            return Job(statusCode=str(1), statusMessage="finishedWithDatasetErrors").model_dump(
+        case SciCatClient.JOBSTATUSCODE.IN_PROGRESS:
+            return Job(statusCode="inProgress", statusMessage="jobStarted").model_dump(exclude_none=True)
+        case SciCatClient.JOBSTATUSCODE.FINISHED_SUCCESSFULLY:
+            return Job(statusCode="finishedSuccessful", statusMessage="jobFinished").model_dump(
+                exclude_none=True
+            )
+        case SciCatClient.JOBSTATUSCODE.FINISHED_UNSUCCESSFULLY:
+            return Job(statusCode="finishedUnsuccessful", statusMessage="jobFinished").model_dump(
+                exclude_none=True
+            )
+        case SciCatClient.JOBSTATUSCODE.FINISHED_WITHDATASET_ERRORS:
+            return Job(statusCode="finishedWithDatasetErrors", statusMessage="jobFinished").model_dump(
                 exclude_none=True
             )
 
