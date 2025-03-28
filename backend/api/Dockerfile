@@ -1,5 +1,12 @@
+FROM openapitools/openapi-generator-cli:latest AS generator
+ADD ./ /local
+RUN /usr/local/bin/docker-entrypoint.sh generate -i /local/openapi.yaml   -g python-fastapi   -o /local/out --global-property apis,models
+
 FROM python:3.12-slim AS builder
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
+# Copy the generated project
+COPY --from=generator --chown=app:app /local /app
 
 # Change the working directory to the `app` directory
 WORKDIR /app
@@ -12,12 +19,8 @@ ENV UV_LINK_MODE=copy
 
 # Install dependencies
 RUN --mount=type=cache,target=/root/.cache/uv \
-    --mount=type=bind,source=uv.lock,target=uv.lock \
-    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
     uv sync --frozen --no-install-project --no-editable
 
-# Copy the project into the intermediate image
-ADD . /app
 
 # Sync the project
 RUN --mount=type=cache,target=/root/.cache/uv \

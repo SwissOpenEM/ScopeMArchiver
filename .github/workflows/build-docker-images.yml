@@ -66,7 +66,7 @@ jobs:
   #         path: ./backend/junit/test-results.xml
   #         # Use always() to always run this step to publish test results when there are test failures
   #       if: ${{ always() }}
-  #
+  
 
   test_flows:
     runs-on: ubuntu-latest
@@ -205,6 +205,30 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Generate API
+        uses: addnab/docker-run-action@v3
+        with:
+            image: openapitools/openapi-generator-cli:latest
+            options: -v ${{ github.workspace }}/backend/api:/local
+            run: |
+              /usr/local/bin/docker-entrypoint.sh generate -i /local/openapi.yaml   -g python-fastapi   -o /local --global-property apis,models
+
+      - name: Check if there are changes
+        id: changes
+        shell: bash
+        # git status below is so the script doesn't fail if the same file content is written. git diff-index detects those as changes.
+        run: |
+          git status
+          if ! git diff-index --quiet HEAD; then
+            printf 'These files changed:\n\n'
+
+            git diff --name-only | while read -r n ; do
+              echo "* $n"
+            done
+
+            exit 1
+          fi
 
       - name: Ruff Format
         uses: astral-sh/ruff-action@v3
