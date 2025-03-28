@@ -18,5 +18,5 @@ MINIO_ENDPOINT = "scopem-openemdata.ethz.ch:9090" # S3 endpoint of storage serve
 
 [scicat]
 SCICAT_ENDPOINT = "https://scopem-openem.ethz.ch/scicat/backend"
-SCICAT_API_PREFIX = "/api/v3/" # Route prefix of Scicat instance
-SCICAT_JOBS_API_PREFIX = "/api/v4/" # jobs endpoints have the new prefix
+SCICAT_API_PREFIX = "/api/v3" # Route prefix of Scicat instance
+SCICAT_JOBS_API_PREFIX = "/api/v4" # jobs endpoints have the new prefix
