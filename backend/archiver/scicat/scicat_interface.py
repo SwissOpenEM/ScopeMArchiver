@@ -20,7 +20,23 @@ from archiver.config.blocks import Blocks
 
 
 class SciCatClient:
-    class JOBSTATUS(StrEnum):
+    class JOBSTATUSMESSAGE(StrEnum):
+        """Human readible job status
+
+        Newly added property in Scicat /api/v4 allowing for more elaborate messages.
+        """
+
+        JOB_IN_PROGRESS = "jobStarted"
+        JOB_UPDATED = "jobUpdated"
+        JOB_FINISHED = "jobFinished"
+
+    class JOBSTATUSCODE(StrEnum):
+        """Job status code in Scicat /api/v4.
+
+        This was previously JobStatusMessage in /api/v3. Values are not restricted but follow the convention of PSI's archiver.
+
+        """
+
         IN_PROGRESS = "inProgress"
         FINISHED_SUCCESSFULLY = "finishedSuccessful"
         FINISHED_UNSUCCESSFULLY = "finishedUnsuccessful"
@@ -42,7 +58,9 @@ class SciCatClient:
         ARCHIVE = "archive"
         RETRIEVE = "retrieve"
 
-    def __init__(self, endpoint: str = "http://scicat.example.com", api_prefix: str = "/", jobs_api_prefix: str = "/"):
+    def __init__(
+        self, endpoint: str = "http://scicat.example.com", api_prefix: str = "/", jobs_api_prefix: str = "/"
+    ):
         self._ENDPOINT = endpoint
         if not api_prefix.endswith("/"):
             raise ValueError("Api prefix needs to end with '/'")
@@ -83,18 +101,19 @@ class SciCatClient:
     @property
     def JOBS_API_PREFIX(self):
         return self._JOBS_API_PREFIX
-    
 
     @log
     def update_job_status(
         self,
         job_id: UUID,
-        type: JOBTYPE,
-        status: JOBSTATUS,
-        jobResultObject: JobResultObject | None,
+        status_code: JOBSTATUSCODE,
+        status_message: JOBSTATUSMESSAGE,
+        job_result_object: JobResultObject | None,
         token: SecretStr,
     ) -> None:
-        job = Job(statusCode="1", statusMessage=str(status), jobResultObject=jobResultObject)
+        job = Job(
+            statusCode=str(status_code), statusMessage=str(status_message), jobResultObject=job_result_object
+        )
 
         headers = self._headers(token)
 

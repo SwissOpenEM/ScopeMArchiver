@@ -222,7 +222,6 @@ def on_job_flow_failure(flow: Flow, flow_run: FlowRun, state: State):
     # TODO: differrentiate user error
     report_job_failure_system_error(
         job_id=flow_run.parameters["job_id"],
-        type=SciCatClient.JOBTYPE.ARCHIVE,
         token=token,
     )
 
@@ -245,7 +244,6 @@ def on_job_flow_cancellation(flow: Flow, flow_run: FlowRun, state: State):
 
     report_job_failure_system_error(
         job_id=flow_run.parameters["job_id"],
-        type=SciCatClient.JOBTYPE.ARCHIVE,
         token=token,
     )
 
@@ -272,7 +270,10 @@ def archive_datasets_flow(job_id: UUID, dataset_ids: List[str] | None = None):
     access_token = get_scicat_access_token()
 
     job_update = update_scicat_archival_job_status.submit(
-        job_id=job_id, status=SciCatClient.JOBSTATUS.IN_PROGRESS, token=access_token
+        job_id=job_id,
+        status_code=SciCatClient.JOBSTATUSCODE.IN_PROGRESS,
+        status_message=SciCatClient.JOBSTATUSMESSAGE.JOB_IN_PROGRESS,
+        token=access_token,
     )
     job_update.result()
 
@@ -288,6 +289,7 @@ def archive_datasets_flow(job_id: UUID, dataset_ids: List[str] | None = None):
 
     update_scicat_archival_job_status.submit(
         job_id=job_id,
-        status=SciCatClient.JOBSTATUS.FINISHED_SUCCESSFULLY,
+        status_code=SciCatClient.JOBSTATUSCODE.FINISHED_SUCCESSFULLY,
+        status_message=SciCatClient.JOBSTATUSMESSAGE.JOB_FINISHED,
         token=access_token,
     ).result()

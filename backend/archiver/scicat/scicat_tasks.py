@@ -27,9 +27,9 @@ def scicat_client() -> SciCatClient:
     global scicat_instance
     if scicat_instance is None:  # type: ignore
         scicat_instance = SciCatClient(
-            endpoint=Variables().SCICAT_ENDPOINT, 
+            endpoint=Variables().SCICAT_ENDPOINT,
             api_prefix=Variables().SCICAT_API_PREFIX,
-            jobs_api_prefix=Variables().SCICAT_JOBS_API_PREFIX
+            jobs_api_prefix=Variables().SCICAT_JOBS_API_PREFIX,
         )
     return scicat_instance
 
@@ -41,12 +41,17 @@ def get_scicat_access_token() -> SecretStr:
 
 
 @task(task_run_name=generate_task_name_job)
-def update_scicat_archival_job_status(job_id: UUID, status: SciCatClient.JOBSTATUS, token: SecretStr) -> None:
+def update_scicat_archival_job_status(
+    job_id: UUID,
+    status_code: SciCatClient.JOBSTATUSCODE,
+    status_message: SciCatClient.JOBSTATUSMESSAGE,
+    token: SecretStr,
+) -> None:
     scicat_client().update_job_status(
         job_id=job_id,
-        type=SciCatClient.JOBTYPE.ARCHIVE,
-        status=status,
-        jobResultObject=None,
+        status_code=status_code,
+        status_message=status_message,
+        job_result_object=None,
         token=token,
     )
 
@@ -54,15 +59,16 @@ def update_scicat_archival_job_status(job_id: UUID, status: SciCatClient.JOBSTAT
 @task(task_run_name=generate_task_name_job)
 def update_scicat_retrieval_job_status(
     job_id: UUID,
-    status: SciCatClient.JOBSTATUS,
+    status_code: SciCatClient.JOBSTATUSCODE,
+    status_message: SciCatClient.JOBSTATUSMESSAGE,
     jobResultObject: JobResultObject | None,
     token: SecretStr,
 ) -> None:
     scicat_client().update_job_status(
         job_id=job_id,
-        type=SciCatClient.JOBTYPE.RETRIEVE,
-        status=status,
-        jobResultObject=jobResultObject,
+        status_code=status_code,
+        status_message=status_message,
+        job_result_object=jobResultObject,
         token=token,
     )
 
@@ -155,30 +161,28 @@ def report_dataset_retrieval_error(
 
 def report_job_failure_user_error(
     job_id: UUID,
-    type: SciCatClient.JOBTYPE,
     token: SecretStr,
     message: str | None = None,
 ):
     scicat_client().update_job_status(
         job_id=job_id,
-        type=type,
-        status=SciCatClient.JOBSTATUS.FINISHED_WITHDATASET_ERRORS,
-        jobResultObject=None,
+        status_code=SciCatClient.JOBSTATUSCODE.FINISHED_WITHDATASET_ERRORS,
+        status_message=SciCatClient.JOBSTATUSMESSAGE.JOB_FINISHED,
+        job_result_object=None,
         token=token,
     )
 
 
 def report_job_failure_system_error(
     job_id: UUID,
-    type: SciCatClient.JOBTYPE,
     token: SecretStr,
     message: str | None = None,
 ):
     scicat_client().update_job_status(
         job_id=job_id,
-        type=type,
-        status=SciCatClient.JOBSTATUS.FINISHED_UNSUCCESSFULLY,
-        jobResultObject=None,
+        status_code=SciCatClient.JOBSTATUSCODE.FINISHED_UNSUCCESSFULLY,
+        status_message=SciCatClient.JOBSTATUSMESSAGE.JOB_FINISHED,
+        job_result_object=None,
         token=token,
     )
 
