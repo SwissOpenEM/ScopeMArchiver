@@ -102,11 +102,11 @@ def test_scicat_api_retrieval(
 
         assert m.jobs_matcher.call_count == 2
         assert m.jobs_matcher.request_history[0].json() == expected_job_status(
-            SciCatClient.JOBTYPE.RETRIEVE, SciCatClient.JOBSTATUS.IN_PROGRESS
+            SciCatClient.JOBTYPE.RETRIEVE, SciCatClient.JOBSTATUSCODE.IN_PROGRESS
         )
 
         expected_job = expected_job_status(
-            SciCatClient.JOBTYPE.RETRIEVE, SciCatClient.JOBSTATUS.FINISHED_SUCCESSFULLY
+            SciCatClient.JOBTYPE.RETRIEVE, SciCatClient.JOBSTATUSCODE.FINISHED_SUCCESSFULLY
         )
 
         expected_job["jobResultObject"] = expected_jobresultsobject(
@@ -205,12 +205,12 @@ def test_datablock_not_found(
 
         assert m.jobs_matcher.call_count == 2
         assert m.jobs_matcher.request_history[0].json() == expected_job_status(
-            SciCatClient.JOBTYPE.RETRIEVE, SciCatClient.JOBSTATUS.IN_PROGRESS
+            SciCatClient.JOBTYPE.RETRIEVE, SciCatClient.JOBSTATUSCODE.IN_PROGRESS
         )
 
         assert m.jobs_matcher.request_history[1].json() == expected_job_status(
             SciCatClient.JOBTYPE.RETRIEVE,
-            SciCatClient.JOBSTATUS.FINISHED_UNSUCCESSFULLY,
+            SciCatClient.JOBSTATUSCODE.FINISHED_UNSUCCESSFULLY,
         )
 
         assert m.datasets_matcher.call_count == 2

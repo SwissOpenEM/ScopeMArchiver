@@ -89,7 +89,7 @@ def test_scicat_api_archiving(
         assert m.datablocks_post_matcher.call_count == num_expected_datablocks
 
         assert m.jobs_matcher.request_history[0].json() == expected_job_status(
-            "archive", SciCatClient.JOBSTATUS.IN_PROGRESS
+            "archive", SciCatClient.JOBSTATUSCODE.IN_PROGRESS
         )
 
         assert m.datasets_matcher.request_history[0].json() == expected_archival_dataset_lifecycle(
@@ -106,7 +106,7 @@ def test_scicat_api_archiving(
         )
 
         assert m.jobs_matcher.request_history[1].json() == expected_job_status(
-            "archive", SciCatClient.JOBSTATUS.FINISHED_SUCCESSFULLY
+            "archive", SciCatClient.JOBSTATUSCODE.FINISHED_SUCCESSFULLY
         )
 
         mock_cleanup_s3_retrieval.assert_not_called()
@@ -167,7 +167,7 @@ def test_create_datablocks_user_error(
         assert m.datablocks_post_matcher.call_count == num_expected_datablocks
 
         assert m.jobs_matcher.request_history[0].json() == expected_job_status(
-            "archive", SciCatClient.JOBSTATUS.IN_PROGRESS
+            "archive", SciCatClient.JOBSTATUSCODE.IN_PROGRESS
         )
 
         assert m.datasets_matcher.request_history[0].json() == expected_archival_dataset_lifecycle(
@@ -175,7 +175,7 @@ def test_create_datablocks_user_error(
         )
 
         assert m.jobs_matcher.request_history[1].json() == expected_job_status(
-            "archive", SciCatClient.JOBSTATUS.FINISHED_UNSUCCESSFULLY
+            "archive", SciCatClient.JOBSTATUSCODE.FINISHED_UNSUCCESSFULLY
         )
 
         assert m.datasets_matcher.request_history[1].json() == expected_archival_dataset_lifecycle(
@@ -241,7 +241,7 @@ def test_move_to_LTS_failure(
         assert m.datablocks_post_matcher.call_count == num_expected_datablocks
 
         assert m.jobs_matcher.request_history[0].json() == expected_job_status(
-            "archive", SciCatClient.JOBSTATUS.IN_PROGRESS
+            "archive", SciCatClient.JOBSTATUSCODE.IN_PROGRESS
         )
 
         assert m.datasets_matcher.request_history[0].json() == expected_archival_dataset_lifecycle(
@@ -252,7 +252,7 @@ def test_move_to_LTS_failure(
             assert m.datablocks_post_matcher.request_history[i].json() == expected_datablocks(dataset_id, i)
 
         assert m.jobs_matcher.request_history[1].json() == expected_job_status(
-            "archive", SciCatClient.JOBSTATUS.FINISHED_UNSUCCESSFULLY
+            "archive", SciCatClient.JOBSTATUSCODE.FINISHED_UNSUCCESSFULLY
         )
 
         assert m.datasets_matcher.request_history[1].json() == expected_archival_dataset_lifecycle(
@@ -322,7 +322,7 @@ def test_LTS_validation_failure(
         assert m.datablocks_post_matcher.call_count == num_expected_datablocks
 
         assert m.jobs_matcher.request_history[0].json() == expected_job_status(
-            "archive", SciCatClient.JOBSTATUS.IN_PROGRESS
+            "archive", SciCatClient.JOBSTATUSCODE.IN_PROGRESS
         )
 
         assert m.datasets_matcher.request_history[0].json() == expected_archival_dataset_lifecycle(
@@ -334,7 +334,7 @@ def test_LTS_validation_failure(
 
         # TODO: check for different message, specific to validation
         assert m.jobs_matcher.request_history[1].json() == expected_job_status(
-            "archive", SciCatClient.JOBSTATUS.FINISHED_UNSUCCESSFULLY
+            "archive", SciCatClient.JOBSTATUSCODE.FINISHED_UNSUCCESSFULLY
         )
 
         assert m.datasets_matcher.request_history[1].json() == expected_archival_dataset_lifecycle(
