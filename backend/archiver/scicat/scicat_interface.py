@@ -20,7 +20,23 @@ from archiver.config.blocks import Blocks
 
 
 class SciCatClient:
-    class JOBSTATUS(StrEnum):
+    class JOBSTATUSMESSAGE(StrEnum):
+        """Human readible job status
+
+        Newly added property in Scicat /api/v4 allowing for more elaborate messages.
+        """
+
+        JOB_IN_PROGRESS = "jobStarted"
+        JOB_UPDATED = "jobUpdated"
+        JOB_FINISHED = "jobFinished"
+
+    class JOBSTATUSCODE(StrEnum):
+        """Job status code in Scicat /api/v4.
+
+        This was previously JobStatusMessage in /api/v3. Values are not restricted but follow the convention of PSI's archiver.
+
+        """
+
         IN_PROGRESS = "inProgress"
         FINISHED_SUCCESSFULLY = "finishedSuccessful"
         FINISHED_UNSUCCESSFULLY = "finishedUnsuccessful"
@@ -42,11 +58,12 @@ class SciCatClient:
         ARCHIVE = "archive"
         RETRIEVE = "retrieve"
 
-    def __init__(self, endpoint: str = "http://scicat.example.com", prefix: str = "/"):
+    def __init__(
+        self, endpoint: str = "http://scicat.example.com", api_prefix: str = "", jobs_api_prefix: str = ""
+    ):
         self._ENDPOINT = endpoint
-        if not prefix.endswith("/"):
-            raise ValueError("Api prefix needs to end with '/'")
-        self._API = prefix
+        self._API_PREFIX = api_prefix
+        self._JOBS_API_PREFIX = jobs_api_prefix
 
         self._session = requests.Session()
         retries = Retry(total=5, backoff_factor=1, status_forcelist=[502, 503, 504])
@@ -66,7 +83,7 @@ class SciCatClient:
         password = Blocks().SCICAT_PASSWORD
 
         resp = self._session.post(
-            url=f"{self._ENDPOINT}{self._API}auth/login",
+            url=f"{self._ENDPOINT}{self._API_PREFIX}/auth/login",
             data={"username": user, "password": password.get_secret_value()},
         )
         resp.raise_for_status()
@@ -74,23 +91,29 @@ class SciCatClient:
 
     @property
     def API(self):
-        return self._API
+        return self._API_PREFIX
+
+    @property
+    def JOBS_API_PREFIX(self):
+        return self._JOBS_API_PREFIX
 
     @log
     def update_job_status(
         self,
         job_id: UUID,
-        type: JOBTYPE,
-        status: JOBSTATUS,
-        jobResultObject: JobResultObject | None,
+        status_code: JOBSTATUSCODE,
+        status_message: JOBSTATUSMESSAGE,
+        job_result_object: JobResultObject | None,
         token: SecretStr,
     ) -> None:
-        job = Job(statusCode="1", statusMessage=str(status), jobResultObject=jobResultObject)
+        job = Job(
+            statusCode=str(status_code), statusMessage=str(status_message), jobResultObject=job_result_object
+        )
 
         headers = self._headers(token)
 
         result = self._session.patch(
-            f"{self._ENDPOINT}{self.API}jobs/{job_id}",
+            f"{self._ENDPOINT}{self.JOBS_API_PREFIX}/jobs/{job_id}",
             data=job.model_dump_json(exclude_none=True),
             headers=headers,
         )
@@ -118,7 +141,7 @@ class SciCatClient:
         headers = self._headers(token)
         safe_dataset_id = self._safe_dataset_id(dataset_id)
         result = self._session.patch(
-            f"{self._ENDPOINT}{self.API}datasets/{safe_dataset_id}",
+            f"{self._ENDPOINT}{self.API}/datasets/{safe_dataset_id}",
             data=dataset.model_dump_json(exclude_none=True),
             headers=headers,
         )
@@ -144,7 +167,7 @@ class SciCatClient:
         headers = self._headers(token)
         safe_dataset_id = self._safe_dataset_id(dataset_id)
         result = self._session.patch(
-            f"{self._ENDPOINT}{self.API}datasets/{safe_dataset_id}",
+            f"{self._ENDPOINT}{self.API}/datasets/{safe_dataset_id}",
             data=dataset.model_dump_json(exclude_none=True),
             headers=headers,
         )
@@ -157,7 +180,7 @@ class SciCatClient:
         safe_dataset_id = self._safe_dataset_id(dataset_id)
         for d in data_blocks:
             result = self._session.post(
-                f"{self._ENDPOINT}{self.API}datasets/{safe_dataset_id}/datablocks",
+                f"{self._ENDPOINT}{self.API}/datasets/{safe_dataset_id}/datablocks",
                 data=d.model_dump_json(exclude_none=True),
                 headers=headers,
             )
@@ -169,7 +192,7 @@ class SciCatClient:
         headers = self._headers(token)
         safe_dataset_id = self._safe_dataset_id(dataset_id)
         result = self._session.get(
-            f"{self._ENDPOINT}{self.API}datasets/{safe_dataset_id}/origdatablocks",
+            f"{self._ENDPOINT}{self.API}/datasets/{safe_dataset_id}/origdatablocks",
             headers=headers,
         )
         # returns none if status_code is 200
@@ -186,7 +209,7 @@ class SciCatClient:
     @log
     def get_job_datasetlist(self, job_id: UUID, token: SecretStr) -> List[str]:
         headers = self._headers(token)
-        result = self._session.get(f"{self._ENDPOINT}{self.API}jobs/{job_id}", headers=headers)
+        result = self._session.get(f"{self._ENDPOINT}{self.JOBS_API_PREFIX}/jobs/{job_id}", headers=headers)
         # returns none if status_code is 200
         result.raise_for_status()
         datasets = result.json()["jobParams"]["datasetList"]
@@ -198,7 +221,7 @@ class SciCatClient:
         headers = self._headers(token)
         safe_dataset_id = self._safe_dataset_id(dataset_id)
         result = self._session.get(
-            f"{self._ENDPOINT}{self.API}datasets/{safe_dataset_id}/datablocks",
+            f"{self._ENDPOINT}{self.API}/datasets/{safe_dataset_id}/datablocks",
             headers=headers,
         )
         # returns none if status_code is 200
