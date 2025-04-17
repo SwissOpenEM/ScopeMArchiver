@@ -19,6 +19,15 @@ from archiver.flows.utils import DatasetError, SystemError, StoragePaths
 
 
 @log
+def get_all_files_relative(folder) -> List[Path]:
+    relative_files = []
+    for i, j, k in os.walk(folder):
+        for f in k:
+            relative_files.append(Path(i).joinpath(f).relative_to(folder))
+    return relative_files
+
+
+@log
 def unpack_tarballs(src_folder: Path, dst_folder: Path):
     if not any(Path(src_folder).iterdir()):
         raise SystemError(f"Empty folder {src_folder} found. No files to unpack.")
@@ -36,7 +45,7 @@ def unpack_tarballs(src_folder: Path, dst_folder: Path):
 
 
 @dataclass
-class TarInfo:
+class ArchiveInfo:
     unpackedSize: int
     packedSize: int
     path: Path
@@ -60,31 +69,33 @@ def partition_files_flat(folder: Path, target_size_bytes: int) -> Generator[List
     part: List[Path] = []
     size = 0
     idx = 0
-    for file in folder.iterdir():
-        if size + file.stat().st_size > target_size_bytes:
-            yield part
-            part = []
-            size = 0
-            idx = idx + 1
-        part.append(file)
-        size = size + file.stat().st_size
+    for dirpath, dirnames, filenames in os.walk(folder):
+        for filename in filenames:
+            filepath = Path(os.path.join(dirpath, filename))
+            if size + os.path.getsize(filepath) > target_size_bytes:
+                yield part
+                part = []
+                size = 0
+                idx = idx + 1
+            part.append(filepath.relative_to(folder))
+            size = size + os.path.getsize(filepath)
 
     yield part
 
 
 @log
-def create_tarfiles_flat(
+def create_tarfiles(
     dataset_id: str,
     src_folder: Path,
     dst_folder: Path,
     target_size: int,
-) -> List[TarInfo]:
-    """Create datablocks, i.e. .tar.gz files, from files in a folder. Nested folders are not recursively. The created tar
-    files will be named according to the dataset they belong to.
+) -> List[ArchiveInfo]:
+    """Create datablocks, i.e. .tar.gz files, from all files in a folder. Folder structures are kept and symlnks not resolved.
+    The created tar files will be named according to the dataset they belong to.
 
     Args:
         dataset_id (str): dataset identifier
-        src_folder (Path): source fodler to find files to create tars from
+        src_folder (Path): source folder to find files to create tars from
         dst_folder (Path): destination folder to write the tar files to
         target_size (int, optional): Target size of the tar file. This is the unpacked size of the files.
 
@@ -93,22 +104,23 @@ def create_tarfiles_flat(
     """
 
     # TODO: corner case: target size < file size
-    tarballs: List[TarInfo] = []
-    tar_name = dataset_id.replace("/", "--")
+    tarballs: List[ArchiveInfo] = []
+    tar_name = dataset_id.replace("/", "-")
 
     if not any(Path(src_folder).iterdir()):
         raise SystemError(f"Empty folder {src_folder} found.")
 
     for files in partition_files_flat(src_folder, target_size):
-        current_tar_info = TarInfo(
+        current_tar_info = ArchiveInfo(
             unpackedSize=0,
             packedSize=0,
             path=Path(dst_folder / Path(f"{tar_name}_{len(tarballs)}.tar.gz")),
         )
         current_tarfile: tarfile.TarFile = tarfile.open(current_tar_info.path, "w")
-        for file in files:
-            current_tar_info.unpackedSize += file.stat().st_size
-            current_tarfile.add(name=file, arcname=file.name, recursive=False)
+        for relative_file_path in files:
+            full_path = src_folder.joinpath(relative_file_path)
+            current_tar_info.unpackedSize += full_path.stat().st_size
+            current_tarfile.add(name=full_path, arcname=relative_file_path)
         current_tarfile.close()
         current_tar_info.packedSize = current_tar_info.path.stat().st_size
         tarballs.append(current_tar_info)
@@ -233,7 +245,7 @@ def create_datablock_entries(
     dataset_id: str,
     folder: Path,
     origDataBlocks: List[OrigDataBlock],
-    tar_infos: List[TarInfo],
+    tar_infos: List[ArchiveInfo],
 ) -> List[DataBlock]:
     """Create datablock entries compliant with schema provided by scicat
 
@@ -505,20 +517,20 @@ def create_datablocks(
     datablocks_scratch_folder = StoragePaths.scratch_archival_datablocks_folder(dataset_id)
     datablocks_scratch_folder.mkdir(parents=True, exist_ok=True)
 
-    tar_infos = create_tarfiles_flat(
+    archive_infos = create_tarfiles(
         dataset_id=dataset_id,
         src_folder=raw_files_scratch_folder,
         dst_folder=datablocks_scratch_folder,
         target_size=Variables().ARCHIVER_TARGET_SIZE_MB * 1024 * 1024,
     )
 
-    getLogger().info(f"Created {len(tar_infos)} datablocks from {len(file_paths)} objects")
+    getLogger().info(f"Created {len(archive_infos)} datablocks from {len(file_paths)} objects")
 
     datablocks = create_datablock_entries(
         dataset_id,
         StoragePaths.scratch_archival_datablocks_folder(dataset_id),
         origDataBlocks,
-        tar_infos,
+        archive_infos,
     )
 
     uploaded_objects = upload_objects_to_s3(
