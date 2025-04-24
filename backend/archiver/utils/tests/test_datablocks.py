@@ -20,14 +20,16 @@ MB = 1024 * 1024
 
 
 def create_raw_files_fixture(storage_paths_fixture, num_raw_files, file_size_in_bytes):
-    folder: Path = StoragePaths.scratch_archival_raw_files_folder(test_dataset_id) / "subfolder"
+    prefix_folder = StoragePaths.scratch_archival_raw_files_folder(test_dataset_id)
+    relative_subfolders = Path("subfolder1") / "subfolder2"
+    folder = prefix_folder / relative_subfolders
     folder.mkdir(parents=True, exist_ok=True)
     for n in range(num_raw_files):
         filename = folder / f"img_{n}.png"
         with open(filename, "wb") as fout:
             print(f"Creating file {filename}")
             fout.write(os.urandom(file_size_in_bytes))
-    return folder.parent
+    return prefix_folder
 
 
 @pytest.fixture()
