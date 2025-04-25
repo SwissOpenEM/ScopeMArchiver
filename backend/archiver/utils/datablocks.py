@@ -393,7 +393,13 @@ def copy_file_to_folder(src_file: Path, dst_folder: Path):
     getLogger().info(f"Start Copy operation. src:{src_file}, dst{dst_folder}")
 
     with subprocess.Popen(
-        ["rsync", "-rcvz", "--stats", "--mkpath", str(src_file), str(dst_folder)],
+        ["rsync", 
+         "-rcvh", # r: recursive, c: checksum, v: verbose, h: human readable format
+         "--stats", # file transfer stats
+         "--no-perms", # don't preserve the file permissions of the source files
+         "--no-owner", #  don't preserve the owner
+         "--no-group", # don't preserve the group ownership
+         "--mkpath", str(src_file), str(dst_folder)],
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         universal_newlines=True,
