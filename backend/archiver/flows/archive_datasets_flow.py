@@ -16,6 +16,7 @@ from .task_utils import (
     generate_task_name_dataset,
     generate_flow_name_job_id,
     generate_subflow_run_name_job_id_dataset_id,
+    generate_sleep_for_task_name
 )
 from archiver.scicat.scicat_interface import SciCatClient
 from archiver.scicat.scicat_tasks import (
@@ -35,7 +36,7 @@ from archiver.utils.model import OrigDataBlock, DataBlock
 import archiver.utils.datablocks as datablocks_operations
 from archiver.config.concurrency_limits import ConcurrencyLimits
 from archiver.utils.s3_storage_interface import get_s3_client
-
+from archiver.utils.log import getLogger
 
 def on_get_origdatablocks_error(dataset_id: str, task: Task, task_run: TaskRun, state: State):
     """Callback for get_origdatablocks tasks. Reports a user error."""
@@ -57,6 +58,14 @@ def create_datablocks(dataset_id: str, origDataBlocks: List[OrigDataBlock]) -> L
 
     s3_client = get_s3_client()
     return datablocks_operations.create_datablocks(s3_client, dataset_id, origDataBlocks)
+
+
+@task(task_run_name=generate_sleep_for_task_name)
+def sleep_for(time_in_seconds: int):
+    """ Sleeps for a given amount of time. Required to wait for the LTS to update its internal state.
+        Needs to be blocking as it should prevent the following task to run.
+    """
+    time.sleep(time_in_seconds)
 
 
 @task(tags=[ConcurrencyLimits().LTS_FREE_TAG])
@@ -119,9 +128,12 @@ def move_datablock_to_lts_flow(dataset_id: str, datablock: DataBlock):
     wait = check_free_space_in_LTS.submit()
 
     checksum = move_data_to_LTS.submit(dataset_id=dataset_id, datablock=datablock, wait_for=[wait])  # type: ignore
+ 
+    getLogger().info(f"Wait {Variables().ARCHIVER_LTS_WAIT_BEFORE_VERIFY_S}s before verifying datablock")
+    sleep = sleep_for.submit(Variables().ARCHIVER_LTS_WAIT_BEFORE_VERIFY_S, wait_for=[checksum])
 
     checksum_verification = verify_checksum.submit(
-        dataset_id=dataset_id, datablock=datablock, checksum=checksum
+        dataset_id=dataset_id, datablock=datablock, checksum=checksum, wait_for=[sleep]
     )
 
     verify_data_in_LTS.submit(
@@ -202,11 +214,24 @@ def archive_single_dataset_flow(dataset_id: str, scicat_token: SecretStr):
     except Exception as e:
         raise e
 
-    try:
-        for datablock in datablocks:
-            move_datablock_to_lts_flow(dataset_id=dataset_id, datablock=datablock)
-    except Exception as e:
-        raise e
+    tasks = []
+
+    for datablock in datablocks:
+        wait = check_free_space_in_LTS.submit()
+
+        checksum = move_data_to_LTS.submit(dataset_id=dataset_id, datablock=datablock, wait_for=[wait])  # type: ignore
+    
+        getLogger().info(f"Wait {Variables().ARCHIVER_LTS_WAIT_BEFORE_VERIFY_S}s before verifying datablock")
+        sleep = sleep_for.submit(Variables().ARCHIVER_LTS_WAIT_BEFORE_VERIFY_S, wait_for=[checksum])
+
+        checksum_verification = verify_checksum.submit(
+            dataset_id=dataset_id, datablock=datablock, checksum=checksum, wait_for=[sleep]
+        )
+
+        w = verify_data_in_LTS.submit(
+            dataset_id=dataset_id, datablock=datablock, wait_for=[checksum_verification]
+        )  # type: ignore
+        tasks.append(w)
 
     update_scicat_archival_dataset_lifecycle.submit(
         dataset_id=dataset_id,
@@ -214,6 +239,7 @@ def archive_single_dataset_flow(dataset_id: str, scicat_token: SecretStr):
         archivable=False,
         retrievable=True,
         token=scicat_token,
+        wait_for=tasks
     ).result()
 
 
