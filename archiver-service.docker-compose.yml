@@ -84,7 +84,7 @@ services:
       - "traefik.http.routers.prefect-api-server.entrypoints=websecure"
       - "traefik.http.routers.prefect-api-server.tls"
       - "traefik.http.middlewares.prefect-api-strip.stripprefix.prefixes=/archiver/prefect"
-      - "traefik.http.routers.prefect-api-server.middlewares=prefect-api-strip,${AUTH_MIDDLEWARE}"
+      - "traefik.http.routers.prefect-api-server.middlewares=prefect-api-strip${AUTH_MIDDLEWARE:+,$AUTH_MIDDLEWARE}"
     networks:
       - scopemarchiver_network
   postgres:
