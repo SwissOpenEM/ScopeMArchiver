@@ -31,6 +31,7 @@ class PrefectVariablesModel(BaseSettings):
     MINIO_LANDINGZONE_BUCKET: str = ""
     MINIO_ENDPOINT: str = ""
     MINIO_EXTERNAL_ENDPOINT: str = ""
+    MINIO_URL_EXPIRATION_DAYS: int = 7
 
     LTS_STORAGE_ROOT: Path = Path("")
     LTS_FREE_SPACE_PERCENTAGE: float = 20
@@ -101,6 +102,10 @@ class Variables:
     @property
     def MINIO_ENDPOINT(self) -> str:
         return self.__get("minio_endpoint")
+
+    @property
+    def MINIO_URL_EXPIRATION_DAYS(self) -> int:
+        return int(self.__get("minio_url_expiration_days") or 7)
 
     @property
     def MINIO_EXTERNAL_ENDPOINT(self) -> str:

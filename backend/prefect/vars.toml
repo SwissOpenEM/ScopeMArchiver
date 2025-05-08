@@ -15,6 +15,7 @@ MINIO_RETRIEVAL_BUCKET = "retrieval"              # S3 bucket where datasets are
 MINIO_LANDINGZONE_BUCKET = "landingzone"          # S3 bucket where datasets are uploaded to  
 MINIO_STAGING_BUCKET = "staging"                  # S3 internally used bucket where datasets are staged before copying to LTS
 MINIO_ENDPOINT = "scopem-openemdata.ethz.ch:9090" # S3 endpoint of storage server
+MINIO_URL_EXPIRATION_DAYS = 7
 
 [scicat]
 SCICAT_ENDPOINT = "https://scopem-openem.ethz.ch/scicat/backend"
