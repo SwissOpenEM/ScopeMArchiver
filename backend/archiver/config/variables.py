@@ -35,7 +35,7 @@ class PrefectVariablesModel(BaseSettings):
     LTS_STORAGE_ROOT: Path = Path("")
     LTS_FREE_SPACE_PERCENTAGE: float = 20
     ARCHIVER_SCRATCH_FOLDER: Path = Path("")
-    ARCHIVER_TARGET_SIZE_MB: int = 20
+    ARCHIVER_TARGET_SIZE_GB: int = 20
     ARCHIVER_LTS_FILE_TIMEOUT_S: int = 60
     ARCHIVER_LTS_WAIT_BEFORE_VERIFY_S: int = 180
 
@@ -111,8 +111,8 @@ class Variables:
         return Path(self.__get("archiver_scratch_folder"))
 
     @property
-    def ARCHIVER_TARGET_SIZE_MB(self) -> int:
-        return int(self.__get("archiver_target_size_mb") or 200)
+    def ARCHIVER_TARGET_SIZE_GB(self) -> int:
+        return int(self.__get("archiver_target_size_gb") or 200)
 
     @property
     def ARCHIVER_LTS_FILE_TIMEOUT_S(self) -> int:

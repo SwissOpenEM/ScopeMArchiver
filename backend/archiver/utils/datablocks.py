@@ -517,11 +517,13 @@ def create_datablocks(
     datablocks_scratch_folder = StoragePaths.scratch_archival_datablocks_folder(dataset_id)
     datablocks_scratch_folder.mkdir(parents=True, exist_ok=True)
 
+    GB_TO_B = 1024*1024*1024
+
     archive_infos = create_tarfiles(
         dataset_id=dataset_id,
         src_folder=raw_files_scratch_folder,
         dst_folder=datablocks_scratch_folder,
-        target_size=Variables().ARCHIVER_TARGET_SIZE_MB * 1024 * 1024,
+        target_size=Variables().ARCHIVER_TARGET_SIZE_GB * GB_TO_B,
     )
 
     getLogger().info(f"Created {len(archive_infos)} datablocks from {len(file_paths)} objects")
