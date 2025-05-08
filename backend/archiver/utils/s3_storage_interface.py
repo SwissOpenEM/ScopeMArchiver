@@ -64,10 +64,11 @@ class S3Storage:
 
     @log
     def get_presigned_url(self, bucket: Bucket, filename: str) -> str:
+        days_to_seconds = 60*60*24
         presigned_url = self._minio.generate_presigned_url(
             "get_object",
             Params={"Bucket": bucket.name, "Key": filename},
-            ExpiresIn=3600,  # URL expiration time in seconds
+            ExpiresIn=Variables().MINIO_URL_EXPIRATION_DAYS*days_to_seconds,  # URL expiration time in seconds
         )
         return presigned_url
 
