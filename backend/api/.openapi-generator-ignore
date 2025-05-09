@@ -21,3 +21,26 @@
 #docs/*.md
 # Then explicitly reverse the ignore rule for a single file:
 #!docs/README.md
+
+impl/*
+tests/*
+
+README.md
+openapi.yaml
+src/openapi_server/main.py
+docker-compose.yaml
+Dockerfile
+requirements.txt
+src/openapi_server/security_api.py
+# The following files need to be generated 
+# src/openapi_server/models/extra_models.py
+# src/openapi_server/models/__init__.py
+# src/openapi_server/apis/__init__.py
+# src/openapi_server/impl/__init__.py
+.gitignore
+pyproject.toml
+setup.cfg
+.flake8
+.openapi-generator/VERSION
+.openapi-generator/FILES
+__main__.py

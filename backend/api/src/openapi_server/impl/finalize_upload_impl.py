@@ -1,5 +1,5 @@
 from fastapi.responses import JSONResponse
-from openapi_server.apis.presigned_urls_api_base import BasePresignedUrlsApi
+from openapi_server.apis.s3upload_api_base import BaseS3uploadApi
 from openapi_server.models.finalize_dataset_upload_body import FinalizeDatasetUploadBody
 from openapi_server.impl.scicat import mark_dataset_as_archivable, start_archiving
 
@@ -10,7 +10,7 @@ from openapi_server.models.finalize_dataset_upload_resp import FinalizeDatasetUp
 _LOGGER = getLogger("uvicorn.finalize_upload")
 
 
-class FinalizeDatasetUploadImpl(BasePresignedUrlsApi):
+class FinalizeDatasetUploadImpl(BaseS3uploadApi):
     async def finalize_dataset_upload(
         self, finalize_dataset_upload_body: FinalizeDatasetUploadBody
     ) -> FinalizeDatasetUploadResp:

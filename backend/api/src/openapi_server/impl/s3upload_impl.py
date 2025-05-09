@@ -9,7 +9,7 @@ from openapi_server.models.abort_upload_resp import AbortUploadResp
 from openapi_server.models.presigned_url_body import PresignedUrlBody
 from openapi_server.models.presigned_url_resp import PresignedUrlResp
 
-from openapi_server.apis.presigned_urls_api_base import BasePresignedUrlsApi
+from openapi_server.apis.s3upload_api_base import BaseS3uploadApi
 from openapi_server.settings import Settings
 
 from .s3 import (
@@ -26,7 +26,7 @@ _LOGGER = getLogger("uvicorn.presignedurls")
 _SETTINGS = Settings()
 
 
-class BasePresignedUrlsApiImpl(BasePresignedUrlsApi):
+class BaseS3UploadApiImpl(BaseS3uploadApi):
     async def complete_upload(  # type: ignore
         self,
         complete_upload_body: CompleteUploadBody,
