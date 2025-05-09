@@ -18,6 +18,8 @@ services:
       - minio_password
       - idp_client_secret
       - idp_password
+      - job_endpoint_username 
+      - job_endpoint_password
     expose:
       - 8000
     labels:
@@ -219,3 +221,7 @@ secrets:
     file: ./.secrets/idpclientsecret.txt
   idp_password:
     file: ./.secrets/idppassword.txt
+  job_endpoint_username:
+    file: ./.secrets/jobsusername.txt
+  job_endpoint_password:
+    file: ./.secrets/jobspassword.txt
