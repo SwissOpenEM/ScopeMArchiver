@@ -27,14 +27,13 @@ try:
 except ImportError:
     from typing_extensions import Self
 
-class CreateDatasetResp(BaseModel):
+class FinalizeDatasetUploadResp(BaseModel):
     """
-    CreateDatasetResp
+    FinalizeDatasetUploadResp
     """ # noqa: E501
-    name: StrictStr = Field(alias="Name")
-    uuid: StrictStr = Field(alias="Uuid")
-    data_set_id: StrictStr = Field(alias="DataSetId")
-    __properties: ClassVar[List[str]] = ["Name", "Uuid", "DataSetId"]
+    dataset_id: StrictStr = Field(alias="DatasetID")
+    message: StrictStr = Field(alias="Message")
+    __properties: ClassVar[List[str]] = ["DatasetID", "Message"]
 
     model_config = {
         "populate_by_name": True,
@@ -54,7 +53,7 @@ class CreateDatasetResp(BaseModel):
 
     @classmethod
     def from_json(cls, json_str: str) -> Self:
-        """Create an instance of CreateDatasetResp from a JSON string"""
+        """Create an instance of FinalizeDatasetUploadResp from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self) -> Dict[str, Any]:
@@ -77,7 +76,7 @@ class CreateDatasetResp(BaseModel):
 
     @classmethod
     def from_dict(cls, obj: Dict) -> Self:
-        """Create an instance of CreateDatasetResp from a dict"""
+        """Create an instance of FinalizeDatasetUploadResp from a dict"""
         if obj is None:
             return None
 
@@ -85,9 +84,8 @@ class CreateDatasetResp(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "Name": obj.get("Name"),
-            "Uuid": obj.get("Uuid"),
-            "DataSetId": obj.get("DataSetId")
+            "DatasetID": obj.get("DatasetID"),
+            "Message": obj.get("Message")
         })
         return _obj
 

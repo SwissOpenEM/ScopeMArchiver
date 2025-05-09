@@ -20,22 +20,23 @@ import json
 
 
 
-from pydantic import BaseModel, ConfigDict, Field, StrictInt, StrictStr
-from typing import Any, ClassVar, Dict, List, Optional
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr
+from typing import Any, ClassVar, Dict, List
 try:
     from typing import Self
 except ImportError:
     from typing_extensions import Self
 
-class CreateDatasetBody(BaseModel):
+class FinalizeDatasetUploadBody(BaseModel):
     """
-    CreateDatasetBody
+    FinalizeDatasetUploadBody
     """ # noqa: E501
-    file_size_in_mb: StrictInt = Field(alias="FileSizeInMB")
-    number_of_files: StrictInt = Field(alias="NumberOfFiles")
-    datablock_size_in_mb: StrictInt = Field(alias="DatablockSizeInMB")
-    data_set_id: Optional[StrictStr] = Field(default=None, alias="DataSetId")
-    __properties: ClassVar[List[str]] = ["FileSizeInMB", "NumberOfFiles", "DatablockSizeInMB", "DataSetId"]
+    dataset_pid: StrictStr = Field(alias="DatasetPID")
+    create_archiving_job: StrictBool = Field(alias="CreateArchivingJob")
+    owner_group: StrictStr = Field(alias="OwnerGroup")
+    owner_user: StrictStr = Field(alias="OwnerUser")
+    contact_email: StrictStr = Field(alias="ContactEmail")
+    __properties: ClassVar[List[str]] = ["DatasetPID", "CreateArchivingJob", "OwnerGroup", "OwnerUser", "ContactEmail"]
 
     model_config = {
         "populate_by_name": True,
@@ -55,7 +56,7 @@ class CreateDatasetBody(BaseModel):
 
     @classmethod
     def from_json(cls, json_str: str) -> Self:
-        """Create an instance of CreateDatasetBody from a JSON string"""
+        """Create an instance of FinalizeDatasetUploadBody from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self) -> Dict[str, Any]:
@@ -78,7 +79,7 @@ class CreateDatasetBody(BaseModel):
 
     @classmethod
     def from_dict(cls, obj: Dict) -> Self:
-        """Create an instance of CreateDatasetBody from a dict"""
+        """Create an instance of FinalizeDatasetUploadBody from a dict"""
         if obj is None:
             return None
 
@@ -86,10 +87,11 @@ class CreateDatasetBody(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "FileSizeInMB": obj.get("FileSizeInMB"),
-            "NumberOfFiles": obj.get("NumberOfFiles"),
-            "DatablockSizeInMB": obj.get("DatablockSizeInMB"),
-            "DataSetId": obj.get("DataSetId")
+            "DatasetPID": obj.get("DatasetPID"),
+            "CreateArchivingJob": obj.get("CreateArchivingJob"),
+            "OwnerGroup": obj.get("OwnerGroup"),
+            "OwnerUser": obj.get("OwnerUser"),
+            "ContactEmail": obj.get("ContactEmail")
         })
         return _obj
 

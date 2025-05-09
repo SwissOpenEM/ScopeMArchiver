@@ -35,43 +35,10 @@ paths:
       summary: Create New Service Token
       tags:
         - service_token
-  /archiver/new_dataset:
-    post:
-      # https://github.com/SwissOpenEM/ScopeMArchiver/issues/151
-      security: []
-      operationId: create_new_dataset
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/CreateDatasetBody"
-        required: true
-      responses:
-        "201":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/CreateDatasetResp"
-          description: Dataset Created
-        "422":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/HTTPValidationError"
-          description: Validation Error
-        "500":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/InternalError"
-          description: Internal Server Error
-      summary: Create New Dataset
-      tags:
-        - archiving
   /archiver/jobs:
     post:
-      # https://github.com/SwissOpenEM/ScopeMArchiver/issues/151
-      security: []
+      security: 
+        - BasicAuth: []
       operationId: create_job
       requestBody:
         content:
@@ -131,7 +98,7 @@ paths:
           description: Internal Server Error
       summary: Get Presigned Urls
       tags:
-        - presignedUrls
+        - s3upload
   /s3/completeUpload:
     post:
       operationId: complete_upload
@@ -162,7 +129,7 @@ paths:
           description: Internal Server Error
       summary: Complete Upload
       tags:
-        - presignedUrls
+        - s3upload
   /s3/abortMultipartUpload:
     post:
       operationId: abort_multipart_upload
@@ -193,9 +160,43 @@ paths:
           description: Internal Server Error
       summary: Abort Multipart Upload
       tags:
-        - presignedUrls
+        - s3upload
+  /s3/finalizeDatasetUpload:
+    post:
+      operationId: FinalizeDatasetUpload
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FinalizeDatasetUploadBody"
+        required: true
+      responses:
+        "201":
+          description: Finalize dataset upload requested
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FinalizeDatasetUploadResp"
+        "422":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HTTPValidationError"
+          description: Validation Error
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InternalError"
+          description: Internal Server Error
+      summary: Finalize Dataset Upload
+      tags:
+        - s3upload
 components:
   securitySchemes:
+    BasicAuth:
+      type: http
+      scheme: basic
     BearerAuth: # RS256 tokens signed by Keycloak
       type: http
       scheme: bearer
@@ -344,47 +345,6 @@ components:
         - Location
         - Key
       title: CompleteUploadResp
-    CreateDatasetBody:
-      example:
-        FileSizeInMB: 40
-        NumberOfFiles: 20
-        DatablockSizeInMB: 400
-      properties:
-        FileSizeInMB:
-          title: FileSizeInMB
-          type: integer
-        NumberOfFiles:
-          title: NumberOfFiles
-          type: integer
-        DatablockSizeInMB:
-          title: DatablockSizeInMB
-          type: integer
-        DataSetId:
-          title: DatasetID
-          type: string
-      required:
-        - FileSizeInMB
-        - NumberOfFiles
-        - DatablockSizeInMB
-      title: CreateDatasetBody
-    CreateDatasetResp:
-      properties:
-        Name:
-          title: Deployment Name
-          type: string
-        Uuid:
-          title: Uuid
-          type: string
-          format: uuid
-        DataSetId:
-          title: DatasetID
-          type: string
-          format: uuid
-      required:
-        - Name
-        - Uuid
-        - DataSetId
-      title: CreateDatasetResp
     CreateJobBody:
       properties:
         Id:
@@ -412,6 +372,52 @@ components:
         - Uuid
         - Name
       title: CreateJobResp
+    FinalizeDatasetUploadBody:
+      example:
+        DatasetPID: c2c6bc13-2c14-43d7-91a9-46cd556b258d
+        CreateArchivingJob: true
+        OwnerGroup: Group
+        OwnerUser: User
+        ContactEmail: user@mail.com
+      properties:
+        DatasetPID:
+          title: DatasetPID
+          type: string
+        CreateArchivingJob:
+          title: CreateArchivingJob
+          type: boolean
+        OwnerGroup:
+          title: OwnerGroup
+          type: string
+        OwnerUser:
+          title: OwnerUser
+          type: string
+        ContactEmail:
+          title: ContactEmail
+          type: string
+          format: email
+      required:
+        - DatasetPID
+        - CreateArchivingJob
+        - OwnerGroup
+        - OwnerUser
+        - ContactEmail
+      title: FinalizeDatasetUploadBody
+    FinalizeDatasetUploadResp:
+      example:
+        DatasetID: DatasetID
+        Message: "Upload finalized"
+      properties:
+        DatasetID:
+          title: DatasetID
+          type: string
+        Message:
+          title: Message
+          type: string
+      required:
+        - DatasetID
+        - Message
+      title: FinalizeDatasetUploadResp
     HTTPValidationError:
       example:
         detail:
