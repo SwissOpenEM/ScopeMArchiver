@@ -1,6 +1,9 @@
 FROM openapitools/openapi-generator-cli:latest AS generator
 ADD ./ /local
-RUN /usr/local/bin/docker-entrypoint.sh generate -i /local/openapi.yaml   -g python-fastapi   -o /local/out --global-property apis,models
+# rebuild the models and apis, everything else is implemented manually
+RUN rm /local/src/openapi_server/apis/*
+RUN rm /local/src/openapi_server/models/*
+RUN cd /local && /usr/local/bin/docker-entrypoint.sh generate -i openapi.yaml   -g python-fastapi   -o /local --global-property apis,models,supportingFiles
 
 FROM python:3.12-slim AS builder
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
