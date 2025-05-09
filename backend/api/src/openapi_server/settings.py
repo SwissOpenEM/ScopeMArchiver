@@ -27,5 +27,8 @@ class Settings(BaseSettings):
 
     SCICAT_API: str = "https://scopem-openem.ethz.ch/scicat/backend/api/v3"
 
+    JOB_ENDPOINT_USERNAME: SecretStr
+    JOB_ENDPOINT_PASSWORD: SecretStr
+
     class Config:
         secrets_dir = os.environ.get("SECRETS_DIR", "/run/secrets")

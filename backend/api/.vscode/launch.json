@@ -19,6 +19,8 @@
         "UVICORN_PORT": "8888",
         "IDP_CLIENT_SECRET":"ASFD",
         "IDP_PASSWORD":"ASFD",
+        "JOB_ENDPOINT_PASSWORD":"pw",
+        "JOB_ENDPOINT_USERNAME":"username"
       },
       "cwd": "${workspaceFolder}/src",
       "module": "openapi_server",

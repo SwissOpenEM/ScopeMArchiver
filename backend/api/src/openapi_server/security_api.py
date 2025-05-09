@@ -1,13 +1,16 @@
 # coding: utf-8
+import secrets
 import jwt
 import requests
 
 from logging import getLogger
 
-from fastapi import Depends, HTTPException, Security  # noqa: F401
+from fastapi import status, HTTPException, Security  # noqa: F401
 from fastapi.security import (  # noqa: F401
     HTTPAuthorizationCredentials,
     HTTPBearer,
+    HTTPBasic,
+    HTTPBasicCredentials,
 )
 
 from openapi_server.models.create_service_token_resp import CreateServiceTokenResp
@@ -15,13 +18,14 @@ from openapi_server.settings import Settings
 
 from starlette.status import HTTP_401_UNAUTHORIZED
 
-security = HTTPBearer()
+bearer_security = HTTPBearer()
 settings = Settings()
+
 _LOGGER = getLogger("uvicorn.security")
 
 
 def get_token_BearerAuth(
-    credentials: HTTPAuthorizationCredentials = Security(security),
+    credentials: HTTPAuthorizationCredentials = Security(bearer_security),
 ):
     if not credentials:
         raise HTTPException(
@@ -159,7 +163,7 @@ def generate_token() -> CreateServiceTokenResp:
 
 
 def get_token_SciCatAuth(
-    credentials: HTTPAuthorizationCredentials = Security(security),
+    credentials: HTTPAuthorizationCredentials = Security(bearer_security),
 ):
     if not credentials:
         raise HTTPException(
@@ -200,3 +204,22 @@ def check_scicat_token(token) -> bool:
         # return False
         raise HTTPException(status_code=401, detail=detail)
     return True
+
+
+basic_security = HTTPBasic()
+
+
+def get_token_BasicAuth(credentials: HTTPBasicCredentials = Security(basic_security)):
+    current_username_bytes = credentials.username.encode("utf8")
+    correct_username_bytes = str.encode(settings.JOB_ENDPOINT_USERNAME.get_secret_value())
+    is_correct_username = secrets.compare_digest(current_username_bytes, correct_username_bytes)
+    current_password_bytes = credentials.password.encode("utf8")
+    correct_password_bytes = str.encode(settings.JOB_ENDPOINT_PASSWORD.get_secret_value())
+    is_correct_password = secrets.compare_digest(current_password_bytes, correct_password_bytes)
+    if not (is_correct_username and is_correct_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Basic"},
+        )
+    return credentials.username
