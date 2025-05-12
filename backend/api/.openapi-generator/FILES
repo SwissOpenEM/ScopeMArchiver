@@ -12,8 +12,6 @@ src/openapi_server/models/abort_upload_resp.py
 src/openapi_server/models/complete_part.py
 src/openapi_server/models/complete_upload_body.py
 src/openapi_server/models/complete_upload_resp.py
-src/openapi_server/models/create_dataset_body.py
-src/openapi_server/models/create_dataset_resp.py
 src/openapi_server/models/create_job_body.py
 src/openapi_server/models/create_job_resp.py
 src/openapi_server/models/create_service_token_resp.py

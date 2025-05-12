@@ -35,43 +35,10 @@ paths:
       summary: Create New Service Token
       tags:
         - service_token
-  /archiver/new_dataset:
-    post:
-      # https://github.com/SwissOpenEM/ScopeMArchiver/issues/151
-      security: []
-      operationId: create_new_dataset
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/CreateDatasetBody"
-        required: true
-      responses:
-        "201":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/CreateDatasetResp"
-          description: Dataset Created
-        "422":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/HTTPValidationError"
-          description: Validation Error
-        "500":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/InternalError"
-          description: Internal Server Error
-      summary: Create New Dataset
-      tags:
-        - archiving
   /archiver/jobs:
     post:
-      # https://github.com/SwissOpenEM/ScopeMArchiver/issues/151
-      security: []
+      security: 
+        - BasicAuth: []
       operationId: create_job
       requestBody:
         content:
@@ -227,6 +194,9 @@ paths:
         - s3upload
 components:
   securitySchemes:
+    BasicAuth:
+      type: http
+      scheme: basic
     BearerAuth: # RS256 tokens signed by Keycloak
       type: http
       scheme: bearer
@@ -375,47 +345,6 @@ components:
         - Location
         - Key
       title: CompleteUploadResp
-    CreateDatasetBody:
-      example:
-        FileSizeInMB: 40
-        NumberOfFiles: 20
-        DatablockSizeInMB: 400
-      properties:
-        FileSizeInMB:
-          title: FileSizeInMB
-          type: integer
-        NumberOfFiles:
-          title: NumberOfFiles
-          type: integer
-        DatablockSizeInMB:
-          title: DatablockSizeInMB
-          type: integer
-        DataSetId:
-          title: DatasetID
-          type: string
-      required:
-        - FileSizeInMB
-        - NumberOfFiles
-        - DatablockSizeInMB
-      title: CreateDatasetBody
-    CreateDatasetResp:
-      properties:
-        Name:
-          title: Deployment Name
-          type: string
-        Uuid:
-          title: Uuid
-          type: string
-          format: uuid
-        DataSetId:
-          title: DatasetID
-          type: string
-          format: uuid
-      required:
-        - Name
-        - Uuid
-        - DataSetId
-      title: CreateDatasetResp
     CreateJobBody:
       properties:
         Id:

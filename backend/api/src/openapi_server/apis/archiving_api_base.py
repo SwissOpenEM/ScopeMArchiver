@@ -2,13 +2,11 @@
 
 from typing import ClassVar, Dict, List, Tuple  # noqa: F401
 
-from openapi_server.models.create_dataset_body import CreateDatasetBody
-from openapi_server.models.create_dataset_resp import CreateDatasetResp
 from openapi_server.models.create_job_body import CreateJobBody
 from openapi_server.models.create_job_resp import CreateJobResp
 from openapi_server.models.http_validation_error import HTTPValidationError
 from openapi_server.models.internal_error import InternalError
-
+from openapi_server.security_api import get_token_BasicAuth
 
 class BaseArchivingApi:
     subclasses: ClassVar[Tuple] = ()
@@ -20,11 +18,4 @@ class BaseArchivingApi:
         self,
         create_job_body: CreateJobBody,
     ) -> CreateJobResp:
-        ...
-
-
-    async def create_new_dataset(
-        self,
-        create_dataset_body: CreateDatasetBody,
-    ) -> CreateDatasetResp:
         ...

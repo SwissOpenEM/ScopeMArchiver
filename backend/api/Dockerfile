@@ -1,4 +1,4 @@
-FROM openapitools/openapi-generator-cli:latest AS generator
+FROM openapitools/openapi-generator-cli:v7.13.0 AS generator
 ADD ./ /local
 # rebuild the models and apis, everything else is implemented manually
 RUN rm /local/src/openapi_server/apis/*
