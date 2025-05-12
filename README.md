@@ -1,5 +1,7 @@
 # ScopeMArchiver
 
+[![release](https://github.com/SwissOpenEM/ScopeMArchiver/actions/workflows/release.yml/badge.svg)](https://github.com/SwissOpenEM/ScopeMArchiver/actions/workflows/release.yml)
+
 An archiver service that allows uploading dataset and registering it with [SciCat](https://scicatproject.github.io). It is built on
 [Prefect.io](prefect.io) to orchestrate the asynchronous jobs (called flows) to archive and retrieve datasets to/from the ETH LTS.
 
