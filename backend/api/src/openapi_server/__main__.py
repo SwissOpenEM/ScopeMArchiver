@@ -12,7 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
 from openapi_server.apis.archiving_api import router as ArchivingApiRouter
-from openapi_server.apis.presigned_urls_api import router as PresignedUrlsApiRouter
+from openapi_server.apis.s3upload_api import router as S3UploadApiRouter
 from openapi_server.apis.service_token_api import router as ServiceTokenRouter
 from openapi_server.security_api import generate_token
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -60,7 +60,7 @@ if __name__ == "__main__":
     app.add_middleware(Enforce201Middleware)
 
     app.include_router(ArchivingApiRouter)
-    app.include_router(PresignedUrlsApiRouter)
+    app.include_router(S3UploadApiRouter)
     app.include_router(ServiceTokenRouter)
 
     log_config = uvicorn.config.LOGGING_CONFIG
