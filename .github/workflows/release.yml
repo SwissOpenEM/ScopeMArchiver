@@ -1,0 +1,17 @@
+name: release
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+  pull-requests: read
+  packages: write
+
+jobs:
+  release:
+    uses: SwissOpenEM/ScopeMArchiver/.github/workflows/build-docker-images.yml@main
+    secrets: inherit
