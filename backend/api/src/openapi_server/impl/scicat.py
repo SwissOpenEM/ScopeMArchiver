@@ -25,7 +25,10 @@ def get_scicat_token(
 ) -> SecretStr:
     resp = requests.post(
         url=f"{scicat_endpoint}{sciat_api_prefix}{SCICAT_LOGIN_PATH}",
-        json={"username": f"{user.get_secret_value()}", "password": f"{password.get_secret_value()}"},
+        json={
+            "username": f"{user.get_secret_value()}",
+            "password": f"{password.get_secret_value()}",
+        },
     )
 
     resp.raise_for_status()
@@ -59,7 +62,14 @@ async def mark_dataset_as_archivable(dataset_id: str):
     api_prefix = await get_scicat_api_prefix()
 
     token = get_scicat_token(endpoint, api_prefix, user, password)
-    data = json.dumps({"datasetlifecycle": {"archiveStatusMessage": "datasetCreated", "archivable": True}})
+    data = json.dumps(
+        {
+            "datasetlifecycle": {
+                "archiveStatusMessage": "datasetCreated",
+                "archivable": True,
+            }
+        }
+    )
 
     headers = build_headers(token)
     pid = safe_dataset_id(dataset_id)
@@ -79,23 +89,21 @@ async def start_archiving(owner_user: str, contact_email, owner_group: str, data
     api_prefix = await get_scicat_api_prefix()
 
     token = get_scicat_token(endpoint, api_prefix, user, password)
-    data = json.dumps(
-        {
-            "type": "archive",
-            "jobParams": {
-                "username": f"{owner_user}",
-                "datasetList": [{"pid": f"{dataset_pid}", "files": []}],
-            },
-            "ownerUser": f"{owner_user}",
-            "ownerGroup": f"{owner_group}",
-            "contactEmail": f"{contact_email}",
-        }
-    )
+    data = {
+        "type": "archive",
+        "jobParams": {
+            "username": f"{owner_user}",
+            "datasetList": [{"pid": f"{dataset_pid}", "files": []}],
+        },
+        "ownerUser": f"{owner_user}",
+        "ownerGroup": f"{owner_group}",
+        "contactEmail": f"{contact_email}",
+    }
 
     headers = build_headers(token)
     response = requests.post(
         url=f"{endpoint}/api/v4{SCICAT_JOB_PATH}",
-        data=data,
+        data=json.dumps(data),
         headers=headers,
     )
 
