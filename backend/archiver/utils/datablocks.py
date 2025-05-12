@@ -559,17 +559,8 @@ def create_datablocks(
 
 @log
 def cleanup_lts_folder(dataset_id: str) -> None:
-    # TODO: is deletion possible?
     lts_folder = StoragePaths.lts_datablocks_folder(dataset_id)
-
-    import random
-    import string
-
-    suffix = "".join(random.choice(string.ascii_uppercase) for _ in range(6))
-
-    lts_folder_new = lts_folder.rename(str(lts_folder) + "_failed_" + suffix)
-    getLogger().warning(f"Move LTS folder from '{lts_folder}' to '{lts_folder_new}'")
-
+    shutil.rmtree(lts_folder, ignore_errors=True)
 
 @log
 def cleanup_s3_staging(client: S3Storage, dataset_id: str) -> None:
