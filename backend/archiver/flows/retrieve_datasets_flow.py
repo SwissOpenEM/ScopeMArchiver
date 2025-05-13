@@ -1,16 +1,20 @@
 from typing import List
 from functools import partial
 from uuid import UUID
+import uuid
 from pydantic import SecretStr
 
-from prefect import flow, task, State, Task, Flow
+from prefect import flow, get_client, task, State, Task, Flow
 from prefect.futures import wait
 from prefect.client.schemas.objects import TaskRun, FlowRun
-
+from prefect.client.schemas.sorting import FlowRunSort
+from prefect.client.schemas.filters import FlowRunFilter, DeploymentFilter
+from prefect.flow_runs import wait_for_flow_run,
+from prefect.context import get_run_context
 from archiver.utils.s3_storage_interface import get_s3_client
 
 
-from .task_utils import generate_flow_name_job_id, generate_task_name_dataset
+from .task_utils import generate_flow_name_dataset, generate_flow_name_job_id, generate_task_name_dataset
 from .utils import report_retrieval_error
 from archiver.scicat.scicat_interface import SciCatClient
 from archiver.utils.model import DataBlock, JobResultObject
@@ -79,6 +83,7 @@ def cleanup_dataset(flow: Flow, flow_run: FlowRun, state: State):
 
 @flow(
     name="retrieve_dataset",
+    flow_run_name=generate_flow_name_dataset,
     log_prints=True,
     on_failure=[on_dataset_flow_failure],
     on_completion=[cleanup_dataset],
@@ -93,6 +98,8 @@ def retrieve_single_dataset_flow(dataset_id: str, job_id: UUID, scicat_token: Se
     datablocks = get_datablocks.with_options(
         on_failure=[partial(on_get_datablocks_error, dataset_id)]
     ).submit(dataset_id=dataset_id, token=scicat_token, wait_for=[dataset_update])  # type: ignore
+
+    # TODO: what if empyt? (scicat returns empty?)
 
     # TODO: check if on retrieval bucket
     # https://github.com/SwissOpenEM/ScopeMArchiver/issues/170
@@ -128,6 +135,30 @@ def on_job_flow_failure(flow: Flow, flow_run: FlowRun, state: State):
     )
 
 
+def find_oldest_dataset_flow(dataset_id: str, prefix: str = "retrieve_dataset", state: str = "Running") -> List[FlowRun]:
+    this_run_id = get_run_context().flow_run.id
+    with get_client(sync_client=True) as client:
+        flow_runs = client.read_flow_runs(
+            flow_run_filter=FlowRunFilter(
+                id={'not_any_': [this_run_id]},
+                name={'like_': f"{prefix}-dataset_id-{dataset_id}"},
+                state=dict(name=dict(any_=[state, "Scheduled"])),
+            ),
+            sort=FlowRunSort.START_TIME_DESC
+        )
+        return flow_runs[0].id if len(flow_runs) > 0 else None
+    return None
+
+
+@flow(
+    name="wait_for_retrieval_flow",
+    log_prints=True,
+    on_failure=[on_job_flow_failure],
+)
+def wait_for_retrieval_flow(flow_run_id: uuid.UUID):
+    wait_for_flow_run(flow_run_id)
+
+
 @flow(
     name="retrieve_datasetlist",
     log_prints=True,
@@ -155,7 +186,11 @@ def retrieve_datasets_flow(job_id: UUID, dataset_ids: List[str] | None = None):
 
     try:
         for id in dataset_ids:
-            retrieve_single_dataset_flow(dataset_id=id, job_id=job_id, scicat_token=access_token)
+            flow_runs = find_dataset_flow(dataset_id=id)
+            if len(flow_runs) == 0:
+                retrieve_single_dataset_flow(dataset_id=id, job_id=job_id, scicat_token=access_token)
+            else:
+                wait_for_retrieval_flow(flow_runs[0].id)
     except Exception as e:
         raise e
 
