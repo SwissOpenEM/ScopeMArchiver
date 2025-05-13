@@ -95,7 +95,7 @@ requires-dist = [
     { name = "fastapi", extras = ["standard"], specifier = ">=0.115.7" },
     { name = "gunicorn", specifier = ">=23.0.0" },
     { name = "importlib-metadata", specifier = ">=8.5.0" },
-    { name = "prefect", specifier = "==3.1.4" },
+    { name = "prefect", specifier = "==3.1.11" },
     { name = "pyjwt", specifier = ">=2.10.1" },
     { name = "requests", specifier = ">=2.32.3" },
     { name = "uvicorn", specifier = ">=0.34.0" },
@@ -1160,7 +1160,7 @@ wheels = [
 
 [[package]]
 name = "prefect"
-version = "3.1.4"
+version = "3.1.11"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiosqlite" },
@@ -1201,6 +1201,7 @@ dependencies = [
     { name = "pydantic-settings" },
     { name = "python-dateutil" },
     { name = "python-slugify" },
+    { name = "python-socks", extra = ["asyncio"] },
     { name = "pytz" },
     { name = "pyyaml" },
     { name = "readchar" },
@@ -1216,9 +1217,9 @@ dependencies = [
     { name = "uvicorn" },
     { name = "websockets" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/1b/df/3166da478890ed99fbc82f38d0a97bd536e483d3fc232b3fcde4d7ddfba6/prefect-3.1.4.tar.gz", hash = "sha256:433cc84e539ebebac8d861eefdef42b21773c8347e72b6e261322d232b0e8c3a", size = 5869215 }
+sdist = { url = "https://files.pythonhosted.org/packages/f2/27/7616632e968ce25a80405b361d5f9084e111be91e79599cf6dfb483e0e0c/prefect-3.1.11.tar.gz", hash = "sha256:21ae99a780a74a4e977429208816d7dfe4874e8c323917667e4744cb8c3d36f3", size = 5911142 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/51/69/ac7fea3c6795df0e634e575632ae4dd09998a08bcd9ed59fb0af68d38562/prefect-3.1.4-py3-none-any.whl", hash = "sha256:d95ff8655883d8dce681ee59d185b307c8e7aea1dc111e1edcb2bb04cf24b4ff", size = 6141918 },
+    { url = "https://files.pythonhosted.org/packages/aa/4a/040e0c96b35934a2cb7a8f79cf73e523aca439c8707bb6f25f339565b5f2/prefect-3.1.11-py3-none-any.whl", hash = "sha256:ab909b73856d9875eb1034d8125281b5267483645089d85dee9f7c57c07482ef", size = 6197382 },
 ]
 
 [[package]]
@@ -1412,6 +1413,20 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/87/c7/5e1547c44e31da50a460df93af11a535ace568ef89d7a811069ead340c4a/python-slugify-8.0.4.tar.gz", hash = "sha256:59202371d1d05b54a9e7720c5e038f928f45daaffe41dd10822f3907b937c856", size = 10921 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/a4/62/02da182e544a51a5c3ccf4b03ab79df279f9c60c5e82d5e8bec7ca26ac11/python_slugify-8.0.4-py2.py3-none-any.whl", hash = "sha256:276540b79961052b66b7d116620b36518847f52d5fd9e3a70164fc8c50faa6b8", size = 10051 },
+]
+
+[[package]]
+name = "python-socks"
+version = "2.7.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/db/56/a21c65c9968fbdb442b177a4f6f42d150c4bc66c179606193ee86e5b5dc5/python_socks-2.7.1.tar.gz", hash = "sha256:f1a0bb603830fe81e332442eada96757b8f8dec02bd22d1d6f5c99a79704c550", size = 230371 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/59/a5/8bc495f162f6ff6a805a0bd558312db2cc8d6aa6279324ba8180af64f777/python_socks-2.7.1-py3-none-any.whl", hash = "sha256:2603c6454eeaeb82b464ad705be188989e8cf1a4a16f0af3c921d6dd71a49cec", size = 54980 },
+]
+
+[package.optional-dependencies]
+asyncio = [
+    { name = "async-timeout", marker = "python_full_version < '3.11'" },
 ]
 
 [[package]]
