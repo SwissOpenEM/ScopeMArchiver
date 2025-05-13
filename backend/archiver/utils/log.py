@@ -3,15 +3,27 @@ import logging
 import functools
 import os
 
-import prefect.logging
+from prefect.context import MissingContextError
 
 
 def getLogger():
+    """
+    Returns an logger depending on the environment:
+    - Testing: returns a logger from the logging package
+    - Prefect Flow: returns the logger from the prefect flow run context
+    - Prefect error callback: there might not be a logger available, falls back to
+        a logger from logging package
+    """
     if "PYTEST_CURRENT_TEST" in os.environ:
         return logging.getLogger(name="TestLogger")
     else:
-        prefect_logger = prefect.get_run_logger()
-        return prefect_logger
+        try:
+            prefect_logger = prefect.get_run_logger()
+            return prefect_logger
+        except MissingContextError:
+            return logging.getLogger(name="FallbackLogger")
+        except Exception:
+            return logging.getLogger(name="FallbackLogger")
 
 
 __attributes__ = ["getLogger"]
