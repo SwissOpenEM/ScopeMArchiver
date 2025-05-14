@@ -1,6 +1,8 @@
 src/openapi_server/apis/__init__.py
 src/openapi_server/apis/archiving_api.py
 src/openapi_server/apis/archiving_api_base.py
+src/openapi_server/apis/health_api.py
+src/openapi_server/apis/health_api_base.py
 src/openapi_server/apis/s3upload_api.py
 src/openapi_server/apis/s3upload_api_base.py
 src/openapi_server/apis/service_token_api.py
@@ -18,6 +20,10 @@ src/openapi_server/models/create_service_token_resp.py
 src/openapi_server/models/extra_models.py
 src/openapi_server/models/finalize_dataset_upload_body.py
 src/openapi_server/models/finalize_dataset_upload_resp.py
+src/openapi_server/models/health_livez_get200_response.py
+src/openapi_server/models/health_livez_get503_response.py
+src/openapi_server/models/health_readyz_get200_response.py
+src/openapi_server/models/health_readyz_get503_response.py
 src/openapi_server/models/http_validation_error.py
 src/openapi_server/models/internal_error.py
 src/openapi_server/models/presigned_url_body.py

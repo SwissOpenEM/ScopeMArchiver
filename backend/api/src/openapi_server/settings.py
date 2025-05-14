@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     UVICORN_ROOT_PATH: str = "/"
     UVICORN_RELOAD: bool = False
     UVICORN_LOG_LEVEL: str = "info"
-    MINIO_ENDPOINT: str = "scopem-openem.ethz.ch:9000"
+    MINIO_ENDPOINT: str = "scopem-openemdata.ethz.ch:9000"
     MINIO_REGION: str = "eu-west-1"
     MINIO_LANDINGZONE_BUCKET: str = "landingzone"
     MINIO_USER: SecretStr
@@ -25,6 +25,8 @@ class Settings(BaseSettings):
     IDP_CLIENT_ID: str = "archiver-service-api"
     IDP_CLIENT_SECRET: SecretStr
     IDP_ALGORITHM: str = "RS256"
+
+    PREFECT_API_URL: str = "http://prefect.io"
 
     SCICAT_API: str = "https://scopem-openem.ethz.ch/scicat/backend/api/v3"
 

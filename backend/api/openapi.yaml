@@ -8,6 +8,76 @@ servers:
 security:
   - BearerAuth: []
 paths:
+  /health/livez:
+    get:
+      security: []
+      summary: Health Check
+      description: Returns the health status of the service
+      tags:
+        - health
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "healthy"
+                  timestamp:
+                    type: string
+                    format: date-time
+                    example: "2023-10-01T12:00:00Z"
+        '503':
+          description: Service is unavailable
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "unhealthy"
+                  error:
+                    type: string
+                    example: "Service is down"
+  /health/readyz:
+    get:
+      security: []
+      summary: Readiness Check
+      description: Returns the Readiness status of the service
+      tags:
+        - health
+      responses:
+        '200':
+          description: Service is ready
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "Ready"
+                  timestamp:
+                    type: string
+                    format: date-time
+                    example: "2023-10-01T12:00:00Z"
+        '503':
+          description: Service is not ready 
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "not ready"
+                  error:
+                    type: string
+                    example: "Service is not ready"
   /token:
     post:
       security:

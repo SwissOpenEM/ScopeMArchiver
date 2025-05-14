@@ -11,7 +11,7 @@ def env_fixture():
     envs = {
         "PREFECT_API_URL": "https://prefect.io/api",
         "PREFECT_LOGGING_LEVEL": "debug",
-        "MINIO_ENDPOINT": "http://min.io",
+        "MINIO_ENDPOINT": "min.io",
         "MINIO_USER": "user",
         "MINIO_PASSWORD": "pw",
         "IDP_CLIENT_SECRET": "secret",
@@ -27,6 +27,7 @@ def env_fixture():
 
     for k, v in envs.items():
         os.environ.pop(k)
+
 
 @pytest.fixture
 def app() -> FastAPI:
