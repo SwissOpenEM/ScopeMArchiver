@@ -77,9 +77,12 @@ class S3Storage:
         Size: int
 
     @log
-    def stat_object(self, bucket: Bucket, filename: str) -> StatInfo:
-        object = self._minio.head_object(Bucket=bucket.name, Key=filename)
-        return S3Storage.StatInfo(Size=object["ContentLength"])
+    def stat_object(self, bucket: Bucket, filename: str) -> StatInfo|None:
+        try:
+            object = self._minio.head_object(Bucket=bucket.name, Key=filename)
+            return S3Storage.StatInfo(Size=object["ContentLength"])
+        except:
+            return None
 
     @log
     def fget_object(self, bucket: Bucket, folder: str, object_name: str, target_path: Path):

@@ -42,6 +42,10 @@ async def mock_wait_for_file_accessible(file, timeout_s=360) -> bool:
     return True
 
 
+def mock_find_missing_datablocks_in_s3(*args, **kwargs):
+    return kwargs["datablocks"]
+
+
 @pytest.mark.parametrize(
     "job_id,dataset_id",
     [
@@ -54,6 +58,7 @@ async def mock_wait_for_file_accessible(file, timeout_s=360) -> bool:
     mock_get_datablock_path_in_LTS,
 )
 @patch("archiver.utils.datablocks.wait_for_file_accessible", mock_wait_for_file_accessible)
+@patch("archiver.utils.datablocks.find_missing_datablocks_in_s3", mock_find_missing_datablocks_in_s3)
 @patch("archiver.utils.datablocks.copy_file_to_folder")
 @patch("archiver.scicat.scicat_tasks.create_presigned_url", mock_create_presigned_url)
 @patch("archiver.utils.datablocks.verify_datablock")
@@ -95,10 +100,7 @@ def test_scicat_api_retrieval(
         ) as m,
         prefect_test_harness(),
     ):
-        try:
-            retrieve_datasets_flow(job_id=job_id, dataset_ids=[dataset_id])
-        except Exception:
-            pass
+        retrieve_datasets_flow(job_id=job_id)
 
         assert m.jobs_matcher.call_count == 2
         assert m.jobs_matcher.request_history[0].json() == expected_job_status(
@@ -156,6 +158,7 @@ def test_scicat_api_retrieval(
     ],
 )
 @patch("archiver.scicat.scicat_tasks.scicat_client", mock_scicat_client)
+@patch("archiver.utils.datablocks.find_missing_datablocks_in_s3", mock_find_missing_datablocks_in_s3)
 @patch("archiver.utils.datablocks.get_datablock_path_in_LTS", mock_raise_system_error)
 @patch("archiver.utils.datablocks.wait_for_file_accessible", mock_wait_for_file_accessible)
 @patch("archiver.utils.datablocks.copy_file_to_folder")
@@ -199,8 +202,8 @@ def test_datablock_not_found(
         prefect_test_harness(),
     ):
         try:
-            retrieve_datasets_flow(job_id=job_id, dataset_ids=[dataset_id])
-        except Exception:
+            retrieve_datasets_flow(job_id=job_id)
+        except SystemError:
             pass
 
         assert m.jobs_matcher.call_count == 2
