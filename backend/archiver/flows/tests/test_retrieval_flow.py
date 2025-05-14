@@ -3,6 +3,7 @@ import pytest
 from uuid import UUID, uuid4
 
 from prefect.testing.utilities import prefect_test_harness
+from prefect.exceptions import UnfinishedRun
 
 from archiver.flows.retrieve_datasets_flow import retrieve_datasets_flow
 from archiver.flows.tests.scicat_unittest_mock import ScicatMock, mock_scicat_client
@@ -205,6 +206,11 @@ def test_datablock_not_found(
             retrieve_datasets_flow(job_id=job_id)
         except SystemError:
             pass
+        except UnfinishedRun:
+            # https://github.com/PrefectHQ/prefect/issues/12028
+            pass
+        except Exception as e:
+            raise e
 
         assert m.jobs_matcher.call_count == 2
         assert m.jobs_matcher.request_history[0].json() == expected_job_status(

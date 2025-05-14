@@ -5,11 +5,10 @@ import uuid
 from pydantic import SecretStr
 
 from prefect import flow, get_client, task, State, Task, Flow
-from prefect.futures import wait
 from prefect.client.schemas.objects import TaskRun, FlowRun
 from prefect.client.schemas.sorting import FlowRunSort
-from prefect.client.schemas.filters import FlowRunFilter, DeploymentFilter
-from prefect.flow_runs import wait_for_flow_run,
+from prefect.client.schemas.filters import FlowRunFilter
+from prefect.flow_runs import wait_for_flow_run
 from prefect.context import get_run_context
 from archiver.utils.s3_storage_interface import get_s3_client
 from archiver.utils.s3_storage_interface import Bucket
@@ -111,22 +110,25 @@ def retrieve_single_dataset_flow(dataset_id: str, job_id: UUID, scicat_token: Se
     # TODO: check if enough space available in bucket
     # https://github.com/SwissOpenEM/ScopeMArchiver/issues/169
 
+    # The error does not propagate correctly through the dependent tasks
+    # https://github.com/PrefectHQ/prefect/issues/12028
     retrieval_tasks = []
-    for d in datablocks_not_in_retrieval_bucket:
-        copy_to_scratch = copy_datablock_from_LTS_to_scratch.submit(dataset_id=dataset_id, datablock=d)
+    for datablock in datablocks_not_in_retrieval_bucket.result():
+        copy_to_scratch = copy_datablock_from_LTS_to_scratch.submit(dataset_id=dataset_id, datablock=datablock)
 
         verify_datablock = verify_data_on_scratch.submit(
-            dataset_id=dataset_id, datablock=d, wait_for=[copy_to_scratch]
+            dataset_id=dataset_id, datablock=datablock, wait_for=[copy_to_scratch]
         )
         upload_data = upload_data_to_s3.submit(
-            dataset_id=dataset_id, datablock=d, wait_for=[verify_datablock]
+            dataset_id=dataset_id, datablock=datablock, wait_for=[verify_datablock]
         )
         retrieval_tasks.append(upload_data)
 
-    done, not_done = wait(retrieval_tasks)
-    r = [d.result() for d in done]
     update_scicat_retrieval_dataset_lifecycle.submit(
-        dataset_id=dataset_id, status=SciCatClient.RETRIEVESTATUSMESSAGE.DATASET_RETRIEVED, token=scicat_token
+        dataset_id=dataset_id,
+        status=SciCatClient.RETRIEVESTATUSMESSAGE.DATASET_RETRIEVED,
+        token=scicat_token,
+        wait_for=retrieval_tasks
     ).result()  # type: ignore
 
 
@@ -159,8 +161,10 @@ def find_oldest_dataset_flow(dataset_id: str, prefix: str = "retrieve_dataset", 
     log_prints=True,
     on_failure=[on_job_flow_failure],
 )
-def wait_for_retrieval_flow(flow_run_id: uuid.UUID):
-    wait_for_flow_run(flow_run_id)
+async def wait_for_retrieval_flow(flow_run_id: uuid.UUID):
+    flow_run: FlowRun = await wait_for_flow_run(flow_run_id, log_states=True)
+    flow_run.state.result()
+
 
 
 @flow(
@@ -169,7 +173,7 @@ def wait_for_retrieval_flow(flow_run_id: uuid.UUID):
     flow_run_name=generate_flow_name_job_id,
     on_failure=[on_job_flow_failure],
 )
-def retrieve_datasets_flow(job_id: UUID):
+async def retrieve_datasets_flow(job_id: UUID):
 
     access_token_future = get_scicat_access_token.submit()
     access_token = access_token_future.result()
@@ -191,7 +195,7 @@ def retrieve_datasets_flow(job_id: UUID):
             if existing_run_id is None:
                 retrieve_single_dataset_flow(dataset_id=id, job_id=job_id, scicat_token=access_token)
             else:
-                wait_for_retrieval_flow(existing_run_id)
+                await wait_for_retrieval_flow(existing_run_id)
     except Exception as e:
         raise e
 
