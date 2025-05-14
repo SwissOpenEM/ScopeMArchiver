@@ -5,7 +5,7 @@ import urllib.parse
 
 from archiver.scicat.scicat_interface import SciCatClient
 from archiver.utils.model import OrigDataBlock, DataBlock
-from utils.model import DatasetListEntry, Job
+from archiver.utils.model import DatasetListEntry, Job
 
 
 def mock_scicat_get_token() -> str:
