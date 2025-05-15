@@ -28,9 +28,9 @@ class BaseArchivingApiImpl(BaseArchivingApi):
         try:
             match create_job_body.type:
                 case "archive":
-                    flowRun = await run_archiving_deployment(job_id=job_id, dataset_list=[])
+                    flowRun = await run_archiving_deployment(job_id=job_id)
                 case "retrieve":
-                    flowRun = await run_retrieval_deployment(job_id=job_id, dataset_list=[])
+                    flowRun = await run_retrieval_deployment(job_id=job_id)
                 case _:
                     return JSONResponse(status_code=500, content={"message": f"unknown job type {type}"})
 

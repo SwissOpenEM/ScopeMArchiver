@@ -303,15 +303,11 @@ def archive_datasets_flow(job_id: UUID, dataset_ids: List[str] | None = None):
     )
     job_update.result()
 
-    if len(dataset_ids) == 0:
-        dataset_ids_future = get_job_datasetlist.submit(job_id=job_id, token=access_token)
-        dataset_ids = dataset_ids_future.result()
+    dataset_ids_future = get_job_datasetlist.submit(job_id=job_id, token=access_token)
+    dataset_ids = dataset_ids_future.result()
 
-    try:
-        for id in dataset_ids:
-            archive_single_dataset_flow(dataset_id=id, scicat_token=access_token)
-    except Exception as e:
-        raise e
+    for id in dataset_ids:
+        archive_single_dataset_flow(dataset_id=id, scicat_token=access_token)
 
     update_scicat_archival_job_status.submit(
         job_id=job_id,

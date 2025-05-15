@@ -189,15 +189,12 @@ async def retrieve_datasets_flow(job_id: UUID):
     dataset_ids_future = get_job_datasetlist.submit(job_id=job_id, token=access_token, wait_for=[job_update])
     dataset_ids = dataset_ids_future.result()
 
-    try:
-        for id in dataset_ids:
+    for id in dataset_ids:
             existing_run_id = find_oldest_dataset_flow(dataset_id=id)
             if existing_run_id is None:
                 retrieve_single_dataset_flow(dataset_id=id, job_id=job_id, scicat_token=access_token)
             else:
                 await wait_for_retrieval_flow(existing_run_id)
-    except Exception as e:
-        raise e
 
     job_results_future = create_job_result_object_task.submit(dataset_ids=dataset_ids)
     job_results = job_results_future.result()
