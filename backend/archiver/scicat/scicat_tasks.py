@@ -121,7 +121,10 @@ def register_datablocks(datablocks: List[DataBlock], dataset_id: str, token: Sec
 
 @task
 def get_datablocks(dataset_id: str, token: SecretStr) -> List[DataBlock]:
-    return scicat_client().get_datablocks(dataset_id=dataset_id, token=token)
+    datablocks = scicat_client().get_datablocks(dataset_id=dataset_id, token=token)
+    if len(datablocks) == 0:
+        raise SystemError(f"Found no datablocks for {dataset_id}")
+    return datablocks
 
 
 def report_dataset_system_error(dataset_id: str, token: SecretStr, message: str | None = None):
