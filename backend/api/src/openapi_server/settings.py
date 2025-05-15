@@ -1,4 +1,5 @@
 import os
+from typing import Optional
 from pydantic_settings import BaseSettings
 from pydantic import SecretStr
 
@@ -32,3 +33,17 @@ class Settings(BaseSettings):
 
     class Config:
         secrets_dir = os.environ.get("SECRETS_DIR", "/run/secrets")
+
+
+_settings: Optional[Settings] = None
+
+
+def GetSettings() -> Settings:
+    global _settings
+    _settings = None
+    if _settings is None:
+        _settings = Settings()
+    return _settings
+
+
+__all__ = ["GetSettings"]

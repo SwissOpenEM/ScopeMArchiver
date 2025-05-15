@@ -17,7 +17,7 @@ from openapi_server.apis.service_token_api import router as ServiceTokenRouter
 from openapi_server.security_api import generate_token
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from .settings import Settings
+from .settings import GetSettings
 from logging import getLogger
 
 __version__ = version("archiver-service-api")
@@ -29,7 +29,6 @@ app = FastAPI(
     version=__version__,
 )
 
-settings = Settings()
 _LOGGER = getLogger("uvicorn")
 
 
@@ -44,7 +43,12 @@ class Enforce201Middleware(BaseHTTPMiddleware):
         return response
 
 
-if __name__ == "__main__":
+def create_app() -> FastAPI:
+    app = FastAPI(
+        title="ETHZ Archiver Service",
+        description="REST API endpoint provider for presigned S3 upload and archiving workflow scheduling",
+        version=__version__,
+    )
     origins = [
         "http://127.0.0.1*",
         "http://localhost:5173",
@@ -62,6 +66,13 @@ if __name__ == "__main__":
     app.include_router(ArchivingApiRouter)
     app.include_router(S3UploadApiRouter)
     app.include_router(ServiceTokenRouter)
+    return app
+
+
+app = create_app()
+
+if __name__ == "__main__":
+    settings = GetSettings()
 
     log_config = uvicorn.config.LOGGING_CONFIG
     log_config["loggers"]["uvicorn"]["level"] = settings.UVICORN_LOG_LEVEL.upper()

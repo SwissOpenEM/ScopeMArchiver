@@ -5,7 +5,7 @@ from prefect import flow  # noqa: F401 # required do to https://github.com/Prefe
 from prefect.deployments import run_deployment
 
 
-async def run_archiving_deployment(job_id: UUID, dataset_list: List[str]):
+async def run_archiving_deployment(job_id: UUID, dataset_list: List[str]) -> FlowRun:
     a = await run_deployment(
         "archive_datasetlist/datasets_archival",
         parameters={"dataset_ids": dataset_list, "job_id": job_id},
@@ -14,7 +14,7 @@ async def run_archiving_deployment(job_id: UUID, dataset_list: List[str]):
     return a
 
 
-async def run_retrieval_deployment(job_id: UUID, dataset_list: List[str]):
+async def run_retrieval_deployment(job_id: UUID, dataset_list: List[str]) -> FlowRun:
     a = await run_deployment(
         "retrieve_datasetlist/datasets_retrieval",
         parameters={"dataset_ids": dataset_list, "job_id": job_id},

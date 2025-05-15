@@ -14,12 +14,11 @@ from fastapi.security import (  # noqa: F401
 )
 
 from openapi_server.models.create_service_token_resp import CreateServiceTokenResp
-from openapi_server.settings import Settings
+from openapi_server.settings import GetSettings
 
 from starlette.status import HTTP_401_UNAUTHORIZED
 
 bearer_security = HTTPBearer()
-settings = Settings()
 
 _LOGGER = getLogger("uvicorn.security")
 
@@ -39,6 +38,7 @@ def get_token_BearerAuth(
 
 
 def get_keycloak_public_key():
+    settings = GetSettings()
     try:
         response = requests.get(
             f"{settings.IDP_URL}/realms/{settings.IDP_REALM}/protocol/openid-connect/certs"
@@ -72,6 +72,7 @@ def validate_token(token: str, fallback_validator=None) -> dict:
         HTTPException: If the token is invalid or expired.
     """
     # TODO: we might cache the jwks at some point, as this information does not change often
+    settings = GetSettings()
     jwks = get_keycloak_public_key()
     if not jwks:
         detail = "Failed to retrieve JWKS from Keycloak"
@@ -128,6 +129,7 @@ def validate_token(token: str, fallback_validator=None) -> dict:
 
 
 def generate_token() -> CreateServiceTokenResp:
+    settings = GetSettings()
     # Token request payload
     payload = {
         "client_id": settings.IDP_CLIENT_ID,
@@ -176,6 +178,7 @@ def get_token_SciCatAuth(
 
 
 def get_scicat_user_info(token) -> dict:
+    settings = GetSettings()
     try:
         headers = {"Authorization": f"Bearer {token}"}
         response = requests.get(f"{settings.SCICAT_API}/users/my/identity", headers=headers)
@@ -210,6 +213,7 @@ basic_security = HTTPBasic()
 
 
 def get_token_BasicAuth(credentials: HTTPBasicCredentials = Security(basic_security)):
+    settings = GetSettings()
     current_username_bytes = credentials.username.encode("utf8")
     correct_username_bytes = str.encode(settings.JOB_ENDPOINT_USERNAME.get_secret_value())
     is_correct_username = secrets.compare_digest(current_username_bytes, correct_username_bytes)

@@ -3,15 +3,12 @@ from pydantic import SecretStr
 import requests
 import urllib
 
-from openapi_server.settings import Settings
 from prefect.blocks.system import Secret
 from prefect.variables import Variable
 
 SCICAT_DATASET_PATH = "/datasets"
 SCICAT_JOB_PATH = "/jobs"
 SCICAT_LOGIN_PATH = "/auth/login"
-
-_SETTINGS = Settings()
 
 
 async def get_scicat_credentials():
