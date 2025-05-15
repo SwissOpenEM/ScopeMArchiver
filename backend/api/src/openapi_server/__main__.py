@@ -14,6 +14,7 @@ import uvicorn
 from openapi_server.apis.archiving_api import router as ArchivingApiRouter
 from openapi_server.apis.s3upload_api import router as S3UploadApiRouter
 from openapi_server.apis.service_token_api import router as ServiceTokenRouter
+from openapi_server.apis.health_api import router as HealthApiRouter
 from openapi_server.security_api import generate_token
 from starlette.middleware.base import BaseHTTPMiddleware
 
@@ -66,6 +67,8 @@ def create_app() -> FastAPI:
     app.include_router(ArchivingApiRouter)
     app.include_router(S3UploadApiRouter)
     app.include_router(ServiceTokenRouter)
+    app.include_router(HealthApiRouter)
+
     return app
 
 
