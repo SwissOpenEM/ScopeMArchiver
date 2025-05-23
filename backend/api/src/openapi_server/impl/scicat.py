@@ -1,7 +1,7 @@
-import json
 from pydantic import SecretStr
-import requests
 import urllib
+
+from httpx import AsyncClient
 
 from prefect.blocks.system import Secret
 from prefect.variables import Variable
@@ -17,20 +17,21 @@ async def get_scicat_credentials():
     return SecretStr(user_block.get()), SecretStr(password_block.get())
 
 
-def get_scicat_token(
+async def get_scicat_token(
     scicat_endpoint: str, sciat_api_prefix: str, user: SecretStr, password: SecretStr
 ) -> SecretStr:
-    resp = requests.post(
-        url=f"{scicat_endpoint}{sciat_api_prefix}{SCICAT_LOGIN_PATH}",
-        json={
-            "username": f"{user.get_secret_value()}",
-            "password": f"{password.get_secret_value()}",
-        },
-    )
+    async with AsyncClient() as client:
+        resp = await client.post(
+            url=f"{scicat_endpoint}{sciat_api_prefix}{SCICAT_LOGIN_PATH}",
+            data={
+                "username": f"{user.get_secret_value()}",
+                "password": f"{password.get_secret_value()}",
+            },
+        )
 
-    resp.raise_for_status()
+        resp.raise_for_status()
 
-    return SecretStr(resp.json()["access_token"])
+        return SecretStr(resp.json()["access_token"])
 
 
 async def get_scicat_endpoint():
@@ -41,7 +42,7 @@ async def get_scicat_api_prefix():
     return await Variable.get("scicat_api_prefix")
 
 
-def build_headers(token: SecretStr):
+def build_headers(token: SecretStr) -> dict[str, str]:
     return {
         "Authorization": f"Bearer {token.get_secret_value()}",
         "Content-Type": "application/json",
@@ -58,25 +59,24 @@ async def mark_dataset_as_archivable(dataset_id: str):
     endpoint = await get_scicat_endpoint()
     api_prefix = await get_scicat_api_prefix()
 
-    token = get_scicat_token(endpoint, api_prefix, user, password)
-    data = json.dumps(
-        {
-            "datasetlifecycle": {
-                "archiveStatusMessage": "datasetCreated",
-                "archivable": True,
-            }
+    token = await get_scicat_token(endpoint, api_prefix, user, password)
+    data = {
+        "datasetlifecycle": {
+            "archiveStatusMessage": "datasetCreated",
+            "archivable": True,
         }
-    )
+    }
 
     headers = build_headers(token)
     pid = safe_dataset_id(dataset_id)
-    response = requests.patch(
-        url=f"{endpoint}{api_prefix}{SCICAT_DATASET_PATH}/{pid}",
-        data=data,
-        headers=headers,
-    )
+    async with AsyncClient() as client:
+        response = await client.patch(
+            url=f"{endpoint}{api_prefix}{SCICAT_DATASET_PATH}/{pid}",
+            json=data,
+            headers=headers,
+        )
 
-    response.raise_for_status()
+        response.raise_for_status()
 
 
 async def start_archiving(owner_user: str, contact_email, owner_group: str, dataset_pid: str):
@@ -85,7 +85,7 @@ async def start_archiving(owner_user: str, contact_email, owner_group: str, data
     endpoint = await get_scicat_endpoint()
     api_prefix = await get_scicat_api_prefix()
 
-    token = get_scicat_token(endpoint, api_prefix, user, password)
+    token = await get_scicat_token(endpoint, api_prefix, user, password)
     data = {
         "type": "archive",
         "jobParams": {
@@ -98,10 +98,12 @@ async def start_archiving(owner_user: str, contact_email, owner_group: str, data
     }
 
     headers = build_headers(token)
-    response = requests.post(
-        url=f"{endpoint}/api/v4{SCICAT_JOB_PATH}",
-        data=json.dumps(data),
-        headers=headers,
-    )
 
-    response.raise_for_status()
+    async with AsyncClient() as client:
+        response = await client.post(
+            url=f"{endpoint}/api/v4{SCICAT_JOB_PATH}",
+            json=data,
+            headers=headers,
+        )
+
+        response.raise_for_status()
