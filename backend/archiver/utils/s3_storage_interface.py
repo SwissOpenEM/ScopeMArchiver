@@ -5,6 +5,8 @@ import boto3
 from boto3.s3.transfer import TransferConfig
 from botocore.client import Config
 
+import datetime
+
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -75,6 +77,24 @@ class S3Storage:
     @dataclass
     class StatInfo:
         Size: int
+
+    @log
+    def reset_expiry_date(self, bucket_name: str, filename: str, retention_period_days: int) -> None:
+
+        new_expiration_date= datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=retention_period_days)
+
+        # the only way to reset the expiration date is to copy the object to itself apparently
+        copy_source = {
+            'Bucket': bucket_name,
+            'Key': filename
+        }
+        self._minio.copy_object(
+            Bucket=bucket_name,
+            Key=filename,
+            CopySource=copy_source,
+            MetadataDirective='REPLACE',  # This is important to replace metadata
+            Expires=new_expiration_date.isoformat() 
+        )
 
     @log
     def stat_object(self, bucket: Bucket, filename: str) -> StatInfo|None:

@@ -82,9 +82,17 @@ def cleanup_dataset(flow: Flow, flow_run: FlowRun, state: State):
 
 
 @task()
-def find_missing_datablocks_in_s3(datablocks: List[DataBlock], bucket=Bucket("retrieval")):
+def find_missing_datablocks_in_s3(datablocks: List[DataBlock], bucket=Bucket("retrieval")) -> List[DataBlock]:
     s3_client = get_s3_client()
     return datablocks_operations.find_missing_datablocks_in_s3(client=s3_client, datablocks=datablocks, bucket=bucket)
+
+
+@task()
+def reset_expiry_date(all_datablocks: List[DataBlock], missing_datablocks: List[DataBlock], bucket=Bucket("retrieval")):
+    s3_client = get_s3_client()
+    filenames = list(set(d.archiveId for d in all_datablocks) - set(d.archiveId for d in missing_datablocks))
+
+    datablocks_operations.reset_expiry_date(client=s3_client, filenames=filenames, bucket=bucket)
 
 
 @flow(
@@ -105,15 +113,17 @@ def retrieve_single_dataset_flow(dataset_id: str, job_id: UUID, scicat_token: Se
         on_failure=[partial(on_get_datablocks_error, dataset_id)]
     ).submit(dataset_id=dataset_id, token=scicat_token, wait_for=[dataset_update])  # type: ignore
 
-    datablocks_not_in_retrieval_bucket = find_missing_datablocks_in_s3.submit(datablocks=datablocks)
+    missing_datablocks = find_missing_datablocks_in_s3.submit(datablocks=datablocks)
+
+    retrieval_tasks = []
+    retrieval_tasks.append(reset_expiry_date.submit(all_datablocks=datablocks, missing_datablocks=missing_datablocks))
 
     # TODO: check if enough space available in bucket
     # https://github.com/SwissOpenEM/ScopeMArchiver/issues/169
 
     # The error does not propagate correctly through the dependent tasks
     # https://github.com/PrefectHQ/prefect/issues/12028
-    retrieval_tasks = []
-    for datablock in datablocks_not_in_retrieval_bucket.result():
+    for datablock in missing_datablocks.result():
         copy_to_scratch = copy_datablock_from_LTS_to_scratch.submit(dataset_id=dataset_id, datablock=datablock)
 
         verify_datablock = verify_data_on_scratch.submit(
@@ -166,7 +176,6 @@ async def wait_for_retrieval_flow(flow_run_id: uuid.UUID):
     flow_run.state.result()
 
 
-
 @flow(
     name="retrieve_datasetlist",
     log_prints=True,
@@ -190,11 +199,11 @@ async def retrieve_datasets_flow(job_id: UUID):
     dataset_ids = dataset_ids_future.result()
 
     for id in dataset_ids:
-            existing_run_id = find_oldest_dataset_flow(dataset_id=id)
-            if existing_run_id is None:
-                retrieve_single_dataset_flow(dataset_id=id, job_id=job_id, scicat_token=access_token)
-            else:
-                await wait_for_retrieval_flow(existing_run_id)
+        existing_run_id = find_oldest_dataset_flow(dataset_id=id)
+        if existing_run_id is None:
+            retrieve_single_dataset_flow(dataset_id=id, job_id=job_id, scicat_token=access_token)
+        else:
+            await wait_for_retrieval_flow(existing_run_id)
 
     job_results_future = create_job_result_object_task.submit(dataset_ids=dataset_ids)
     job_results = job_results_future.result()

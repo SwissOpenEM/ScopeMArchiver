@@ -218,6 +218,7 @@ def download_objects_from_s3(
     return files
 
 
+@log
 def find_missing_datablocks_in_s3(client: S3Storage, datablocks: List[DataBlock], bucket: Bucket) -> List[DataBlock]:
 
     datablocks_not_in_retrieval_bucket = [
@@ -225,10 +226,21 @@ def find_missing_datablocks_in_s3(client: S3Storage, datablocks: List[DataBlock]
         if client.stat_object(
             bucket=bucket,
             filename=f"{datablock.archiveId}",
-        ) is not None
+        ) is None
     ]
 
     return datablocks_not_in_retrieval_bucket
+
+@log
+def reset_expiry_date(client: S3Storage, filenames: List[str], bucket: Bucket):
+
+    retention_period = Variables().MINIO_URL_EXPIRATION_DAYS
+
+    for filename in filenames:
+        client.reset_expiry_date(
+            bucket_name=bucket.name,
+            filename=f"{filename}",
+            retention_period_days=retention_period)
 
 
 @log
