@@ -3,6 +3,7 @@ import pytest
 from uuid import UUID, uuid4
 
 from prefect.testing.utilities import prefect_test_harness
+from prefect.exceptions import UnfinishedRun
 
 from archiver.flows.retrieve_datasets_flow import retrieve_datasets_flow
 from archiver.flows.tests.scicat_unittest_mock import ScicatMock, mock_scicat_client
@@ -42,6 +43,11 @@ async def mock_wait_for_file_accessible(file, timeout_s=360) -> bool:
     return True
 
 
+def mock_find_missing_datablocks_in_s3(*args, **kwargs):
+    return kwargs["datablocks"]
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize(
     "job_id,dataset_id",
     [
@@ -54,6 +60,7 @@ async def mock_wait_for_file_accessible(file, timeout_s=360) -> bool:
     mock_get_datablock_path_in_LTS,
 )
 @patch("archiver.utils.datablocks.wait_for_file_accessible", mock_wait_for_file_accessible)
+@patch("archiver.utils.datablocks.find_missing_datablocks_in_s3", mock_find_missing_datablocks_in_s3)
 @patch("archiver.utils.datablocks.copy_file_to_folder")
 @patch("archiver.scicat.scicat_tasks.create_presigned_url", mock_create_presigned_url)
 @patch("archiver.utils.datablocks.verify_datablock")
@@ -63,7 +70,7 @@ async def mock_wait_for_file_accessible(file, timeout_s=360) -> bool:
 @patch("archiver.utils.datablocks.cleanup_s3_staging")
 @patch("archiver.utils.datablocks.cleanup_s3_landingzone")
 @patch("archiver.utils.datablocks.cleanup_s3_retrieval")
-def test_scicat_api_retrieval(
+async def test_scicat_api_retrieval(
     mock_cleanup_s3_retrieval: MagicMock,
     mock_cleanup_s3_landingzone: MagicMock,
     mock_cleanup_s3_staging: MagicMock,
@@ -95,10 +102,7 @@ def test_scicat_api_retrieval(
         ) as m,
         prefect_test_harness(),
     ):
-        try:
-            retrieve_datasets_flow(job_id=job_id, dataset_ids=[dataset_id])
-        except Exception:
-            pass
+        await retrieve_datasets_flow(job_id=job_id)
 
         assert m.jobs_matcher.call_count == 2
         assert m.jobs_matcher.request_history[0].json() == expected_job_status(
@@ -149,6 +153,7 @@ def test_scicat_api_retrieval(
         mock_copy_file_to_folder.assert_has_calls(calls, any_order=True)
 
 
+@pytest.mark.asyncio
 @pytest.mark.parametrize(
     "job_id,dataset_id",
     [
@@ -156,6 +161,7 @@ def test_scicat_api_retrieval(
     ],
 )
 @patch("archiver.scicat.scicat_tasks.scicat_client", mock_scicat_client)
+@patch("archiver.utils.datablocks.find_missing_datablocks_in_s3", mock_find_missing_datablocks_in_s3)
 @patch("archiver.utils.datablocks.get_datablock_path_in_LTS", mock_raise_system_error)
 @patch("archiver.utils.datablocks.wait_for_file_accessible", mock_wait_for_file_accessible)
 @patch("archiver.utils.datablocks.copy_file_to_folder")
@@ -167,7 +173,7 @@ def test_scicat_api_retrieval(
 @patch("archiver.utils.datablocks.cleanup_s3_staging")
 @patch("archiver.utils.datablocks.cleanup_s3_landingzone")
 @patch("archiver.utils.datablocks.cleanup_s3_retrieval")
-def test_datablock_not_found(
+async def test_datablock_not_found(
     mock_cleanup_s3_retrieval: MagicMock,
     mock_cleanup_s3_landingzone: MagicMock,
     mock_cleanup_s3_staging: MagicMock,
@@ -199,9 +205,12 @@ def test_datablock_not_found(
         prefect_test_harness(),
     ):
         try:
-            retrieve_datasets_flow(job_id=job_id, dataset_ids=[dataset_id])
-        except Exception:
+            await retrieve_datasets_flow(job_id=job_id)
+        except UnfinishedRun:
+            # https://github.com/PrefectHQ/prefect/issues/12028
             pass
+        except Exception as e:
+            raise e
 
         assert m.jobs_matcher.call_count == 2
         assert m.jobs_matcher.request_history[0].json() == expected_job_status(

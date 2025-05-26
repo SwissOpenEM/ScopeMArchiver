@@ -219,6 +219,31 @@ def download_objects_from_s3(
 
 
 @log
+def find_missing_datablocks_in_s3(client: S3Storage, datablocks: List[DataBlock], bucket: Bucket) -> List[DataBlock]:
+
+    datablocks_not_in_retrieval_bucket = [
+        datablock for datablock in datablocks
+        if client.stat_object(
+            bucket=bucket,
+            filename=f"{datablock.archiveId}",
+        ) is None
+    ]
+
+    return datablocks_not_in_retrieval_bucket
+
+@log
+def reset_expiry_date(client: S3Storage, filenames: List[str], bucket: Bucket):
+
+    retention_period = Variables().MINIO_URL_EXPIRATION_DAYS
+
+    for filename in filenames:
+        client.reset_expiry_date(
+            bucket_name=bucket.name,
+            filename=f"{filename}",
+            retention_period_days=retention_period)
+
+
+@log
 def upload_objects_to_s3(
     client: S3Storage,
     prefix: Path,
@@ -405,12 +430,12 @@ def copy_file_to_folder(src_file: Path, dst_folder: Path):
     getLogger().info(f"Start Copy operation. src:{src_file}, dst{dst_folder}")
 
     with subprocess.Popen(
-        ["rsync", 
-         "-rcvh", # r: recursive, c: checksum, v: verbose, h: human readable format
-         "--stats", # file transfer stats
-         "--no-perms", # don't preserve the file permissions of the source files
-         "--no-owner", #  don't preserve the owner
-         "--no-group", # don't preserve the group ownership
+        ["rsync",
+         "-rcvh",  # r: recursive, c: checksum, v: verbose, h: human readable format
+         "--stats",  # file transfer stats
+         "--no-perms",  # don't preserve the file permissions of the source files
+         "--no-owner",  # don't preserve the owner
+         "--no-group",  # don't preserve the group ownership
          "--mkpath", str(src_file), str(dst_folder)],
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
@@ -517,7 +542,7 @@ def create_datablocks(
     datablocks_scratch_folder = StoragePaths.scratch_archival_datablocks_folder(dataset_id)
     datablocks_scratch_folder.mkdir(parents=True, exist_ok=True)
 
-    GB_TO_B = 1024*1024*1024
+    GB_TO_B = 1024 * 1024 * 1024
 
     archive_infos = create_tarfiles(
         dataset_id=dataset_id,
@@ -561,6 +586,7 @@ def create_datablocks(
 def cleanup_lts_folder(dataset_id: str) -> None:
     lts_folder = StoragePaths.lts_datablocks_folder(dataset_id)
     shutil.rmtree(lts_folder, ignore_errors=True)
+
 
 @log
 def cleanup_s3_staging(client: S3Storage, dataset_id: str) -> None:

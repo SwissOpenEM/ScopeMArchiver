@@ -5,6 +5,7 @@ import urllib.parse
 
 from archiver.scicat.scicat_interface import SciCatClient
 from archiver.utils.model import OrigDataBlock, DataBlock
+from archiver.utils.model import DatasetListEntry, Job
 
 
 def mock_scicat_get_token() -> str:
@@ -40,6 +41,18 @@ class ScicatMock(requests_mock.Mocker):
         self.matchers: dict[str, requests_mock.Request.matcher] = {}
 
         self.matchers["jobs"] = self.patch(f"{self.ENDPOINT}{self.JOBS_API_PREFIX}/jobs/{job_id}", json=None)
+
+        datasetList = [DatasetListEntry(
+            pid=dataset_id,
+            files=[]
+        )]
+        job_json = Job(
+            id=str(job_id),
+            jobParams={"datasetList": datasetList},  # v4
+            datasetList=datasetList  # v3
+        ).model_dump()
+        job_json["id"] = str(job_json["id"])
+        self.matchers["jobs_get"] = self.get(f"{self.ENDPOINT}{self.JOBS_API_PREFIX}/jobs/{job_id}", json=job_json)
 
         self.matchers["datasets"] = self.patch(
             f"{self.ENDPOINT}{self.API_PREFIX}/datasets/{safe_dataset_url}", json=None

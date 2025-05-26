@@ -17,6 +17,7 @@ dependencies = [
     "prefect==3.1.11",
     "prefect-docker>=0.6.2",
     "pytest>=8.3.4",
+    "pytest-asyncio>=0.25.3",
     "requests>=2.32.3",
     "requests-mock>=1.12.1",
     "strenum>=0.4.15",
