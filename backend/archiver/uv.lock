@@ -70,13 +70,14 @@ wheels = [
 [[package]]
 name = "archiver"
 version = "0.1.0"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
     { name = "boto3" },
     { name = "moto", extra = ["s3"] },
     { name = "prefect" },
     { name = "prefect-docker" },
     { name = "pytest" },
+    { name = "pytest-asyncio" },
     { name = "requests" },
     { name = "requests-mock" },
     { name = "strenum" },
@@ -102,6 +103,7 @@ requires-dist = [
     { name = "prefect", specifier = "==3.1.11" },
     { name = "prefect-docker", specifier = ">=0.6.2" },
     { name = "pytest", specifier = ">=8.3.4" },
+    { name = "pytest-asyncio", specifier = ">=0.25.3" },
     { name = "requests", specifier = ">=2.32.3" },
     { name = "requests-mock", specifier = ">=1.12.1" },
     { name = "strenum", specifier = ">=0.4.15" },
