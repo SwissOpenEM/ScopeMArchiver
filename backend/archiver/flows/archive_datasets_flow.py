@@ -164,11 +164,14 @@ def create_datablocks_flow(dataset_id: str, scicat_token: SecretStr) -> List[Dat
 
     datablocks_future = create_datablocks.submit(dataset_id=dataset_id, origDataBlocks=orig_datablocks)  # type: ignore
 
-    register_datablocks.submit(
+    register_future = register_datablocks.submit(
         datablocks=datablocks_future,  # type: ignore
         dataset_id=dataset_id,
         token=scicat_token,
-    ).wait()
+    )
+
+
+    register_future.result()
 
     return datablocks_future.result()
 
