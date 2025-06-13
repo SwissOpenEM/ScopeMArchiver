@@ -52,7 +52,7 @@ class S3Storage:
             aws_access_key_id=self._USER.strip(),
             aws_secret_access_key=self._PASSWORD.get_secret_value().strip(),
             region_name=self._REGION,
-            config=Config(signature_version="s3v4", max_connection_pool=30),
+            config=Config(signature_version="s3v4"),
         )
         self._resource = boto3.resource(
             "s3",
