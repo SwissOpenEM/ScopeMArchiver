@@ -198,22 +198,10 @@ def download_objects_from_s3(
     """
     destination_folder.mkdir(parents=True, exist_ok=True)
 
-    files: List[Path] = []
-
-    for item in client.list_objects(bucket, str(prefix)):
-        item_name = Path(item.Name).name
-        local_filepath = destination_folder / item_name
-        local_filepath.parent.mkdir(parents=True, exist_ok=True)
-        client.fget_object(
-            bucket=bucket,
-            folder=str(prefix),
-            object_name=item.Name,
-            target_path=local_filepath,
-        )
-        files.append(local_filepath)
+    files = client.download_objects(minio_prefix=prefix, bucket=bucket, destination_folder=destination_folder)
 
     if len(files) == 0:
-        raise SystemError(f"No files found in bucket {bucket} at {prefix}")
+        raise SystemError(f"No files found in bucket {bucket.name} at {prefix}")
 
     return files
 
