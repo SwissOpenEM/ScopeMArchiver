@@ -1,4 +1,5 @@
 from __future__ import annotations
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import functools
 from typing import Iterable, List
 import boto3
@@ -12,7 +13,7 @@ from pathlib import Path
 
 from pydantic import SecretStr
 
-from .log import log
+from .log import log_debug, log
 
 from archiver.config.variables import Variables
 from archiver.config.blocks import Blocks
@@ -33,7 +34,21 @@ class Bucket:
     @staticmethod
     def landingzone_bucket() -> Bucket:  # type: ignore
         return Bucket(Variables().MINIO_LANDINGZONE_BUCKET)
-
+@log
+def download_file(s3_client, obj, minio_prefix, destination_folder, bucket):
+    item_name = Path(obj.key).name
+    item_dir = Path(obj.key).parent
+    item_parent_dirs = item_dir.relative_to(minio_prefix)
+    local_filedir = destination_folder / item_parent_dirs
+    local_filedir.mkdir(parents=True, exist_ok=True)
+    local_filepath = local_filedir / item_name
+    config = TransferConfig(
+        multipart_threshold=100*1024*1024,
+        max_concurrency=2,
+        multipart_chunksize=100*1024*1024,
+    )
+    s3_client.download_file(bucket.name, obj.key, local_filepath, Config=config)
+    return local_filepath
 
 class S3Storage:
     def __init__(self, url: str, user: str, password: SecretStr, region: str):
@@ -52,8 +67,7 @@ class S3Storage:
             aws_access_key_id=self._USER.strip(),
             aws_secret_access_key=self._PASSWORD.get_secret_value().strip(),
             region_name=self._REGION,
-            config=Config(signature_version="s3v4", max_connection_pool=30),
-        )
+            config=Config(signature_version="s3v4", max_pool_connections=32))
         self._resource = boto3.resource(
             "s3",
             endpoint_url=f"https://{self._URL}" if self._URL is not None and self._URL != "" else None,
@@ -112,27 +126,33 @@ class S3Storage:
         except:
             return None
 
-    @log
+    @log_debug
     def fget_object(self, bucket: Bucket, folder: str, object_name: str, target_path: Path):
         self._minio.download_file(Bucket=bucket.name, Key=object_name, Filename=str(target_path.absolute()))
 
     @log
-    def download_objects(self, minio_prefix: Path, bucket: Bucket, destination_folder: Path) -> List[Path]:
+    def download_objects(self, minio_prefix: Path, bucket: Bucket, destination_folder: Path, progress_callback) -> List[Path]:
         remote_bucket = self._resource.Bucket(bucket.name)
         objs = remote_bucket.objects.filter(Prefix=str(minio_prefix))
 
         files: List[Path] = []
-        for obj in objs:
-            item_name = Path(obj.key).name
-            item_dir = Path(obj.key).parent
-            item_parent_dirs = item_dir.relative_to(minio_prefix)
-            local_filedir = destination_folder / item_parent_dirs
-            local_filedir.mkdir(parents=True, exist_ok=True)
-            local_filepath = local_filedir / item_name
-            files.append(local_filepath)
-            self._minio.download_file(bucket.name, obj.key, local_filepath)
-            if not local_filepath.exists():
-                raise SystemError(f"Failed to download file {obj.key} from bucket {bucket.name}")
+
+        count = 0
+
+        with ThreadPoolExecutor(max_workers=4) as executor:
+            future_to_key = {executor.submit(download_file, self._minio, key, minio_prefix, destination_folder, bucket): key for key in objs}
+
+
+            for future in as_completed(future_to_key):
+                count = count+1
+                progress_callback(count)
+                key = future_to_key[future]
+                exception = future.exception()
+
+                if not exception:
+                    files.append(future.result())
+                else:
+                    raise exception
 
         return files
 

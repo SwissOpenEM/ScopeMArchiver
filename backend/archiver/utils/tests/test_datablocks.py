@@ -455,7 +455,7 @@ def test_create_datablocks(
             )
 
     datablocks = datablock_operations.create_datablocks(
-        mock_s3client(), dataset_id=dataset_id, origDataBlocks=origDataBlocks_fixture
+        mock_s3client(), dataset_id=dataset_id, orig_datablocks=origDataBlocks_fixture
     )
 
     assert len(datablocks) == 1

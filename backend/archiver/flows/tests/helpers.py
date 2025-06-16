@@ -130,7 +130,7 @@ def expected_jobresultsobject(dataset_id: str, datablocks: List[DataBlock]):
 
 
 def mock_create_datablocks(
-    s3_client: S3Storage, dataset_id: str, origDataBlocks: List[OrigDataBlock]
+    s3_client: S3Storage, dataset_id: str, origDataBlocks: List[OrigDataBlock], file_paths
 ) -> List[DataBlock]:
     datablocks: List[DataBlock] = []
     for o in origDataBlocks:

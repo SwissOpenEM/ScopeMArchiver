@@ -184,7 +184,7 @@ def list_datablocks(client: S3Storage, prefix: Path, bucket: Bucket) -> List[S3S
 
 @log
 def download_objects_from_s3(
-    client: S3Storage, prefix: Path, bucket: Bucket, destination_folder: Path
+    client: S3Storage, prefix: Path, bucket: Bucket, destination_folder: Path, progress_callback
 ) -> List[Path]:
     """Download objects form s3 storage to folder
 
@@ -198,7 +198,8 @@ def download_objects_from_s3(
     """
     destination_folder.mkdir(parents=True, exist_ok=True)
 
-    files = client.download_objects(minio_prefix=prefix, bucket=bucket, destination_folder=destination_folder)
+
+    files = client.download_objects(minio_prefix=prefix, bucket=bucket, destination_folder=destination_folder, progress_callback=progress_callback)
 
     if len(files) == 0:
         raise SystemError(f"No files found in bucket {bucket.name} at {prefix}")
@@ -495,42 +496,16 @@ def verify_datablock(datablock: DataBlock, datablock_path: Path):
 
 @log
 def create_datablocks(
-    s3_client: S3Storage, dataset_id: str, origDataBlocks: List[OrigDataBlock]
-) -> List[DataBlock]:
-    if len(origDataBlocks) == 0:
-        return []
+    s3_client: S3Storage, dataset_id: str, orig_datablocks: List[OrigDataBlock], file_paths: List[Path]) -> List[DataBlock]:
 
-    if all(
-        False
-        for _ in list_datablocks(
-            s3_client,
-            StoragePaths.relative_raw_files_folder(dataset_id),
-            Bucket.landingzone_bucket(),
-        )
-    ):
-        raise Exception(
-            f"""No objects found in landing zone at {
-                StoragePaths.relative_raw_files_folder(dataset_id)
-            } for dataset {dataset_id}. Storage endpoint: {s3_client.url}"""
-        )
-
-    raw_files_scratch_folder = StoragePaths.scratch_archival_raw_files_folder(dataset_id)
-    raw_files_scratch_folder.mkdir(parents=True, exist_ok=True)
-
-    # files with full path are downloaded to scratch root
-    file_paths = download_objects_from_s3(
-        s3_client,
-        prefix=StoragePaths.relative_raw_files_folder(dataset_id),
-        bucket=Bucket.landingzone_bucket(),
-        destination_folder=raw_files_scratch_folder,
-    )
-
-    getLogger().info(f"Downloaded {len(file_paths)} objects from {Bucket.landingzone_bucket()}")
 
     datablocks_scratch_folder = StoragePaths.scratch_archival_datablocks_folder(dataset_id)
     datablocks_scratch_folder.mkdir(parents=True, exist_ok=True)
 
     GB_TO_B = 1024 * 1024 * 1024
+
+    raw_files_scratch_folder = StoragePaths.scratch_archival_raw_files_folder(dataset_id)
+    raw_files_scratch_folder.mkdir(parents=True, exist_ok=True)
 
     archive_infos = create_tarfiles(
         dataset_id=dataset_id,
@@ -544,7 +519,7 @@ def create_datablocks(
     datablocks = create_datablock_entries(
         dataset_id,
         StoragePaths.scratch_archival_datablocks_folder(dataset_id),
-        origDataBlocks,
+        orig_datablocks,
         archive_infos,
     )
 
