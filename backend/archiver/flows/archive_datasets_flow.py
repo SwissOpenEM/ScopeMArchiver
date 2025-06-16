@@ -142,7 +142,7 @@ def move_datablock_to_lts_flow(dataset_id: str, datablock: DataBlock):
 
 
 @flow(name="create_datablocks", flow_run_name=generate_subflow_run_name_job_id_dataset_id)
-def create_datablocks_flow(dataset_id: str, scicat_token: SecretStr) -> List[DataBlock]:
+def create_datablocks_flow(dataset_id: str) -> List[DataBlock]:
     """Prefect (sub-)flow to create datablocks (.tar.gz files) for files of a dataset and register them in Scicat.
 
     Args:
@@ -151,6 +151,8 @@ def create_datablocks_flow(dataset_id: str, scicat_token: SecretStr) -> List[Dat
     Returns:
         List[DataBlock]: List of created and registered datablocks
     """
+
+    scicat_token = get_scicat_access_token.submit()
 
     dataset_update = update_scicat_archival_dataset_lifecycle.submit(
         dataset_id=dataset_id,
@@ -163,6 +165,8 @@ def create_datablocks_flow(dataset_id: str, scicat_token: SecretStr) -> List[Dat
     ).submit(dataset_id=dataset_id, token=scicat_token, wait_for=[dataset_update])  # type: ignore
 
     datablocks_future = create_datablocks.submit(dataset_id=dataset_id, origDataBlocks=orig_datablocks)  # type: ignore
+
+    scicat_token = get_scicat_access_token.submit(wait_for=[datablocks_future])
 
     register_future = register_datablocks.submit(
         datablocks=datablocks_future,  # type: ignore
@@ -211,11 +215,13 @@ def cleanup_dataset(flow: Flow, flow_run: FlowRun, state: State):
     on_completion=[cleanup_dataset],
     on_cancellation=[on_dataset_flow_failure],
 )
-def archive_single_dataset_flow(dataset_id: str, scicat_token: SecretStr):
+def archive_single_dataset_flow(dataset_id: str):
+
     try:
-        datablocks = create_datablocks_flow(dataset_id, scicat_token=scicat_token)
+        datablocks = create_datablocks_flow(dataset_id)
     except Exception as e:
         raise e
+
 
     tasks = []
 
@@ -236,12 +242,13 @@ def archive_single_dataset_flow(dataset_id: str, scicat_token: SecretStr):
         )  # type: ignore
         tasks.append(w)
 
+    access_token = get_scicat_access_token.submit(wait_for=tasks)
     update_scicat_archival_dataset_lifecycle.submit(
         dataset_id=dataset_id,
         status=SciCatClient.ARCHIVESTATUSMESSAGE.DATASET_ON_ARCHIVEDISK,
         archivable=False,
         retrievable=True,
-        token=scicat_token,
+        token=access_token,
         wait_for=tasks
     ).result()
 
@@ -296,7 +303,7 @@ def archive_datasets_flow(job_id: UUID, dataset_ids: List[str] | None = None):
         e: _description_
     """
     dataset_ids: List[str] = dataset_ids or []
-    access_token = get_scicat_access_token()
+    access_token = get_scicat_access_token.submit()
 
     job_update = update_scicat_archival_job_status.submit(
         job_id=job_id,
@@ -310,7 +317,9 @@ def archive_datasets_flow(job_id: UUID, dataset_ids: List[str] | None = None):
     dataset_ids = dataset_ids_future.result()
 
     for id in dataset_ids:
-        archive_single_dataset_flow(dataset_id=id, scicat_token=access_token)
+        archive_single_dataset_flow(dataset_id=id)
+
+    access_token = get_scicat_access_token.submit()
 
     update_scicat_archival_job_status.submit(
         job_id=job_id,
