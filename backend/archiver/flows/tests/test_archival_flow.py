@@ -13,7 +13,7 @@ from archiver.flows.tests.helpers import (
     mock_s3client,
     create_datablocks,
     create_orig_datablocks,
-    mock_create_datablocks,
+    mock_create_datablock_entries,
     expected_datablocks,
     expected_archival_dataset_lifecycle,
     expected_job_status,
@@ -32,6 +32,14 @@ def mock_void_function(*args, **kwargs):
     pass
 
 
+def mock_empty_list(*args, **kwargs):
+    return []
+
+
+def mock_list(*args, **kwargs):
+    return [1]
+
+
 @pytest.mark.parametrize(
     "job_id,dataset_id",
     [
@@ -39,7 +47,12 @@ def mock_void_function(*args, **kwargs):
     ],
 )
 @patch("archiver.scicat.scicat_tasks.scicat_client", mock_scicat_client)
-@patch("archiver.utils.datablocks.create_datablocks", mock_create_datablocks)
+@patch("archiver.utils.datablocks.list_datablocks", mock_list)
+@patch("archiver.utils.datablocks.download_objects_from_s3", mock_list)
+@patch("archiver.utils.datablocks.create_tarfiles", mock_void_function)
+@patch("archiver.utils.datablocks.create_datablock_entries", mock_create_datablock_entries)
+@patch("archiver.utils.datablocks.upload_objects_to_s3", mock_void_function)
+@patch("archiver.utils.datablocks.verify_objects", mock_empty_list)
 @patch("archiver.utils.datablocks.move_data_to_LTS", mock_void_function)
 @patch("archiver.utils.datablocks.verify_checksum", mock_void_function)
 @patch("archiver.utils.datablocks.verify_data_in_LTS", mock_void_function)
@@ -123,7 +136,12 @@ def test_scicat_api_archiving(
     ],
 )
 @patch("archiver.scicat.scicat_tasks.scicat_client", mock_scicat_client)
-@patch("archiver.utils.datablocks.create_datablocks", raise_user_error)
+@patch("archiver.utils.datablocks.list_datablocks", raise_user_error)
+@patch("archiver.utils.datablocks.download_objects_from_s3", mock_list)
+@patch("archiver.utils.datablocks.create_tarfiles", mock_void_function)
+@patch("archiver.utils.datablocks.create_datablock_entries", mock_create_datablock_entries)
+@patch("archiver.utils.datablocks.upload_objects_to_s3", mock_void_function)
+@patch("archiver.utils.datablocks.verify_objects", mock_empty_list)
 @patch("archiver.utils.datablocks.cleanup_lts_folder")
 @patch("archiver.utils.datablocks.cleanup_scratch")
 @patch("archiver.utils.datablocks.cleanup_s3_staging")
@@ -196,7 +214,12 @@ def test_create_datablocks_user_error(
     ],
 )
 @patch("archiver.scicat.scicat_tasks.scicat_client", mock_scicat_client)
-@patch("archiver.utils.datablocks.create_datablocks", mock_create_datablocks)
+@patch("archiver.utils.datablocks.list_datablocks", mock_list)
+@patch("archiver.utils.datablocks.download_objects_from_s3", mock_list)
+@patch("archiver.utils.datablocks.create_tarfiles", mock_void_function)
+@patch("archiver.utils.datablocks.create_datablock_entries", mock_create_datablock_entries)
+@patch("archiver.utils.datablocks.upload_objects_to_s3", mock_void_function)
+@patch("archiver.utils.datablocks.verify_objects", mock_empty_list)
 @patch("archiver.utils.datablocks.move_data_to_LTS", raise_system_error)
 @patch("archiver.utils.datablocks.cleanup_lts_folder")
 @patch("archiver.utils.datablocks.cleanup_scratch")
@@ -274,7 +297,12 @@ def test_move_to_LTS_failure(
     ],
 )
 @patch("archiver.scicat.scicat_tasks.scicat_client", mock_scicat_client)
-@patch("archiver.utils.datablocks.create_datablocks", mock_create_datablocks)
+@patch("archiver.utils.datablocks.list_datablocks", mock_list)
+@patch("archiver.utils.datablocks.download_objects_from_s3", mock_list)
+@patch("archiver.utils.datablocks.create_tarfiles", mock_void_function)
+@patch("archiver.utils.datablocks.create_datablock_entries", mock_create_datablock_entries)
+@patch("archiver.utils.datablocks.upload_objects_to_s3", mock_void_function)
+@patch("archiver.utils.datablocks.verify_objects", mock_empty_list)
 @patch("archiver.utils.datablocks.move_data_to_LTS", mock_void_function)
 @patch("archiver.utils.datablocks.verify_checksum", mock_void_function)
 @patch("archiver.utils.datablocks.verify_data_in_LTS", raise_system_error)

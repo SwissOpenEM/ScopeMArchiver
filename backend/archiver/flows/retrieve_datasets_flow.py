@@ -102,7 +102,9 @@ def reset_expiry_date(all_datablocks: List[DataBlock], missing_datablocks: List[
     on_failure=[on_dataset_flow_failure],
     on_completion=[cleanup_dataset],
 )
-def retrieve_single_dataset_flow(dataset_id: str, job_id: UUID, scicat_token: SecretStr):
+def retrieve_single_dataset_flow(dataset_id: str, job_id: UUID):
+    scicat_token = get_scicat_access_token.submit()
+
     dataset_update = update_scicat_retrieval_dataset_lifecycle.submit(
         dataset_id=dataset_id,
         status=SciCatClient.RETRIEVESTATUSMESSAGE.STARTED,
@@ -133,6 +135,8 @@ def retrieve_single_dataset_flow(dataset_id: str, job_id: UUID, scicat_token: Se
             dataset_id=dataset_id, datablock=datablock, wait_for=[verify_datablock]
         )
         retrieval_tasks.append(upload_data)
+
+    scicat_token = get_scicat_access_token.submit(wait_for=retrieval_tasks)
 
     update_scicat_retrieval_dataset_lifecycle.submit(
         dataset_id=dataset_id,
@@ -184,8 +188,7 @@ async def wait_for_retrieval_flow(flow_run_id: uuid.UUID):
 )
 async def retrieve_datasets_flow(job_id: UUID):
 
-    access_token_future = get_scicat_access_token.submit()
-    access_token = access_token_future.result()
+    access_token = get_scicat_access_token.submit()
 
     job_update = update_scicat_retrieval_job_status.submit(
         job_id=job_id,
@@ -201,13 +204,15 @@ async def retrieve_datasets_flow(job_id: UUID):
     for id in dataset_ids:
         existing_run_id = find_oldest_dataset_flow(dataset_id=id)
         if existing_run_id is None:
-            retrieve_single_dataset_flow(dataset_id=id, job_id=job_id, scicat_token=access_token)
+            retrieve_single_dataset_flow(dataset_id=id, job_id=job_id)
         else:
             await wait_for_retrieval_flow(existing_run_id)
 
     job_results_future = create_job_result_object_task.submit(dataset_ids=dataset_ids)
     job_results = job_results_future.result()
     job_results_object = JobResultObject(result=job_results)
+
+    access_token = get_scicat_access_token.submit(wait_for=[job_results_future])
 
     update_scicat_retrieval_job_status.submit(
         job_id=job_id,
