@@ -439,23 +439,37 @@ def test_create_datablocks(
     dataset_id = "testprefix/11.111"
     folder = create_raw_files_fixture(storage_paths_fixture, 10, 10 * MB)
 
+    datablocks_scratch_folder = StoragePaths.scratch_archival_datablocks_folder(dataset_id)
+    datablocks_scratch_folder.mkdir(parents=True)
+    raw_files_scratch_folder = StoragePaths.scratch_archival_raw_files_folder(dataset_id)
+
     for dir, _, raw_file in os.walk(folder):
         for file in raw_file:
             full_path = Path(dir) / file
             relative_folder = Path(dir).relative_to(folder)
-            StoragePaths.scratch_archival_raw_files_folder(dataset_id).joinpath(relative_folder).mkdir(
+            raw_files_scratch_folder.joinpath(relative_folder).mkdir(
                 parents=True, exist_ok=True
             )
 
             shutil.copy(
                 full_path,
-                StoragePaths.scratch_archival_raw_files_folder(dataset_id)
+                raw_files_scratch_folder
                 .joinpath(relative_folder)
                 .joinpath(file),
             )
 
-    datablocks = datablock_operations.create_datablocks(
-        mock_s3client(), dataset_id=dataset_id, orig_datablocks=origDataBlocks_fixture
+    tar_files = datablock_operations.create_tarfiles(
+        dataset_id=dataset_id,
+        src_folder=raw_files_scratch_folder,
+        dst_folder=datablocks_scratch_folder,
+        target_size=500 * 1024 * 1024
+    )
+
+    datablocks = datablock_operations.create_datablock_entries(
+        dataset_id=dataset_id,
+        folder=datablocks_scratch_folder,
+        origDataBlocks=origDataBlocks_fixture,
+        tar_infos=tar_files
     )
 
     assert len(datablocks) == 1

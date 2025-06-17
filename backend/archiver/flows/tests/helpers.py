@@ -129,8 +129,8 @@ def expected_jobresultsobject(dataset_id: str, datablocks: List[DataBlock]):
     return JobResultObject(result=results).model_dump(exclude_none=True)
 
 
-def mock_create_datablocks(
-    s3_client: S3Storage, dataset_id: str, origDataBlocks: List[OrigDataBlock], file_paths
+def mock_create_datablock_entries(
+    s3_client: S3Storage, dataset_id: str, origDataBlocks: List[OrigDataBlock], tar_files, progress_callback
 ) -> List[DataBlock]:
     datablocks: List[DataBlock] = []
     for o in origDataBlocks:

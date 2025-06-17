@@ -1,7 +1,7 @@
 from __future__ import annotations
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import functools
-from typing import Iterable, List
+from typing import Callable, Iterable, List
 import boto3
 from boto3.s3.transfer import TransferConfig
 from botocore.client import Config
@@ -34,7 +34,8 @@ class Bucket:
     @staticmethod
     def landingzone_bucket() -> Bucket:  # type: ignore
         return Bucket(Variables().MINIO_LANDINGZONE_BUCKET)
-    
+
+
 @log_debug
 def download_file(s3_client, obj, minio_prefix, destination_folder, bucket):
     item_name = Path(obj.key).name
@@ -44,12 +45,13 @@ def download_file(s3_client, obj, minio_prefix, destination_folder, bucket):
     local_filedir.mkdir(parents=True, exist_ok=True)
     local_filepath = local_filedir / item_name
     config = TransferConfig(
-        multipart_threshold=100*1024*1024,
+        multipart_threshold=100 * 1024 * 1024,
         max_concurrency=2,
-        multipart_chunksize=100*1024*1024,
+        multipart_chunksize=100 * 1024 * 1024,
     )
     s3_client.download_file(bucket.name, obj.key, local_filepath, Config=config)
     return local_filepath
+
 
 class S3Storage:
     def __init__(self, url: str, user: str, password: SecretStr, region: str):
@@ -89,11 +91,11 @@ class S3Storage:
 
     @log_debug
     def get_presigned_url(self, bucket: Bucket, filename: str) -> str:
-        days_to_seconds = 60*60*24
+        days_to_seconds = 60 * 60 * 24
         presigned_url = self._minio.generate_presigned_url(
             "get_object",
             Params={"Bucket": bucket.name, "Key": filename},
-            ExpiresIn=Variables().MINIO_URL_EXPIRATION_DAYS*days_to_seconds,  # URL expiration time in seconds
+            ExpiresIn=Variables().MINIO_URL_EXPIRATION_DAYS * days_to_seconds,  # URL expiration time in seconds
         )
         return presigned_url
 
@@ -104,7 +106,7 @@ class S3Storage:
     @log_debug
     def reset_expiry_date(self, bucket_name: str, filename: str, retention_period_days: int) -> None:
 
-        new_expiration_date= datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=retention_period_days)
+        new_expiration_date = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=retention_period_days)
 
         # the only way to reset the expiration date is to copy the object to itself apparently
         copy_source = {
@@ -116,11 +118,11 @@ class S3Storage:
             Key=filename,
             CopySource=copy_source,
             MetadataDirective='REPLACE',  # This is important to replace metadata
-            Expires=new_expiration_date.isoformat() 
+            Expires=new_expiration_date.isoformat()
         )
 
     @log_debug
-    def stat_object(self, bucket: Bucket, filename: str) -> StatInfo|None:
+    def stat_object(self, bucket: Bucket, filename: str) -> StatInfo | None:
         try:
             object = self._minio.head_object(Bucket=bucket.name, Key=filename)
             return S3Storage.StatInfo(Size=object["ContentLength"])
@@ -132,7 +134,11 @@ class S3Storage:
         self._minio.download_file(Bucket=bucket.name, Key=object_name, Filename=str(target_path.absolute()))
 
     @log
-    def download_objects(self, minio_prefix: Path, bucket: Bucket, destination_folder: Path, progress_callback) -> List[Path]:
+    def download_objects(self,
+                         minio_prefix: Path,
+                         bucket: Bucket,
+                         destination_folder: Path,
+                         progress_callback: Callable[[float], None] = None) -> List[Path]:
         remote_bucket = self._resource.Bucket(bucket.name)
         objs = remote_bucket.objects.filter(Prefix=str(minio_prefix))
 
@@ -141,11 +147,11 @@ class S3Storage:
         count = 0
 
         with ThreadPoolExecutor(max_workers=4) as executor:
-            future_to_key = {executor.submit(download_file, self._minio, key, minio_prefix, destination_folder, bucket): key for key in objs}
-
+            future_to_key = {executor.submit(download_file, self._minio, key, minio_prefix,
+                                             destination_folder, bucket): key for key in objs}
 
             for future in as_completed(future_to_key):
-                count = count+1
+                count = count + 1
                 progress_callback(count)
                 key = future_to_key[future]
                 exception = future.exception()
