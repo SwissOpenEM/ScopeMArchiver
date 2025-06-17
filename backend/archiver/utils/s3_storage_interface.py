@@ -34,7 +34,8 @@ class Bucket:
     @staticmethod
     def landingzone_bucket() -> Bucket:  # type: ignore
         return Bucket(Variables().MINIO_LANDINGZONE_BUCKET)
-@log
+    
+@log_debug
 def download_file(s3_client, obj, minio_prefix, destination_folder, bucket):
     item_name = Path(obj.key).name
     item_dir = Path(obj.key).parent
@@ -86,7 +87,7 @@ class S3Storage:
     def url(self):
         return self._URL
 
-    @log
+    @log_debug
     def get_presigned_url(self, bucket: Bucket, filename: str) -> str:
         days_to_seconds = 60*60*24
         presigned_url = self._minio.generate_presigned_url(
@@ -100,7 +101,7 @@ class S3Storage:
     class StatInfo:
         Size: int
 
-    @log
+    @log_debug
     def reset_expiry_date(self, bucket_name: str, filename: str, retention_period_days: int) -> None:
 
         new_expiration_date= datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=retention_period_days)
@@ -118,7 +119,7 @@ class S3Storage:
             Expires=new_expiration_date.isoformat() 
         )
 
-    @log
+    @log_debug
     def stat_object(self, bucket: Bucket, filename: str) -> StatInfo|None:
         try:
             object = self._minio.head_object(Bucket=bucket.name, Key=filename)
@@ -160,7 +161,7 @@ class S3Storage:
     class ListedObject:
         Name: str
 
-    @log
+    @log_debug
     def list_objects(self, bucket: Bucket, folder: str | None = None) -> List[S3Storage.ListedObject]:
         ''' Lists up to 1000 objects in a bucket. This is an s3 limitation
         '''

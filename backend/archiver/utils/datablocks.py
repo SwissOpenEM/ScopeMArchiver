@@ -13,7 +13,7 @@ from pathlib import Path
 
 from archiver.utils.s3_storage_interface import S3Storage, Bucket
 from archiver.utils.model import OrigDataBlock, DataBlock, DataFile
-from archiver.utils.log import getLogger, log
+from archiver.utils.log import getLogger, log, log_debug
 from archiver.config.variables import Variables
 from archiver.flows.utils import DatasetError, SystemError, StoragePaths
 
@@ -83,7 +83,7 @@ def partition_files_flat(folder: Path, target_size_bytes: int) -> Generator[List
     yield part
 
 
-@log
+@log_debug
 def create_tarfiles(
     dataset_id: str,
     src_folder: Path,
@@ -128,7 +128,7 @@ def create_tarfiles(
     return tarballs
 
 
-@log
+@log_debug
 def calculate_md5_checksum(filename: Path, chunksize: int = 1024 * 1025) -> str:
     """Calculate an md5 hash of a file
 
@@ -148,7 +148,7 @@ def calculate_md5_checksum(filename: Path, chunksize: int = 1024 * 1025) -> str:
     return m.hexdigest()
 
 
-@log
+@log_debug
 def download_object_from_s3(
     client: S3Storage, bucket: Bucket, folder: Path, object_name: str, target_path: Path
 ):
