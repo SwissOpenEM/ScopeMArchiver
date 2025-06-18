@@ -155,11 +155,13 @@ def calculate_md5_checksum(filename: Path, chunksize: int = 1024 * 1025) -> str:
             m.update(chunk)
     return m.hexdigest()
 
+
 def calculate_checksum(dataset_id: str, datablock: DataBlock) -> str:
     datablocks_scratch_folder = StoragePaths.scratch_archival_datablocks_folder(dataset_id)
     datablock_name = Path(datablock.archiveId).name
     datablock_full_path = datablocks_scratch_folder / datablock_name
-    return calculate_md5_checksum(datablock_full_path, chunksize=65536)
+    return calculate_md5_checksum(datablock_full_path)
+
 
 @log_debug
 def download_object_from_s3(
@@ -340,7 +342,8 @@ def create_datablock_entries(
             )
         )
 
-        progress_callback((idx + 1) / len(tar_infos))
+        if progress_callback:
+            progress_callback((idx + 1) / len(tar_infos))
 
     return datablocks
 
@@ -383,6 +386,7 @@ def move_data_to_LTS(dataset_id: str, datablock: DataBlock):
     # Copy to LTS
     copy_file_to_folder(src_file=datablock_full_path.absolute(), dst_folder=lts_target_dir.absolute())
 
+
 @log
 def copy_file_from_LTS(dataset_id: str, datablock: DataBlock):
     lts_target_dir = StoragePaths.lts_datablocks_folder(dataset_id)
@@ -399,11 +403,12 @@ def copy_file_from_LTS(dataset_id: str, datablock: DataBlock):
     verification_path.mkdir(exist_ok=True)
     copy_file_to_folder(src_file=lts_datablock_path, dst_folder=verification_path)
 
+
 @log
 def verify_checksum(dataset_id: str, datablock: DataBlock, expected_checksum: str) -> None:
     datablock_name = Path(datablock.archiveId).name
     verification_path = StoragePaths.scratch_archival_datablocks_folder(dataset_id) / "verification"
-    datablock_checksum = calculate_md5_checksum(verification_path / datablock_name, chunksize=65536)
+    datablock_checksum = calculate_md5_checksum(verification_path / datablock_name)
 
     if datablock_checksum != expected_checksum:
         raise SystemError(
