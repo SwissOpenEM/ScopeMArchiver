@@ -136,8 +136,7 @@ def create_tarfiles(
     return tarballs
 
 
-@log_debug
-def calculate_md5_checksum(filename: Path, chunksize: int = 1024 * 1025) -> str:
+def calculate_md5_checksum(filename: Path, chunksize: int = 2**20) -> str:
     """Calculate an md5 hash of a file
 
     Args:
@@ -459,37 +458,9 @@ def copy_file_to_folder(src_file: Path, dst_folder: Path):
         raise SystemError(f"Copying did not produce file {expected_dst_file}")
 
 
-# @log
-# def verify_datablock_content(dataset_id: str, datablock: DataBlock) -> None:
-#     datablocks_scratch_folder = StoragePaths.scratch_archival_datablocks_folder(dataset_id) / "verification"
-#     datablocks_scratch_folder.mkdir(parents=True, exist_ok=True)
-
-#     datablock_folder = datablocks_scratch_folder / Path(datablock.archiveId).name
-
-#     lts_datablock_path = StoragePaths.lts_datablocks_folder(dataset_id) / Path(datablock.archiveId).name
-
-#     asyncio.run(
-#         wait_for_file_accessible(lts_datablock_path.absolute(), Variables().ARCHIVER_LTS_FILE_TIMEOUT_S)
-#     )
-
-#     copy_file_to_folder(
-#         src_file=lts_datablock_path.absolute(),
-#         dst_folder=datablocks_scratch_folder.absolute(),
-#     )
-
-#     verify_datablock(datablock, datablock_folder)
-
-#     os.remove(datablock_folder)
-
-
 @log
-def verify_datablock_content(dataset_id: str, datablock: DataBlock):
+def verify_datablock_content(datablock: DataBlock, datablock_path: str):
 
-    datablock_name = Path(datablock.archiveId).name
-    verification_path = StoragePaths.scratch_archival_datablocks_folder(dataset_id) / "verification"
-
-    datablock_path = verification_path / datablock_name
-    
     expected_checksums: Dict[str, str] = {
         datafile.path: datafile.chk or "" for datafile in datablock.dataFileList or []
     }
@@ -662,11 +633,19 @@ def copy_from_LTS_to_scratch_retrieval(dataset_id: str, datablock: DataBlock) ->
 
 
 @log
-def verify_data_on_scratch(dataset_id: str, datablock: DataBlock) -> None:
+def verify_datablock_in_verification(dataset_id: str, datablock: DataBlock) -> None:
+    datablock_name = Path(datablock.archiveId).name
+    verification_path = StoragePaths.scratch_archival_datablocks_folder(dataset_id) / "verification"
+    datablock_path = verification_path / datablock_name
+    verify_datablock_content(datablock=datablock, datablock_path=datablock_path)
+
+
+@log
+def verify_datablock_on_scratch(dataset_id: str, datablock: DataBlock) -> None:
     scratch_destination_folder = StoragePaths.scratch_archival_datablocks_folder(dataset_id)
     assert scratch_destination_folder.exists()
     datablock_on_scratch = scratch_destination_folder / Path(datablock.archiveId).name
-    verify_datablock(datablock=datablock, datablock_path=datablock_on_scratch)
+    verify_datablock_content(datablock=datablock, datablock_path=datablock_on_scratch)
 
 
 @log

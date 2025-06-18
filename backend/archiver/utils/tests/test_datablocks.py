@@ -333,12 +333,12 @@ def test_copy_file():
         assert (Path(dst_folder) / Path(name).name).exists()
 
 
-def test_verify_datablock(datablock_fixture):
+def test_verify_datablock_content(datablock_fixture):
     datablock_folder = StoragePaths.scratch_archival_datablocks_folder(test_dataset_id)
 
     # same checksum
     for d in datablock_fixture:
-        datablock_operations.verify_datablock(
+        datablock_operations.verify_datablock_content(
             datablock=d, datablock_path=datablock_folder / Path(d.archiveId).name
         )
 
@@ -346,7 +346,7 @@ def test_verify_datablock(datablock_fixture):
     with pytest.raises(SystemError):
         wrong_checksum_datablock = datablock_fixture[0]
         wrong_checksum_datablock.dataFileList[0].chk = "wrongChecksum"
-        datablock_operations.verify_datablock(
+        datablock_operations.verify_datablock_content(
             datablock=wrong_checksum_datablock,
             datablock_path=datablock_folder / wrong_checksum_datablock.archiveId,
         )
@@ -355,7 +355,7 @@ def test_verify_datablock(datablock_fixture):
     with pytest.raises(SystemError):
         wrong_archive_id_datablock = datablock_fixture[0]
         wrong_archive_id_datablock.archiveId = "DatablockDoesNotExist.tar.gz"
-        datablock_operations.verify_datablock(
+        datablock_operations.verify_datablock_content(
             datablock=wrong_archive_id_datablock,
             datablock_path=datablock_folder / wrong_archive_id_datablock.archiveId,
         )
@@ -364,7 +364,7 @@ def test_verify_datablock(datablock_fixture):
     with pytest.raises(SystemError):
         wrong_datafile_datablock = datablock_fixture[0]
         wrong_datafile_datablock.dataFileList[0].path = "DataFileDoesNotExist.img"
-        datablock_operations.verify_datablock(
+        datablock_operations.verify_datablock_content(
             datablock=wrong_datafile_datablock,
             datablock_path=datablock_folder / wrong_datafile_datablock.archiveId,
         )

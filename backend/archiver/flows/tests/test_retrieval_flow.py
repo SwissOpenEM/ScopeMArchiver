@@ -63,7 +63,7 @@ def mock_find_missing_datablocks_in_s3(*args, **kwargs):
 @patch("archiver.utils.datablocks.find_missing_datablocks_in_s3", mock_find_missing_datablocks_in_s3)
 @patch("archiver.utils.datablocks.copy_file_to_folder")
 @patch("archiver.scicat.scicat_tasks.create_presigned_url", mock_create_presigned_url)
-@patch("archiver.utils.datablocks.verify_datablock")
+@patch("archiver.utils.datablocks.verify_datablock_content")
 @patch("archiver.utils.datablocks.upload_datablock")
 @patch("archiver.utils.datablocks.cleanup_lts_folder")
 @patch("archiver.utils.datablocks.cleanup_scratch")
@@ -77,7 +77,7 @@ async def test_scicat_api_retrieval(
     mock_cleanup_scratch: MagicMock,
     mock_cleanup_lts: MagicMock,
     mock_upload_datablock: MagicMock,
-    mock_verify_datablock: MagicMock,
+    mock_verify_datablock_content: MagicMock,
     mock_copy_file_to_folder: MagicMock,
     job_id: UUID,
     dataset_id: str,
@@ -140,6 +140,7 @@ async def test_scicat_api_retrieval(
         mock_cleanup_s3_staging.assert_not_called()
         mock_cleanup_scratch.assert_called_once_with(dataset_id)
         mock_cleanup_lts.assert_not_called()
+        mock_verify_datablock_content.assert_called()
 
         dst_folder = StoragePaths.scratch_archival_datablocks_folder(dataset_id)
         calls = [
@@ -166,7 +167,7 @@ async def test_scicat_api_retrieval(
 @patch("archiver.utils.datablocks.wait_for_file_accessible", mock_wait_for_file_accessible)
 @patch("archiver.utils.datablocks.copy_file_to_folder")
 @patch("archiver.scicat.scicat_tasks.create_presigned_url", mock_create_presigned_url)
-@patch("archiver.utils.datablocks.verify_datablock")
+@patch("archiver.utils.datablocks.verify_datablock_content")
 @patch("archiver.utils.datablocks.upload_datablock")
 @patch("archiver.utils.datablocks.cleanup_lts_folder")
 @patch("archiver.utils.datablocks.cleanup_scratch")
@@ -180,7 +181,7 @@ async def test_datablock_not_found(
     mock_cleanup_scratch: MagicMock,
     mock_cleanup_lts: MagicMock,
     mock_upload_datablock: MagicMock,
-    mock_verify_datablock: MagicMock,
+    mock_verify_datablock_content: MagicMock,
     mock_copy_file_to_folder: MagicMock,
     job_id,
     dataset_id,
@@ -242,3 +243,4 @@ async def test_datablock_not_found(
         mock_cleanup_scratch.assert_called_once_with(dataset_id)
         mock_cleanup_lts.assert_not_called()
         mock_copy_file_to_folder.assert_not_called()
+        mock_verify_datablock_content.assert_called()
