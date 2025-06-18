@@ -155,6 +155,11 @@ def calculate_md5_checksum(filename: Path, chunksize: int = 1024 * 1025) -> str:
             m.update(chunk)
     return m.hexdigest()
 
+def calculate_checksum(dataset_id: str, datablock: DataBlock) -> str:
+    datablocks_scratch_folder = StoragePaths.scratch_archival_datablocks_folder(dataset_id)
+    datablock_name = Path(datablock.archiveId).name
+    datablock_full_path = datablocks_scratch_folder / datablock_name
+    return calculate_md5_checksum(datablock_full_path, chunksize=65536)
 
 @log_debug
 def download_object_from_s3(
@@ -353,8 +358,7 @@ def find_object_in_s3(client: S3Storage, dataset_id, datablock_name):
 
 
 @log
-def move_data_to_LTS(dataset_id: str, datablock: DataBlock) -> str:
-    # mount target dir and check access
+def move_data_to_LTS(dataset_id: str, datablock: DataBlock):
     if not Variables().LTS_STORAGE_ROOT.exists():
         raise FileNotFoundError(f"Can't open LTS root {Variables().LTS_STORAGE_ROOT}")
 
@@ -371,9 +375,6 @@ def move_data_to_LTS(dataset_id: str, datablock: DataBlock) -> str:
             f"Datablock {datablock_name} not found in storage at {StoragePaths.relative_datablocks_folder(dataset_id)}"
         )
 
-    getLogger().info("Calculating Checksum")
-    checksum_source = calculate_md5_checksum(datablock_full_path)
-
     lts_target_dir = StoragePaths.lts_datablocks_folder(dataset_id)
     lts_target_dir.mkdir(parents=True, exist_ok=True)
 
@@ -382,11 +383,8 @@ def move_data_to_LTS(dataset_id: str, datablock: DataBlock) -> str:
     # Copy to LTS
     copy_file_to_folder(src_file=datablock_full_path.absolute(), dst_folder=lts_target_dir.absolute())
 
-    return checksum_source
-
-
 @log
-def verify_checksum(dataset_id: str, datablock: DataBlock, expected_checksum: str) -> None:
+def copy_file_from_LTS(dataset_id: str, datablock: DataBlock):
     lts_target_dir = StoragePaths.lts_datablocks_folder(dataset_id)
     datablock_name = Path(datablock.archiveId).name
 
@@ -400,7 +398,12 @@ def verify_checksum(dataset_id: str, datablock: DataBlock, expected_checksum: st
     verification_path = StoragePaths.scratch_archival_datablocks_folder(dataset_id) / "verification"
     verification_path.mkdir(exist_ok=True)
     copy_file_to_folder(src_file=lts_datablock_path, dst_folder=verification_path)
-    datablock_checksum = calculate_md5_checksum(verification_path / datablock_name)
+
+@log
+def verify_checksum(dataset_id: str, datablock: DataBlock, expected_checksum: str) -> None:
+    datablock_name = Path(datablock.archiveId).name
+    verification_path = StoragePaths.scratch_archival_datablocks_folder(dataset_id) / "verification"
+    datablock_checksum = calculate_md5_checksum(verification_path / datablock_name, chunksize=65536)
 
     if datablock_checksum != expected_checksum:
         raise SystemError(
@@ -451,31 +454,37 @@ def copy_file_to_folder(src_file: Path, dst_folder: Path):
         raise SystemError(f"Copying did not produce file {expected_dst_file}")
 
 
+# @log
+# def verify_datablock_content(dataset_id: str, datablock: DataBlock) -> None:
+#     datablocks_scratch_folder = StoragePaths.scratch_archival_datablocks_folder(dataset_id) / "verification"
+#     datablocks_scratch_folder.mkdir(parents=True, exist_ok=True)
+
+#     datablock_folder = datablocks_scratch_folder / Path(datablock.archiveId).name
+
+#     lts_datablock_path = StoragePaths.lts_datablocks_folder(dataset_id) / Path(datablock.archiveId).name
+
+#     asyncio.run(
+#         wait_for_file_accessible(lts_datablock_path.absolute(), Variables().ARCHIVER_LTS_FILE_TIMEOUT_S)
+#     )
+
+#     copy_file_to_folder(
+#         src_file=lts_datablock_path.absolute(),
+#         dst_folder=datablocks_scratch_folder.absolute(),
+#     )
+
+#     verify_datablock(datablock, datablock_folder)
+
+#     os.remove(datablock_folder)
+
+
 @log
-def verify_data_in_LTS(dataset_id: str, datablock: DataBlock) -> None:
-    datablocks_scratch_folder = StoragePaths.scratch_archival_datablocks_folder(dataset_id) / "verification"
-    datablocks_scratch_folder.mkdir(parents=True, exist_ok=True)
+def verify_datablock_content(dataset_id: str, datablock: DataBlock):
 
-    datablock_folder = datablocks_scratch_folder / Path(datablock.archiveId).name
+    datablock_name = Path(datablock.archiveId).name
+    verification_path = StoragePaths.scratch_archival_datablocks_folder(dataset_id) / "verification"
 
-    lts_datablock_path = StoragePaths.lts_datablocks_folder(dataset_id) / Path(datablock.archiveId).name
-
-    asyncio.run(
-        wait_for_file_accessible(lts_datablock_path.absolute(), Variables().ARCHIVER_LTS_FILE_TIMEOUT_S)
-    )
-
-    copy_file_to_folder(
-        src_file=lts_datablock_path.absolute(),
-        dst_folder=datablocks_scratch_folder.absolute(),
-    )
-
-    verify_datablock(datablock, datablock_folder)
-
-    os.remove(datablock_folder)
-
-
-@log
-def verify_datablock(datablock: DataBlock, datablock_path: Path):
+    datablock_path = verification_path / datablock_name
+    
     expected_checksums: Dict[str, str] = {
         datafile.path: datafile.chk or "" for datafile in datablock.dataFileList or []
     }
