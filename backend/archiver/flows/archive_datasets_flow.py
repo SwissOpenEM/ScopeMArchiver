@@ -276,11 +276,11 @@ def verify_checksum(dataset_id: str, datablock: DataBlock, checksum: str) -> Non
 
 
 @task(task_run_name=generate_task_name_dataset)
-def verify_datablock_content(dataset_id: str, datablock: DataBlock) -> None:
+def verify_datablock_in_verification(dataset_id: str, datablock: DataBlock) -> None:
     """Prefect Task to verify a datablock in the LTS against a checksum. Task of this type run with no concurrency since the LTS
     does only allow limited concurrent access.
     """
-    datablocks_operations.verify_datablock_content(dataset_id, datablock)
+    datablocks_operations.verify_datablock_in_verification(dataset_id=dataset_id, datablock=datablock)
 
 
 # Flows
@@ -315,7 +315,7 @@ def move_datablocks_to_lts_flow(dataset_id: str, datablocks: List[DataBlock]):
             dataset_id=dataset_id, datablock=datablock, checksum=checksum, wait_for=[copy]
         )
 
-        w = verify_datablock_content.submit(
+        w = verify_datablock_in_verification.submit(
             dataset_id=dataset_id, datablock=datablock, wait_for=[checksum_verification]
         )  # type: ignore
         tasks.append(w)

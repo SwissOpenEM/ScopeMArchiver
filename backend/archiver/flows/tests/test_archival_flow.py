@@ -307,7 +307,6 @@ def test_move_to_LTS_failure(
 @patch("archiver.utils.datablocks.verify_objects", mock_empty_list)
 @patch("archiver.utils.datablocks.move_data_to_LTS", mock_void_function)
 @patch("archiver.utils.datablocks.verify_checksum", mock_void_function)
-@patch("archiver.utils.datablocks.verify_data_in_LTS", raise_system_error)
 @patch("archiver.utils.datablocks.cleanup_lts_folder")
 @patch("archiver.utils.datablocks.cleanup_scratch")
 @patch("archiver.utils.datablocks.cleanup_s3_staging")

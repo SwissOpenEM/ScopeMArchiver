@@ -51,7 +51,7 @@ def copy_datablock_from_LTS_to_scratch(dataset_id: str, datablock: DataBlock):
     task_run_name=generate_task_name_dataset,
 )
 def verify_data_on_scratch(dataset_id: str, datablock: DataBlock):
-    datablocks_operations.verify_data_on_scratch(dataset_id, datablock)
+    datablocks_operations.verify_datablock_on_scratch(dataset_id, datablock)
 
 
 @task(
