@@ -9,7 +9,8 @@ from uuid import UUID
 
 from prefect import flow, task, State, Task, Flow
 from prefect.client.schemas.objects import TaskRun, FlowRun
-
+from prefect.futures import wait as wait_for_futures
+from prefect.states import Failed
 from prefect.artifacts import (
     create_progress_artifact,
     update_progress_artifact,
@@ -246,8 +247,7 @@ def move_data_to_LTS(dataset_id: str, datablock: DataBlock):
     """Prefect task to move a datablock (.tar.gz file) to the LTS. Concurrency of this task is limited to 2 instances
     at the same time.
     """
-    s3_client = get_s3_client()
-    return datablocks_operations.move_data_to_LTS(s3_client, dataset_id, datablock)
+    return datablocks_operations.move_data_to_LTS(dataset_id, datablock)
 
 
 @task(
@@ -281,28 +281,44 @@ def verify_data_in_LTS(dataset_id: str, datablock: DataBlock) -> None:
     log_prints=True,
     flow_run_name=generate_subflow_run_name_job_id_dataset_id,
 )
-def move_datablock_to_lts_flow(dataset_id: str, datablock: DataBlock):
+def move_datablocks_to_lts_flow(dataset_id: str, datablocks: List[DataBlock]):
     """Prefect (sub-)flow to move a datablock to the LTS. Implements the copying of data and verification via checksum.
 
     Args:
         dataset_id (str): _description_
         datablock (DataBlock): _description_
     """
+    tasks = []
+    all_tasks = []
 
-    wait = check_free_space_in_LTS.submit()
+    for datablock in datablocks:
+        free_space = check_free_space_in_LTS.submit()
 
-    checksum = move_data_to_LTS.submit(dataset_id=dataset_id, datablock=datablock, wait_for=[wait])  # type: ignore
+        checksum = move_data_to_LTS.submit(dataset_id=dataset_id, datablock=datablock, wait_for=[free_space])  # type: ignore
 
-    getLogger().info(f"Wait {Variables().ARCHIVER_LTS_WAIT_BEFORE_VERIFY_S}s before verifying datablock")
-    sleep = sleep_for.submit(Variables().ARCHIVER_LTS_WAIT_BEFORE_VERIFY_S, wait_for=[checksum])
+        getLogger().info(f"Wait {Variables().ARCHIVER_LTS_WAIT_BEFORE_VERIFY_S}s before verifying datablock")
+        sleep = sleep_for.submit(Variables().ARCHIVER_LTS_WAIT_BEFORE_VERIFY_S, wait_for=[checksum])
 
-    checksum_verification = verify_checksum.submit(
-        dataset_id=dataset_id, datablock=datablock, checksum=checksum, wait_for=[sleep]
-    )
+        checksum_verification = verify_checksum.submit(
+            dataset_id=dataset_id, datablock=datablock, checksum=checksum, wait_for=[sleep]
+        )
 
-    verify_data_in_LTS.submit(
-        dataset_id=dataset_id, datablock=datablock, wait_for=[checksum_verification]
-    ).result()  # type: ignore
+        w = verify_data_in_LTS.submit(
+            dataset_id=dataset_id, datablock=datablock, wait_for=[checksum_verification]
+        )  # type: ignore
+        tasks.append(w)
+
+        all_tasks.append(free_space)
+        all_tasks.append(checksum)
+        all_tasks.append(sleep)
+        all_tasks.append(checksum_verification)
+        all_tasks.append(w)
+
+    wait_for_futures(tasks)
+
+    # this is necessary to propagate the errors of the tasks
+    for t in all_tasks:
+        t.result()
 
 
 @flow(name="create_datablocks", flow_run_name=generate_subflow_run_name_job_id_dataset_id)
@@ -333,17 +349,11 @@ def create_datablocks_flow(dataset_id: str) -> List[DataBlock]:
     tarfiles_future = create_tarfiles.submit(dataset_id, wait_for=[files])
     datablocks_future = create_datablock_entries.submit(dataset_id, orig_datablocks, tarfiles_future)
 
-    uploaded_files = upload_datablocks_to_s3.submit(dataset_id, wait_for=[datablocks_future])
-
-    verify_future = verify_objects.submit(dataset_id, uploaded_files)
-
     # Prefect issue: https://github.com/PrefectHQ/prefect/issues/12028
     # Exceptions are not propagated correctly
     files.result()
     tarfiles_future.result()
     datablocks_future.result()
-    uploaded_files.result()
-    verify_future.result()
 
     scicat_token = get_scicat_access_token.submit(wait_for=[datablocks_future])
 
@@ -355,7 +365,7 @@ def create_datablocks_flow(dataset_id: str) -> List[DataBlock]:
 
     register_future.result()
 
-    return datablocks_future.result()
+    return datablocks_future
 
 
 def on_dataset_flow_failure(flow: Flow, flow_run: FlowRun, state: State):
@@ -395,38 +405,17 @@ def cleanup_dataset(flow: Flow, flow_run: FlowRun, state: State):
 )
 def archive_single_dataset_flow(dataset_id: str):
 
-    try:
-        datablocks = create_datablocks_flow(dataset_id)
-    except Exception as e:
-        raise e
+    datablocks = create_datablocks_flow(dataset_id)
 
-    tasks = []
+    move_datablocks_to_lts_flow(dataset_id=dataset_id, datablocks=datablocks)
 
-    for datablock in datablocks:
-        wait = check_free_space_in_LTS.submit()
-
-        checksum = move_data_to_LTS.submit(dataset_id=dataset_id, datablock=datablock, wait_for=[wait])  # type: ignore
-
-        getLogger().info(f"Wait {Variables().ARCHIVER_LTS_WAIT_BEFORE_VERIFY_S}s before verifying datablock")
-        sleep = sleep_for.submit(Variables().ARCHIVER_LTS_WAIT_BEFORE_VERIFY_S, wait_for=[checksum])
-
-        checksum_verification = verify_checksum.submit(
-            dataset_id=dataset_id, datablock=datablock, checksum=checksum, wait_for=[sleep]
-        )
-
-        w = verify_data_in_LTS.submit(
-            dataset_id=dataset_id, datablock=datablock, wait_for=[checksum_verification]
-        )  # type: ignore
-        tasks.append(w)
-
-    access_token = get_scicat_access_token.submit(wait_for=tasks)
+    access_token = get_scicat_access_token.submit()
     update_scicat_archival_dataset_lifecycle.submit(
         dataset_id=dataset_id,
         status=SciCatClient.ARCHIVESTATUSMESSAGE.DATASET_ON_ARCHIVEDISK,
         archivable=False,
         retrievable=True,
-        token=access_token,
-        wait_for=tasks
+        token=access_token
     ).result()
 
 
