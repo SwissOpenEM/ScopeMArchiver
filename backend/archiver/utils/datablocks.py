@@ -136,7 +136,7 @@ def create_tarfiles(
     return tarballs
 
 
-def calculate_md5_checksum(filename: Path, chunksize: int = 1024 * 1025) -> str:
+def calculate_md5_checksum(filename: Path, chunksize: int = 2**20) -> str:
     """Calculate an md5 hash of a file
 
     Args:
@@ -482,13 +482,8 @@ def copy_file_to_folder(src_file: Path, dst_folder: Path):
 
 
 @log
-def verify_datablock_content(dataset_id: str, datablock: DataBlock):
+def verify_datablock_content(datablock: DataBlock, datablock_path: str):
 
-    datablock_name = Path(datablock.archiveId).name
-    verification_path = StoragePaths.scratch_archival_datablocks_folder(dataset_id) / "verification"
-
-    datablock_path = verification_path / datablock_name
-    
     expected_checksums: Dict[str, str] = {
         datafile.path: datafile.chk or "" for datafile in datablock.dataFileList or []
     }
@@ -712,11 +707,19 @@ def copy_from_LTS_to_scratch_retrieval(dataset_id: str, datablock: DataBlock) ->
 
 
 @log
-def verify_data_on_scratch(dataset_id: str, datablock: DataBlock) -> None:
+def verify_datablock_in_verification(dataset_id: str, datablock: DataBlock) -> None:
+    datablock_name = Path(datablock.archiveId).name
+    verification_path = StoragePaths.scratch_archival_datablocks_folder(dataset_id) / "verification"
+    datablock_path = verification_path / datablock_name
+    verify_datablock_content(datablock=datablock, datablock_path=datablock_path)
+
+
+@log
+def verify_datablock_on_scratch(dataset_id: str, datablock: DataBlock) -> None:
     scratch_destination_folder = StoragePaths.scratch_archival_datablocks_folder(dataset_id)
     assert scratch_destination_folder.exists()
     datablock_on_scratch = scratch_destination_folder / Path(datablock.archiveId).name
-    verify_datablock(datablock=datablock, datablock_path=datablock_on_scratch)
+    verify_datablock_content(datablock=datablock, datablock_path=datablock_on_scratch)
 
 
 @log
