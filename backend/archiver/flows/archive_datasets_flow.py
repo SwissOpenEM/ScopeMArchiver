@@ -239,6 +239,7 @@ def check_free_space_in_LTS():
     """
     asyncio.run(wait_for_free_space())
 
+
 @task(task_run_name=generate_task_name_dataset)
 def calculate_checksum(dataset_id: str, datablock: DataBlock):
     return datablocks_operations.calculate_checksum(dataset_id, datablock)
@@ -253,14 +254,15 @@ def move_data_to_LTS(dataset_id: str, datablock: DataBlock):
 
 
 @task(task_run_name=generate_task_name_dataset,
-    tags=[ConcurrencyLimits().MOVE_TO_LTS_TAG],
-    retries=5,
-    retry_delay_seconds=[60, 120, 240, 480, 960])
+      tags=[ConcurrencyLimits().MOVE_TO_LTS_TAG],
+      retries=5,
+      retry_delay_seconds=[60, 120, 240, 480, 960])
 def copy_datablock_from_LTS(dataset_id: str, datablock: DataBlock):
     """Prefect task to move a datablock (.tar.gz file) to the LTS. Concurrency of this task is limited to 2 instances
     at the same time.
     """
     datablocks_operations.copy_file_from_LTS(dataset_id, datablock)
+
 
 @task(
     task_run_name=generate_task_name_dataset
@@ -298,12 +300,12 @@ def move_datablocks_to_lts_flow(dataset_id: str, datablocks: List[DataBlock]):
     for datablock in datablocks:
 
         checksum = calculate_checksum.submit(dataset_id=dataset_id, datablock=datablock)
-        free_space = check_free_space_in_LTS.submit()
+        free_space = check_free_space_in_LTS.submit(wait_for=[checksum])
 
-        move_data_to_LTS.submit(dataset_id=dataset_id, datablock=datablock, wait_for=[free_space,checksum])  # type: ignore
+        move = move_data_to_LTS.submit(dataset_id=dataset_id, datablock=datablock, wait_for=[free_space])  # type: ignore
 
         getLogger().info(f"Wait {Variables().ARCHIVER_LTS_WAIT_BEFORE_VERIFY_S}s before verifying datablock")
-        sleep = sleep_for.submit(Variables().ARCHIVER_LTS_WAIT_BEFORE_VERIFY_S, wait_for=[checksum])
+        sleep = sleep_for.submit(Variables().ARCHIVER_LTS_WAIT_BEFORE_VERIFY_S, wait_for=[move])
 
         copy = copy_datablock_from_LTS.submit(dataset_id=dataset_id, datablock=datablock, wait_for=[sleep])
 
@@ -318,6 +320,7 @@ def move_datablocks_to_lts_flow(dataset_id: str, datablocks: List[DataBlock]):
 
         all_tasks.append(free_space)
         all_tasks.append(checksum)
+        all_tasks.append(move)
         all_tasks.append(sleep)
         all_tasks.append(copy)
         all_tasks.append(checksum_verification)
