@@ -242,37 +242,45 @@ def check_free_space_in_LTS():
     asyncio.run(wait_for_free_space())
 
 
+@task(task_run_name=generate_task_name_dataset)
+def calculate_checksum(dataset_id: str, datablock: DataBlock):
+    return datablocks_operations.calculate_checksum(dataset_id, datablock)
+
+
 @task(task_run_name=generate_task_name_dataset, tags=[ConcurrencyLimits().MOVE_TO_LTS_TAG])
 def move_data_to_LTS(dataset_id: str, datablock: DataBlock):
     """Prefect task to move a datablock (.tar.gz file) to the LTS. Concurrency of this task is limited to 2 instances
     at the same time.
     """
-    return datablocks_operations.move_data_to_LTS(dataset_id, datablock)
+    datablocks_operations.move_data_to_LTS(dataset_id, datablock)
+
+
+@task(task_run_name=generate_task_name_dataset,
+      tags=[ConcurrencyLimits().MOVE_TO_LTS_TAG],
+      retries=5,
+      retry_delay_seconds=[60, 120, 240, 480, 960])
+def copy_datablock_from_LTS(dataset_id: str, datablock: DataBlock):
+    """Prefect task to move a datablock (.tar.gz file) to the LTS. Concurrency of this task is limited to 2 instances
+    at the same time.
+    """
+    datablocks_operations.copy_file_from_LTS(dataset_id, datablock)
 
 
 @task(
-    task_run_name=generate_task_name_dataset,
-    tags=[ConcurrencyLimits().MOVE_TO_LTS_TAG],
-    retries=5,
-    retry_delay_seconds=[60, 120, 240, 480, 960],
+    task_run_name=generate_task_name_dataset
 )
 def verify_checksum(dataset_id: str, datablock: DataBlock, checksum: str) -> None:
-    """Prefect task to move a datablock (.tar.gz file) to the LTS. Concurrency of this task is limited to 2 instances
-    at the same time.
-
-    Exponential backoff for retries is implemented:  1*60s, 2*60s, 4*60s, 8*60s
-    """
     return datablocks_operations.verify_checksum(
         dataset_id=dataset_id, datablock=datablock, expected_checksum=checksum
     )
 
 
-@task(task_run_name=generate_task_name_dataset, tags=[ConcurrencyLimits().VERIFY_LTS_TAG])
-def verify_data_in_LTS(dataset_id: str, datablock: DataBlock) -> None:
+@task(task_run_name=generate_task_name_dataset)
+def verify_datablock_content(dataset_id: str, datablock: DataBlock) -> None:
     """Prefect Task to verify a datablock in the LTS against a checksum. Task of this type run with no concurrency since the LTS
     does only allow limited concurrent access.
     """
-    datablocks_operations.verify_data_in_LTS(dataset_id, datablock)
+    datablocks_operations.verify_datablock_content(dataset_id, datablock)
 
 
 # Flows
@@ -292,25 +300,31 @@ def move_datablocks_to_lts_flow(dataset_id: str, datablocks: List[DataBlock]):
     all_tasks = []
 
     for datablock in datablocks:
-        free_space = check_free_space_in_LTS.submit()
 
-        checksum = move_data_to_LTS.submit(dataset_id=dataset_id, datablock=datablock, wait_for=[free_space])  # type: ignore
+        checksum = calculate_checksum.submit(dataset_id=dataset_id, datablock=datablock)
+        free_space = check_free_space_in_LTS.submit(wait_for=[checksum])
+
+        move = move_data_to_LTS.submit(dataset_id=dataset_id, datablock=datablock, wait_for=[free_space])  # type: ignore
 
         getLogger().info(f"Wait {Variables().ARCHIVER_LTS_WAIT_BEFORE_VERIFY_S}s before verifying datablock")
-        sleep = sleep_for.submit(Variables().ARCHIVER_LTS_WAIT_BEFORE_VERIFY_S, wait_for=[checksum])
+        sleep = sleep_for.submit(Variables().ARCHIVER_LTS_WAIT_BEFORE_VERIFY_S, wait_for=[move])
+
+        copy = copy_datablock_from_LTS.submit(dataset_id=dataset_id, datablock=datablock, wait_for=[sleep])
 
         checksum_verification = verify_checksum.submit(
-            dataset_id=dataset_id, datablock=datablock, checksum=checksum, wait_for=[sleep]
+            dataset_id=dataset_id, datablock=datablock, checksum=checksum, wait_for=[copy]
         )
 
-        w = verify_data_in_LTS.submit(
+        w = verify_datablock_content.submit(
             dataset_id=dataset_id, datablock=datablock, wait_for=[checksum_verification]
         )  # type: ignore
         tasks.append(w)
 
         all_tasks.append(free_space)
         all_tasks.append(checksum)
+        all_tasks.append(move)
         all_tasks.append(sleep)
+        all_tasks.append(copy)
         all_tasks.append(checksum_verification)
         all_tasks.append(w)
 
