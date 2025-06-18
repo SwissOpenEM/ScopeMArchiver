@@ -294,7 +294,9 @@ def create_datablock_entries(
     version = 1.0
 
     datablocks: List[DataBlock] = []
-    for tar in tar_infos:
+
+    for idx, tar in enumerate(tar_infos):
+        # TODO: is it necessary to use any datablock information?
         o = origDataBlocks[0]
 
         data_file_list: List[DataFile] = []
@@ -333,6 +335,8 @@ def create_datablock_entries(
             )
         )
 
+        progress_callback((idx + 1) / len(tar_infos))
+
     return datablocks
 
 
@@ -349,23 +353,12 @@ def find_object_in_s3(client: S3Storage, dataset_id, datablock_name):
 
 
 @log
-def move_data_to_LTS(client: S3Storage, dataset_id: str, datablock: DataBlock) -> str:
+def move_data_to_LTS(dataset_id: str, datablock: DataBlock) -> str:
     # mount target dir and check access
     if not Variables().LTS_STORAGE_ROOT.exists():
         raise FileNotFoundError(f"Can't open LTS root {Variables().LTS_STORAGE_ROOT}")
 
     datablock_name = datablock.archiveId
-
-    getLogger().info(f"Searching datablock {datablock_name}")
-
-    object_found = find_object_in_s3(client, dataset_id, datablock_name)
-
-    if not object_found:
-        raise DatasetError(
-            f"Datablock {datablock_name} not found in storage at {StoragePaths.relative_datablocks_folder(dataset_id)}"
-        )
-
-    getLogger().info(f"Downloading datablock {datablock_name}")
 
     datablocks_scratch_folder = StoragePaths.scratch_archival_datablocks_folder(dataset_id)
     datablocks_scratch_folder.mkdir(parents=True, exist_ok=True)
@@ -373,15 +366,12 @@ def move_data_to_LTS(client: S3Storage, dataset_id: str, datablock: DataBlock) -
     datablock_name = Path(datablock.archiveId).name
     datablock_full_path = datablocks_scratch_folder / datablock_name
 
-    download_object_from_s3(
-        client,
-        bucket=Bucket.staging_bucket(),
-        folder=StoragePaths.relative_datablocks_folder(dataset_id),
-        object_name=str(StoragePaths.relative_datablocks_folder(dataset_id) / datablock_name),
-        target_path=datablock_full_path,
-    )
+    if not datablock_full_path.exists():
+        raise DatasetError(
+            f"Datablock {datablock_name} not found in storage at {StoragePaths.relative_datablocks_folder(dataset_id)}"
+        )
 
-    getLogger().info("Calculating Checksum.")
+    getLogger().info("Calculating Checksum")
     checksum_source = calculate_md5_checksum(datablock_full_path)
 
     lts_target_dir = StoragePaths.lts_datablocks_folder(dataset_id)
