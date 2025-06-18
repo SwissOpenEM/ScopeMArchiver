@@ -1,3 +1,4 @@
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 import subprocess
 import tarfile
@@ -111,7 +112,7 @@ def create_tarfiles(
     if not any(Path(src_folder).iterdir()):
         raise SystemError(f"Empty folder {src_folder} found.")
 
-    total_file_count = sum(len(files) for _, _, files in os.walk(src_folder))
+    total_file_count = count_files(src_folder)
     current_file_count = 0
 
     for files in partition_files_flat(src_folder, target_size):
@@ -299,6 +300,12 @@ def create_datablock_entries(
 
     version = 1.0
 
+    total_file_count = 0
+    for b in origDataBlocks:
+        total_file_count += len(b.dataFileList)
+
+    file_count = 0
+
     datablocks: List[DataBlock] = []
 
     for idx, tar in enumerate(tar_infos):
@@ -311,22 +318,37 @@ def create_datablock_entries(
 
         tarball = tarfile.open(tar_path)
 
-        for tar_info in tarball.getmembers():
+        def create_datafile_list_entry(tar_info: tarfile.TarInfo) -> DataFile:
             checksum = calculate_md5_checksum(
                 StoragePaths.scratch_archival_raw_files_folder(dataset_id) / tar_info.path
             )
 
-            data_file_list.append(
-                DataFile(
-                    path=tar_info.path,
-                    size=tar_info.size,
-                    chk=checksum,
-                    uid=str(tar_info.uid),
-                    gid=str(tar_info.gid),
-                    perm=str(tar_info.mode),
-                    time=str(datetime.datetime.now(datetime.UTC).isoformat()),
-                )
+            return DataFile(
+                path=tar_info.path,
+                size=tar_info.size,
+                chk=checksum,
+                uid=str(tar_info.uid),
+                gid=str(tar_info.gid),
+                perm=str(tar_info.mode),
+                time=str(datetime.datetime.now(datetime.UTC).isoformat()),
             )
+
+        with ThreadPoolExecutor(max_workers=4) as executor:
+            future_to_key = {executor.submit(create_datafile_list_entry, tar_info): tar_info for tar_info in tarball.getmembers()}
+
+            for future in as_completed(future_to_key):
+                exception = future.exception()
+
+                if not exception:
+                    data_file_list.append(future.result())
+                    file_count += 1
+                    if progress_callback:
+                        progress_callback(file_count / total_file_count)
+                else:
+                    raise exception
+
+
+
 
         datablocks.append(
             DataBlock(
@@ -341,8 +363,6 @@ def create_datablock_entries(
             )
         )
 
-        if progress_callback:
-            progress_callback((idx + 1) / len(tar_infos))
 
     return datablocks
 
@@ -654,3 +674,7 @@ def upload_data_to_retrieval_bucket(client: S3Storage, dataset_id: str, databloc
     assert scratch_destination_folder.exists()
     datablock_on_scratch = scratch_destination_folder / Path(datablock.archiveId).name
     upload_datablock(client=client, file=datablock_on_scratch, datablock=datablock)
+
+
+def count_files(folder: str) -> int:
+    return sum(len(files) for _, _, files in os.walk(folder))
