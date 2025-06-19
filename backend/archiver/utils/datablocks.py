@@ -74,7 +74,7 @@ def partition_files_flat(folder: Path, target_size_bytes: int) -> Generator[List
         for filename in filenames:
             filepath = Path(os.path.join(dirpath, filename))
             if size + os.path.getsize(filepath) > target_size_bytes:
-                yield part
+                yield (idx, part)
                 part = []
                 size = 0
                 idx = idx + 1
@@ -130,11 +130,12 @@ def create_tarfiles(
             #     progress_callback(1.0 * current_file_count / total_file_count)
 
         current_tarfile.close()
-        current_tar_info.packedSize = current_tar_info.path.stat().st_size 
+        current_tar_info.packedSize = current_tar_info.path.stat().st_size
         return current_tar_info
 
     with ThreadPoolExecutor(max_workers=4) as executor:
-        future_to_key = {executor.submit(create_tar, idx, files): (idx, files) for (idx, files) in partition_files_flat(src_folder, target_size)}
+        future_to_key = {executor.submit(create_tar, idx, files): (idx, files)
+                         for (idx, files) in partition_files_flat(src_folder, target_size)}
         for future in as_completed(future_to_key):
             exception = future.exception()
 
@@ -144,7 +145,7 @@ def create_tarfiles(
                 # if progress_callback:
                 #     progress_callback(file_count / total_file_count)
             else:
-                raise exception 
+                raise exception
 
     # for files in partition_files_flat(src_folder, target_size):
     #     current_tar_info = ArchiveInfo(
@@ -378,9 +379,6 @@ def create_datablock_entries(
                 else:
                     raise exception
 
-
-
-
         datablocks.append(
             DataBlock(
                 archiveId=str(StoragePaths.relative_datablocks_folder(dataset_id) / tar_path.name),
@@ -393,7 +391,6 @@ def create_datablock_entries(
                 derivedDatasetId=o.derivedDatasetId,
             )
         )
-
 
     return datablocks
 
