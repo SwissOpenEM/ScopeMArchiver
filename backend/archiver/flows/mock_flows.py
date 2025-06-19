@@ -411,7 +411,7 @@ def end_to_end_test_flow(
 
     ASSERT(scicat_archival_job_status.get("type") == "archive")
 
-    ASSERT(scicat_archival_job_status.get("statusCode") == "jobCreated" or scicat_archival_job_status.get("statusCode") == "inProgress")
+    ASSERT(scicat_archival_job_status.get("statusCode") in ["jobCreated", "jobSubmitted", "inProgress"])
 
     wait_for_flow.submit(scicat_job_id=scicat_archival_job_id).wait()
     getLogger().info("Archiving Flow finished")
@@ -450,7 +450,7 @@ def end_to_end_test_flow(
     getLogger().info(scicat_retrieval_job_status)
     ASSERT(scicat_retrieval_job_status is not None)
     ASSERT(scicat_retrieval_job_status.get("type") == "retrieve")
-    ASSERT(scicat_retrieval_job_status.get("statusCode") == "jobCreated" or scicat_retrieval_job_status.get("statusCode") == "inProgress")
+    ASSERT(scicat_retrieval_job_status.get("statusCode") in ["jobCreated", "jobSubmitted", "inProgress"])
 
     wait_for_flow.submit(scicat_job_id=scicat_retrieval_job_id).wait()
 

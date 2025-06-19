@@ -333,12 +333,12 @@ def test_copy_file():
         assert (Path(dst_folder) / Path(name).name).exists()
 
 
-def test_verify_datablock(datablock_fixture):
+def test_verify_datablock_content(datablock_fixture):
     datablock_folder = StoragePaths.scratch_archival_datablocks_folder(test_dataset_id)
 
     # same checksum
     for d in datablock_fixture:
-        datablock_operations.verify_datablock(
+        datablock_operations.verify_datablock_content(
             datablock=d, datablock_path=datablock_folder / Path(d.archiveId).name
         )
 
@@ -346,7 +346,7 @@ def test_verify_datablock(datablock_fixture):
     with pytest.raises(SystemError):
         wrong_checksum_datablock = datablock_fixture[0]
         wrong_checksum_datablock.dataFileList[0].chk = "wrongChecksum"
-        datablock_operations.verify_datablock(
+        datablock_operations.verify_datablock_content(
             datablock=wrong_checksum_datablock,
             datablock_path=datablock_folder / wrong_checksum_datablock.archiveId,
         )
@@ -355,7 +355,7 @@ def test_verify_datablock(datablock_fixture):
     with pytest.raises(SystemError):
         wrong_archive_id_datablock = datablock_fixture[0]
         wrong_archive_id_datablock.archiveId = "DatablockDoesNotExist.tar.gz"
-        datablock_operations.verify_datablock(
+        datablock_operations.verify_datablock_content(
             datablock=wrong_archive_id_datablock,
             datablock_path=datablock_folder / wrong_archive_id_datablock.archiveId,
         )
@@ -364,7 +364,7 @@ def test_verify_datablock(datablock_fixture):
     with pytest.raises(SystemError):
         wrong_datafile_datablock = datablock_fixture[0]
         wrong_datafile_datablock.dataFileList[0].path = "DataFileDoesNotExist.img"
-        datablock_operations.verify_datablock(
+        datablock_operations.verify_datablock_content(
             datablock=wrong_datafile_datablock,
             datablock_path=datablock_folder / wrong_datafile_datablock.archiveId,
         )
@@ -404,7 +404,7 @@ def mock_download_objects_from_s3(*args, **kwargs):
 @patch("archiver.utils.datablocks.download_object_from_s3", mock_download_objects_from_s3)
 def test_move_data_to_LTS(storage_paths_fixture, datablock_fixture):
     for datablock in datablock_fixture:
-        datablock_operations.move_data_to_LTS(mock_s3client(), test_dataset_id, datablock)
+        datablock_operations.move_data_to_LTS(test_dataset_id, datablock)
 
         file_in_lts = StoragePaths.lts_datablocks_folder(test_dataset_id) / Path(datablock.archiveId).name
 
@@ -439,23 +439,37 @@ def test_create_datablocks(
     dataset_id = "testprefix/11.111"
     folder = create_raw_files_fixture(storage_paths_fixture, 10, 10 * MB)
 
+    datablocks_scratch_folder = StoragePaths.scratch_archival_datablocks_folder(dataset_id)
+    datablocks_scratch_folder.mkdir(parents=True)
+    raw_files_scratch_folder = StoragePaths.scratch_archival_raw_files_folder(dataset_id)
+
     for dir, _, raw_file in os.walk(folder):
         for file in raw_file:
             full_path = Path(dir) / file
             relative_folder = Path(dir).relative_to(folder)
-            StoragePaths.scratch_archival_raw_files_folder(dataset_id).joinpath(relative_folder).mkdir(
+            raw_files_scratch_folder.joinpath(relative_folder).mkdir(
                 parents=True, exist_ok=True
             )
 
             shutil.copy(
                 full_path,
-                StoragePaths.scratch_archival_raw_files_folder(dataset_id)
+                raw_files_scratch_folder
                 .joinpath(relative_folder)
                 .joinpath(file),
             )
 
-    datablocks = datablock_operations.create_datablocks(
-        mock_s3client(), dataset_id=dataset_id, origDataBlocks=origDataBlocks_fixture
+    tar_files = datablock_operations.create_tarfiles(
+        dataset_id=dataset_id,
+        src_folder=raw_files_scratch_folder,
+        dst_folder=datablocks_scratch_folder,
+        target_size=500 * 1024 * 1024
+    )
+
+    datablocks = datablock_operations.create_datablock_entries(
+        dataset_id=dataset_id,
+        folder=datablocks_scratch_folder,
+        origDataBlocks=origDataBlocks_fixture,
+        tar_infos=tar_files
     )
 
     assert len(datablocks) == 1

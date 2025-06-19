@@ -1,3 +1,4 @@
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 import subprocess
 import tarfile
@@ -8,12 +9,12 @@ import time
 import datetime
 import hashlib
 
-from typing import Dict, Generator, List
+from typing import Callable, Dict, Generator, List
 from pathlib import Path
 
 from archiver.utils.s3_storage_interface import S3Storage, Bucket
 from archiver.utils.model import OrigDataBlock, DataBlock, DataFile
-from archiver.utils.log import getLogger, log
+from archiver.utils.log import getLogger, log, log_debug
 from archiver.config.variables import Variables
 from archiver.flows.utils import DatasetError, SystemError, StoragePaths
 
@@ -73,22 +74,23 @@ def partition_files_flat(folder: Path, target_size_bytes: int) -> Generator[List
         for filename in filenames:
             filepath = Path(os.path.join(dirpath, filename))
             if size + os.path.getsize(filepath) > target_size_bytes:
-                yield part
+                yield (idx, part)
                 part = []
                 size = 0
                 idx = idx + 1
             part.append(filepath.relative_to(folder))
             size = size + os.path.getsize(filepath)
 
-    yield part
+    yield (idx, part)
 
 
-@log
+@log_debug
 def create_tarfiles(
     dataset_id: str,
     src_folder: Path,
     dst_folder: Path,
     target_size: int,
+    progress_callback: Callable[[float], None] = None
 ) -> List[ArchiveInfo]:
     """Create datablocks, i.e. .tar.gz files, from all files in a folder. Folder structures are kept and symlnks not resolved.
     The created tar files will be named according to the dataset they belong to.
@@ -110,26 +112,64 @@ def create_tarfiles(
     if not any(Path(src_folder).iterdir()):
         raise SystemError(f"Empty folder {src_folder} found.")
 
-    for files in partition_files_flat(src_folder, target_size):
+    # total_file_count = count_files(src_folder)
+    # current_file_count = 0
+
+    def create_tar(idx: int, files: List):
         current_tar_info = ArchiveInfo(
             unpackedSize=0,
             packedSize=0,
-            path=Path(dst_folder / Path(f"{tar_name}_{len(tarballs)}.tar.gz")),
+            path=Path(dst_folder / Path(f"{tar_name}_{idx}.tar.gz")),
         )
         current_tarfile: tarfile.TarFile = tarfile.open(current_tar_info.path, "w")
         for relative_file_path in files:
             full_path = src_folder.joinpath(relative_file_path)
             current_tar_info.unpackedSize += full_path.stat().st_size
             current_tarfile.add(name=full_path, arcname=relative_file_path)
+            # if progress_callback is not None:
+            #     progress_callback(1.0 * current_file_count / total_file_count)
+
         current_tarfile.close()
         current_tar_info.packedSize = current_tar_info.path.stat().st_size
-        tarballs.append(current_tar_info)
+        return current_tar_info
+
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        future_to_key = {executor.submit(create_tar, idx, files): (idx, files)
+                         for (idx, files) in partition_files_flat(src_folder, target_size)}
+        for future in as_completed(future_to_key):
+            exception = future.exception()
+
+            if not exception:
+                tarballs.append(future.result())
+                # file_count += 1
+                # if progress_callback:
+                #     progress_callback(file_count / total_file_count)
+            else:
+                raise exception
+
+    # for files in partition_files_flat(src_folder, target_size):
+    #     current_tar_info = ArchiveInfo(
+    #         unpackedSize=0,
+    #         packedSize=0,
+    #         path=Path(dst_folder / Path(f"{tar_name}_{len(tarballs)}.tar.gz")),
+    #     )
+    #     current_tarfile: tarfile.TarFile = tarfile.open(current_tar_info.path, "w")
+    #     for relative_file_path in files:
+    #         full_path = src_folder.joinpath(relative_file_path)
+    #         current_tar_info.unpackedSize += full_path.stat().st_size
+    #         current_tarfile.add(name=full_path, arcname=relative_file_path)
+    #         current_file_count += 1
+    #         if progress_callback is not None:
+    #             progress_callback(1.0 * current_file_count / total_file_count)
+
+    #     current_tarfile.close()
+    #     current_tar_info.packedSize = current_tar_info.path.stat().st_size
+    #     tarballs.append(current_tar_info)
 
     return tarballs
 
 
-@log
-def calculate_md5_checksum(filename: Path, chunksize: int = 1024 * 1025) -> str:
+def calculate_md5_checksum(filename: Path, chunksize: int = 2**20) -> str:
     """Calculate an md5 hash of a file
 
     Args:
@@ -148,7 +188,14 @@ def calculate_md5_checksum(filename: Path, chunksize: int = 1024 * 1025) -> str:
     return m.hexdigest()
 
 
-@log
+def calculate_checksum(dataset_id: str, datablock: DataBlock) -> str:
+    datablocks_scratch_folder = StoragePaths.scratch_archival_datablocks_folder(dataset_id)
+    datablock_name = Path(datablock.archiveId).name
+    datablock_full_path = datablocks_scratch_folder / datablock_name
+    return calculate_md5_checksum(datablock_full_path)
+
+
+@log_debug
 def download_object_from_s3(
     client: S3Storage, bucket: Bucket, folder: Path, object_name: str, target_path: Path
 ):
@@ -184,7 +231,7 @@ def list_datablocks(client: S3Storage, prefix: Path, bucket: Bucket) -> List[S3S
 
 @log
 def download_objects_from_s3(
-    client: S3Storage, prefix: Path, bucket: Bucket, destination_folder: Path
+    client: S3Storage, prefix: Path, bucket: Bucket, destination_folder: Path, progress_callback
 ) -> List[Path]:
     """Download objects form s3 storage to folder
 
@@ -198,22 +245,11 @@ def download_objects_from_s3(
     """
     destination_folder.mkdir(parents=True, exist_ok=True)
 
-    files: List[Path] = []
-
-    for item in client.list_objects(bucket, str(prefix)):
-        item_name = Path(item.Name).name
-        local_filepath = destination_folder / item_name
-        local_filepath.parent.mkdir(parents=True, exist_ok=True)
-        client.fget_object(
-            bucket=bucket,
-            folder=str(prefix),
-            object_name=item.Name,
-            target_path=local_filepath,
-        )
-        files.append(local_filepath)
+    files = client.download_objects(minio_prefix=prefix, bucket=bucket,
+                                    destination_folder=destination_folder, progress_callback=progress_callback)
 
     if len(files) == 0:
-        raise SystemError(f"No files found in bucket {bucket} at {prefix}")
+        raise SystemError(f"No files found in bucket {bucket.name} at {prefix}")
 
     return files
 
@@ -230,6 +266,7 @@ def find_missing_datablocks_in_s3(client: S3Storage, datablocks: List[DataBlock]
     ]
 
     return datablocks_not_in_retrieval_bucket
+
 
 @log
 def reset_expiry_date(client: S3Storage, filenames: List[str], bucket: Bucket):
@@ -250,12 +287,20 @@ def upload_objects_to_s3(
     bucket: Bucket,
     source_folder: Path,
     ext: str | None = None,
+    progress_callback: Callable[[float], None] = None
 ) -> List[Path]:
     uploaded_files: List[Path] = []
-    for filepath in (f for f in source_folder.iterdir() if not ext or f.suffix == ext):
+
+    files_to_upload = [f for f in source_folder.iterdir() if not ext or f.suffix == ext]
+
+    total_files = len(files_to_upload)
+
+    for filepath in files_to_upload:
         minio_path: Path = prefix / filepath.name
         client.fput_object(source_folder / filepath.name, minio_path, bucket)
         uploaded_files.append(filepath)
+        if progress_callback is not None:
+            progress_callback(1.0 * len(uploaded_files) / total_files)
     return uploaded_files
 
 
@@ -271,6 +316,7 @@ def create_datablock_entries(
     folder: Path,
     origDataBlocks: List[OrigDataBlock],
     tar_infos: List[ArchiveInfo],
+    progress_callback: Callable[[float], None] = None
 ) -> List[DataBlock]:
     """Create datablock entries compliant with schema provided by scicat
 
@@ -286,8 +332,16 @@ def create_datablock_entries(
 
     version = 1.0
 
+    total_file_count = 0
+    for b in origDataBlocks:
+        total_file_count += len(b.dataFileList)
+
+    file_count = 0
+
     datablocks: List[DataBlock] = []
-    for tar in tar_infos:
+
+    for idx, tar in enumerate(tar_infos):
+        # TODO: is it necessary to use any datablock information?
         o = origDataBlocks[0]
 
         data_file_list: List[DataFile] = []
@@ -296,22 +350,34 @@ def create_datablock_entries(
 
         tarball = tarfile.open(tar_path)
 
-        for tar_info in tarball.getmembers():
+        def create_datafile_list_entry(tar_info: tarfile.TarInfo) -> DataFile:
             checksum = calculate_md5_checksum(
                 StoragePaths.scratch_archival_raw_files_folder(dataset_id) / tar_info.path
             )
 
-            data_file_list.append(
-                DataFile(
-                    path=tar_info.path,
-                    size=tar_info.size,
-                    chk=checksum,
-                    uid=str(tar_info.uid),
-                    gid=str(tar_info.gid),
-                    perm=str(tar_info.mode),
-                    time=str(datetime.datetime.now(datetime.UTC).isoformat()),
-                )
+            return DataFile(
+                path=tar_info.path,
+                size=tar_info.size,
+                chk=checksum,
+                uid=str(tar_info.uid),
+                gid=str(tar_info.gid),
+                perm=str(tar_info.mode),
+                time=str(datetime.datetime.now(datetime.UTC).isoformat()),
             )
+
+        with ThreadPoolExecutor(max_workers=4) as executor:
+            future_to_key = {executor.submit(create_datafile_list_entry, tar_info): tar_info for tar_info in tarball.getmembers()}
+
+            for future in as_completed(future_to_key):
+                exception = future.exception()
+
+                if not exception:
+                    data_file_list.append(future.result())
+                    file_count += 1
+                    if progress_callback:
+                        progress_callback(file_count / total_file_count)
+                else:
+                    raise exception
 
         datablocks.append(
             DataBlock(
@@ -342,23 +408,11 @@ def find_object_in_s3(client: S3Storage, dataset_id, datablock_name):
 
 
 @log
-def move_data_to_LTS(client: S3Storage, dataset_id: str, datablock: DataBlock) -> str:
-    # mount target dir and check access
+def move_data_to_LTS(dataset_id: str, datablock: DataBlock):
     if not Variables().LTS_STORAGE_ROOT.exists():
         raise FileNotFoundError(f"Can't open LTS root {Variables().LTS_STORAGE_ROOT}")
 
     datablock_name = datablock.archiveId
-
-    getLogger().info(f"Searching datablock {datablock_name}")
-
-    object_found = find_object_in_s3(client, dataset_id, datablock_name)
-
-    if not object_found:
-        raise DatasetError(
-            f"Datablock {datablock_name} not found in storage at {StoragePaths.relative_datablocks_folder(dataset_id)}"
-        )
-
-    getLogger().info(f"Downloading datablock {datablock_name}")
 
     datablocks_scratch_folder = StoragePaths.scratch_archival_datablocks_folder(dataset_id)
     datablocks_scratch_folder.mkdir(parents=True, exist_ok=True)
@@ -366,16 +420,10 @@ def move_data_to_LTS(client: S3Storage, dataset_id: str, datablock: DataBlock) -
     datablock_name = Path(datablock.archiveId).name
     datablock_full_path = datablocks_scratch_folder / datablock_name
 
-    download_object_from_s3(
-        client,
-        bucket=Bucket.staging_bucket(),
-        folder=StoragePaths.relative_datablocks_folder(dataset_id),
-        object_name=str(StoragePaths.relative_datablocks_folder(dataset_id) / datablock_name),
-        target_path=datablock_full_path,
-    )
-
-    getLogger().info("Calculating Checksum.")
-    checksum_source = calculate_md5_checksum(datablock_full_path)
+    if not datablock_full_path.exists():
+        raise DatasetError(
+            f"Datablock {datablock_name} not found in storage at {StoragePaths.relative_datablocks_folder(dataset_id)}"
+        )
 
     lts_target_dir = StoragePaths.lts_datablocks_folder(dataset_id)
     lts_target_dir.mkdir(parents=True, exist_ok=True)
@@ -385,11 +433,9 @@ def move_data_to_LTS(client: S3Storage, dataset_id: str, datablock: DataBlock) -
     # Copy to LTS
     copy_file_to_folder(src_file=datablock_full_path.absolute(), dst_folder=lts_target_dir.absolute())
 
-    return checksum_source
-
 
 @log
-def verify_checksum(dataset_id: str, datablock: DataBlock, expected_checksum: str) -> None:
+def copy_file_from_LTS(dataset_id: str, datablock: DataBlock):
     lts_target_dir = StoragePaths.lts_datablocks_folder(dataset_id)
     datablock_name = Path(datablock.archiveId).name
 
@@ -403,6 +449,12 @@ def verify_checksum(dataset_id: str, datablock: DataBlock, expected_checksum: st
     verification_path = StoragePaths.scratch_archival_datablocks_folder(dataset_id) / "verification"
     verification_path.mkdir(exist_ok=True)
     copy_file_to_folder(src_file=lts_datablock_path, dst_folder=verification_path)
+
+
+@log
+def verify_checksum(dataset_id: str, datablock: DataBlock, expected_checksum: str) -> None:
+    datablock_name = Path(datablock.archiveId).name
+    verification_path = StoragePaths.scratch_archival_datablocks_folder(dataset_id) / "verification"
     datablock_checksum = calculate_md5_checksum(verification_path / datablock_name)
 
     if datablock_checksum != expected_checksum:
@@ -454,31 +506,32 @@ def copy_file_to_folder(src_file: Path, dst_folder: Path):
         raise SystemError(f"Copying did not produce file {expected_dst_file}")
 
 
+# @log
+# def verify_datablock_content(dataset_id: str, datablock: DataBlock) -> None:
+#     datablocks_scratch_folder = StoragePaths.scratch_archival_datablocks_folder(dataset_id) / "verification"
+#     datablocks_scratch_folder.mkdir(parents=True, exist_ok=True)
+
+#     datablock_folder = datablocks_scratch_folder / Path(datablock.archiveId).name
+
+#     lts_datablock_path = StoragePaths.lts_datablocks_folder(dataset_id) / Path(datablock.archiveId).name
+
+#     asyncio.run(
+#         wait_for_file_accessible(lts_datablock_path.absolute(), Variables().ARCHIVER_LTS_FILE_TIMEOUT_S)
+#     )
+
+#     copy_file_to_folder(
+#         src_file=lts_datablock_path.absolute(),
+#         dst_folder=datablocks_scratch_folder.absolute(),
+#     )
+
+#     verify_datablock(datablock, datablock_folder)
+
+#     os.remove(datablock_folder)
+
+
 @log
-def verify_data_in_LTS(dataset_id: str, datablock: DataBlock) -> None:
-    datablocks_scratch_folder = StoragePaths.scratch_archival_datablocks_folder(dataset_id) / "verification"
-    datablocks_scratch_folder.mkdir(parents=True, exist_ok=True)
+def verify_datablock_content(datablock: DataBlock, datablock_path: str):
 
-    datablock_folder = datablocks_scratch_folder / Path(datablock.archiveId).name
-
-    lts_datablock_path = StoragePaths.lts_datablocks_folder(dataset_id) / Path(datablock.archiveId).name
-
-    asyncio.run(
-        wait_for_file_accessible(lts_datablock_path.absolute(), Variables().ARCHIVER_LTS_FILE_TIMEOUT_S)
-    )
-
-    copy_file_to_folder(
-        src_file=lts_datablock_path.absolute(),
-        dst_folder=datablocks_scratch_folder.absolute(),
-    )
-
-    verify_datablock(datablock, datablock_folder)
-
-    os.remove(datablock_folder)
-
-
-@log
-def verify_datablock(datablock: DataBlock, datablock_path: Path):
     expected_checksums: Dict[str, str] = {
         datafile.path: datafile.chk or "" for datafile in datablock.dataFileList or []
     }
@@ -505,81 +558,55 @@ def verify_datablock(datablock: DataBlock, datablock_path: Path):
             )
 
 
-@log
-def create_datablocks(
-    s3_client: S3Storage, dataset_id: str, origDataBlocks: List[OrigDataBlock]
-) -> List[DataBlock]:
-    if len(origDataBlocks) == 0:
-        return []
+# @log
+# def create_datablocks(
+#     s3_client: S3Storage, dataset_id: str, orig_datablocks: List[OrigDataBlock], file_paths: List[Path],
+#         progress_callback) -> List[DataBlock]:
 
-    if all(
-        False
-        for _ in list_datablocks(
-            s3_client,
-            StoragePaths.relative_raw_files_folder(dataset_id),
-            Bucket.landingzone_bucket(),
-        )
-    ):
-        raise Exception(
-            f"""No objects found in landing zone at {
-                StoragePaths.relative_raw_files_folder(dataset_id)
-            } for dataset {dataset_id}. Storage endpoint: {s3_client.url}"""
-        )
+#     datablocks_scratch_folder = StoragePaths.scratch_archival_datablocks_folder(dataset_id)
+#     datablocks_scratch_folder.mkdir(parents=True, exist_ok=True)
 
-    raw_files_scratch_folder = StoragePaths.scratch_archival_raw_files_folder(dataset_id)
-    raw_files_scratch_folder.mkdir(parents=True, exist_ok=True)
+#     GB_TO_B = 1024 * 1024 * 1024
 
-    # files with full path are downloaded to scratch root
-    file_paths = download_objects_from_s3(
-        s3_client,
-        prefix=StoragePaths.relative_raw_files_folder(dataset_id),
-        bucket=Bucket.landingzone_bucket(),
-        destination_folder=raw_files_scratch_folder,
-    )
+#     raw_files_scratch_folder = StoragePaths.scratch_archival_raw_files_folder(dataset_id)
+#     raw_files_scratch_folder.mkdir(parents=True, exist_ok=True)
 
-    getLogger().info(f"Downloaded {len(file_paths)} objects from {Bucket.landingzone_bucket()}")
+#     archive_infos = create_tarfiles(
+#         dataset_id=dataset_id,
+#         src_folder=raw_files_scratch_folder,
+#         dst_folder=datablocks_scratch_folder,
+#         target_size=Variables().ARCHIVER_TARGET_SIZE_GB * GB_TO_B,
+#     )
 
-    datablocks_scratch_folder = StoragePaths.scratch_archival_datablocks_folder(dataset_id)
-    datablocks_scratch_folder.mkdir(parents=True, exist_ok=True)
+#     getLogger().info(f"Created {len(archive_infos)} datablocks from {len(file_paths)} objects")
 
-    GB_TO_B = 1024 * 1024 * 1024
+#     datablocks = create_datablock_entries(
+#         dataset_id,
+#         StoragePaths.scratch_archival_datablocks_folder(dataset_id),
+#         orig_datablocks,
+#         archive_infos,
+#     )
 
-    archive_infos = create_tarfiles(
-        dataset_id=dataset_id,
-        src_folder=raw_files_scratch_folder,
-        dst_folder=datablocks_scratch_folder,
-        target_size=Variables().ARCHIVER_TARGET_SIZE_GB * GB_TO_B,
-    )
+#     uploaded_objects = upload_objects_to_s3(
+#         s3_client,
+#         prefix=StoragePaths.relative_datablocks_folder(dataset_id),
+#         bucket=Bucket.staging_bucket(),
+#         source_folder=datablocks_scratch_folder,
+#         ext=".gz",
+#     )
 
-    getLogger().info(f"Created {len(archive_infos)} datablocks from {len(file_paths)} objects")
+#     missing_objects = verify_objects(
+#         s3_client,
+#         uploaded_objects,
+#         minio_prefix=StoragePaths.relative_datablocks_folder(dataset_id),
+#         bucket=Bucket.staging_bucket(),
+#         source_folder=datablocks_scratch_folder,
+#     )
 
-    datablocks = create_datablock_entries(
-        dataset_id,
-        StoragePaths.scratch_archival_datablocks_folder(dataset_id),
-        origDataBlocks,
-        archive_infos,
-    )
+#     if len(missing_objects) > 0:
+#         raise Exception(f"{len(missing_objects)} datablocks missing")
 
-    uploaded_objects = upload_objects_to_s3(
-        s3_client,
-        prefix=StoragePaths.relative_datablocks_folder(dataset_id),
-        bucket=Bucket.staging_bucket(),
-        source_folder=datablocks_scratch_folder,
-        ext=".gz",
-    )
-
-    missing_objects = verify_objects(
-        s3_client,
-        uploaded_objects,
-        minio_prefix=StoragePaths.relative_datablocks_folder(dataset_id),
-        bucket=Bucket.staging_bucket(),
-        source_folder=datablocks_scratch_folder,
-    )
-
-    if len(missing_objects) > 0:
-        raise Exception(f"{len(missing_objects)} datablocks missing")
-
-    return datablocks
+#     return datablocks
 
 
 @log
@@ -621,7 +648,6 @@ def verify_objects(
     uploaded_objects: List[Path],
     minio_prefix: Path,
     bucket: Bucket,
-    source_folder: Path,
 ) -> List[Path]:
     missing_files: List[Path] = []
     for f in uploaded_objects:
@@ -729,11 +755,19 @@ def copy_from_LTS_to_scratch_retrieval(dataset_id: str, datablock: DataBlock) ->
 
 
 @log
-def verify_data_on_scratch(dataset_id: str, datablock: DataBlock) -> None:
+def verify_datablock_in_verification(dataset_id: str, datablock: DataBlock) -> None:
+    datablock_name = Path(datablock.archiveId).name
+    verification_path = StoragePaths.scratch_archival_datablocks_folder(dataset_id) / "verification"
+    datablock_path = verification_path / datablock_name
+    verify_datablock_content(datablock=datablock, datablock_path=datablock_path)
+
+
+@log
+def verify_datablock_on_scratch(dataset_id: str, datablock: DataBlock) -> None:
     scratch_destination_folder = StoragePaths.scratch_archival_datablocks_folder(dataset_id)
     assert scratch_destination_folder.exists()
     datablock_on_scratch = scratch_destination_folder / Path(datablock.archiveId).name
-    verify_datablock(datablock=datablock, datablock_path=datablock_on_scratch)
+    verify_datablock_content(datablock=datablock, datablock_path=datablock_on_scratch)
 
 
 @log
@@ -742,3 +776,7 @@ def upload_data_to_retrieval_bucket(client: S3Storage, dataset_id: str, databloc
     assert scratch_destination_folder.exists()
     datablock_on_scratch = scratch_destination_folder / Path(datablock.archiveId).name
     upload_datablock(client=client, file=datablock_on_scratch, datablock=datablock)
+
+
+def count_files(folder: str) -> int:
+    return sum(len(files) for _, _, files in os.walk(folder))
