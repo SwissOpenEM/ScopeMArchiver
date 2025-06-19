@@ -81,7 +81,7 @@ def partition_files_flat(folder: Path, target_size_bytes: int) -> Generator[List
             part.append(filepath.relative_to(folder))
             size = size + os.path.getsize(filepath)
 
-    yield part
+    yield (idx, part)
 
 
 @log_debug
@@ -112,27 +112,58 @@ def create_tarfiles(
     if not any(Path(src_folder).iterdir()):
         raise SystemError(f"Empty folder {src_folder} found.")
 
-    total_file_count = count_files(src_folder)
-    current_file_count = 0
+    # total_file_count = count_files(src_folder)
+    # current_file_count = 0
 
-    for files in partition_files_flat(src_folder, target_size):
+    def create_tar(idx: int, files: List):
         current_tar_info = ArchiveInfo(
             unpackedSize=0,
             packedSize=0,
-            path=Path(dst_folder / Path(f"{tar_name}_{len(tarballs)}.tar.gz")),
+            path=Path(dst_folder / Path(f"{tar_name}_{idx}.tar.gz")),
         )
         current_tarfile: tarfile.TarFile = tarfile.open(current_tar_info.path, "w")
         for relative_file_path in files:
             full_path = src_folder.joinpath(relative_file_path)
             current_tar_info.unpackedSize += full_path.stat().st_size
             current_tarfile.add(name=full_path, arcname=relative_file_path)
-            current_file_count += 1
-            if progress_callback is not None:
-                progress_callback(1.0 * current_file_count / total_file_count)
+            # if progress_callback is not None:
+            #     progress_callback(1.0 * current_file_count / total_file_count)
 
         current_tarfile.close()
-        current_tar_info.packedSize = current_tar_info.path.stat().st_size
-        tarballs.append(current_tar_info)
+        current_tar_info.packedSize = current_tar_info.path.stat().st_size 
+        return current_tar_info
+
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        future_to_key = {executor.submit(create_tar, idx, files): (idx, files) for (idx, files) in partition_files_flat(src_folder, target_size)}
+        for future in as_completed(future_to_key):
+            exception = future.exception()
+
+            if not exception:
+                tarballs.append(future.result())
+                # file_count += 1
+                # if progress_callback:
+                #     progress_callback(file_count / total_file_count)
+            else:
+                raise exception 
+
+    # for files in partition_files_flat(src_folder, target_size):
+    #     current_tar_info = ArchiveInfo(
+    #         unpackedSize=0,
+    #         packedSize=0,
+    #         path=Path(dst_folder / Path(f"{tar_name}_{len(tarballs)}.tar.gz")),
+    #     )
+    #     current_tarfile: tarfile.TarFile = tarfile.open(current_tar_info.path, "w")
+    #     for relative_file_path in files:
+    #         full_path = src_folder.joinpath(relative_file_path)
+    #         current_tar_info.unpackedSize += full_path.stat().st_size
+    #         current_tarfile.add(name=full_path, arcname=relative_file_path)
+    #         current_file_count += 1
+    #         if progress_callback is not None:
+    #             progress_callback(1.0 * current_file_count / total_file_count)
+
+    #     current_tarfile.close()
+    #     current_tar_info.packedSize = current_tar_info.path.stat().st_size
+    #     tarballs.append(current_tar_info)
 
     return tarballs
 
