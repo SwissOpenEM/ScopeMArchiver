@@ -44,6 +44,11 @@ def download_file(s3_client, obj, minio_prefix, destination_folder, bucket):
     local_filedir = destination_folder / item_parent_dirs
     local_filedir.mkdir(parents=True, exist_ok=True)
     local_filepath = local_filedir / item_name
+
+    if local_filepath.exists():
+        return local_filepath
+
+    
     config = TransferConfig(
         multipart_threshold=100 * 1024 * 1024,
         max_concurrency=2,
