@@ -212,14 +212,12 @@ def upload_datablocks_to_s3(dataset_id: str) -> List[Path]:
 def verify_objects(dataset_id: str, uploaded_objects: List[Path]) -> List[DataBlock]:
     s3_client = get_s3_client()
     prefix = StoragePaths.relative_datablocks_folder(dataset_id)
-    datablocks_scratch_folder = StoragePaths.scratch_archival_datablocks_folder(dataset_id)
 
     missing_objects = datablocks_operations.verify_objects(
         client=s3_client,
         uploaded_objects=uploaded_objects,
         minio_prefix=prefix,
         bucket=Bucket.staging_bucket(),
-        source_folder=datablocks_scratch_folder
     )
     if len(missing_objects) > 0:
         raise SystemError(f"{len(missing_objects)} datablocks missing")
