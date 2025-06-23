@@ -232,7 +232,7 @@ jobs:
           context: ./backend/
           file: ./backend/prefect/config.Dockerfile
           push: ${{ github.event_name != 'pull_request' }}
-          build-args: PREFECT_VERSION=3.1.11-python3.11
+          build-args: PREFECT_VERSION=3.4.6-python3.13
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 

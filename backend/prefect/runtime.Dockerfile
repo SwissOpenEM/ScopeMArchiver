@@ -1,4 +1,4 @@
-ARG PREFECT_VERSION=3.1.11-python3.11
+ARG PREFECT_VERSION=3.4.6-python3.13
 FROM prefecthq/prefect:${PREFECT_VERSION} AS builder
 
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
