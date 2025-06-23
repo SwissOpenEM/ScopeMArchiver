@@ -41,7 +41,7 @@ def on_get_datablocks_error(dataset_id: str, task: Task, task_run: TaskRun, stat
 
 @task(
     task_run_name=generate_task_name_dataset,
-    tags=[ConcurrencyLimits().LTS_TO_RETRIEVAL_TAG],
+    tags=[ConcurrencyLimits().LTS_READ_TAG],
 )
 def copy_datablock_from_LTS_to_scratch(dataset_id: str, datablock: DataBlock):
     datablocks_operations.copy_from_LTS_to_scratch_retrieval(dataset_id, datablock)
@@ -51,7 +51,7 @@ def copy_datablock_from_LTS_to_scratch(dataset_id: str, datablock: DataBlock):
     task_run_name=generate_task_name_dataset,
 )
 def verify_data_on_scratch(dataset_id: str, datablock: DataBlock):
-    datablocks_operations.verify_data_on_scratch(dataset_id, datablock)
+    datablocks_operations.verify_datablock_on_scratch(dataset_id, datablock)
 
 
 @task(

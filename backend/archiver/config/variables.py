@@ -35,10 +35,12 @@ class PrefectVariablesModel(BaseSettings):
 
     LTS_STORAGE_ROOT: Path = Path("")
     LTS_FREE_SPACE_PERCENTAGE: float = 20
+
     ARCHIVER_SCRATCH_FOLDER: Path = Path("")
     ARCHIVER_TARGET_SIZE_GB: int = 20
     ARCHIVER_LTS_FILE_TIMEOUT_S: int = 60
     ARCHIVER_LTS_WAIT_BEFORE_VERIFY_S: int = 180
+    ARCHIVER_NUM_WORKERS: int = 4
 
     SCICAT_ENDPOINT: str = ""
     SCICAT_API_PREFIX: str = ""
@@ -126,6 +128,10 @@ class Variables:
     @property
     def ARCHIVER_LTS_WAIT_BEFORE_VERIFY_S(self) -> int:
         return int(self.__get("archiver_lts_wait_before_verify_s") or 30)
+
+    @property
+    def ARCHIVER_NUM_WORKERS(self) -> int:
+        return int(self.__get("archiver_num_workers") or 30)
 
     @property
     def LTS_STORAGE_ROOT(self) -> Path:

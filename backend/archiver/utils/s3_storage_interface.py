@@ -44,6 +44,10 @@ def download_file(s3_client, obj, minio_prefix, destination_folder, bucket):
     local_filedir = destination_folder / item_parent_dirs
     local_filedir.mkdir(parents=True, exist_ok=True)
     local_filepath = local_filedir / item_name
+
+    if local_filepath.exists():
+        return local_filepath
+
     config = TransferConfig(
         multipart_threshold=100 * 1024 * 1024,
         max_concurrency=2,
@@ -138,7 +142,7 @@ class S3Storage:
                          minio_prefix: Path,
                          bucket: Bucket,
                          destination_folder: Path,
-                         progress_callback: Callable[[float], None] = None) -> List[Path]:
+                         progress_callback: Callable[[float], None] | None = None) -> List[Path]:
         remote_bucket = self._resource.Bucket(bucket.name)
         objs = remote_bucket.objects.filter(Prefix=str(minio_prefix))
 
@@ -146,14 +150,14 @@ class S3Storage:
 
         count = 0
 
-        with ThreadPoolExecutor(max_workers=4) as executor:
+        with ThreadPoolExecutor(max_workers=Variables().ARCHIVER_NUM_WORKERS) as executor:
             future_to_key = {executor.submit(download_file, self._minio, key, minio_prefix,
                                              destination_folder, bucket): key for key in objs}
 
             for future in as_completed(future_to_key):
                 count = count + 1
-                progress_callback(count)
-                key = future_to_key[future]
+                if progress_callback:
+                    progress_callback(count)
                 exception = future.exception()
 
                 if not exception:

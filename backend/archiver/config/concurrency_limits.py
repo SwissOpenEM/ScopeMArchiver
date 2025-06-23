@@ -9,14 +9,11 @@ class ConcurrencyLimits(BaseSettings):
     LTS_FREE_LIMIT: int = 1
     LTS_FREE_TAG: str = "wait-for-free-space-in-lts"
 
-    MOVE_TO_LTS_LIMIT: int = 1
-    MOVE_TO_LTS_TAG: str = "move-datablocks-to-lts"
+    LTS_WRITE_LIMIT: int = 1
+    LTS_WRITE_TAG: str = "write-to-lts-share"
 
-    VERIFY_LTS_LIMIT: int = 1
-    VERIFY_LTS_TAG: str = "verify-datablocks-in-lts"
-
-    LTS_TO_RETRIEVAL_LIMIT: int = 1
-    LTS_TO_RETRIEVAL_TAG: str = "copy-from-LTS-to-retrieval"
+    LTS_READ_LIMIT: int = 1
+    LTS_READ_TAG: str = "read-to-lts-share"
 
 
 def register_concurrency_limits(limits: ConcurrencyLimits):
