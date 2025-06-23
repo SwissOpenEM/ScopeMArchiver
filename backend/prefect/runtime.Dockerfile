@@ -44,8 +44,8 @@ RUN systemctl --system enable rpcbind.service
 ARG LTS_ROOT_FOLDER=/tmp/LTS
 RUN mkdir ${LTS_ROOT_FOLDER}
 
-ARG UID=999
-ARG GID=999
+ARG UID=123
+ARG GID=123
 RUN chown -R ${UID}:${GID} /app
 
 ARG USER=app
