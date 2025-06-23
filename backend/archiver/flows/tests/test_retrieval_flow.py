@@ -243,4 +243,4 @@ async def test_datablock_not_found(
         mock_cleanup_scratch.assert_called_once_with(dataset_id)
         mock_cleanup_lts.assert_not_called()
         mock_copy_file_to_folder.assert_not_called()
-        mock_verify_datablock_content.assert_called()
+        mock_verify_datablock_content.assert_not_called()

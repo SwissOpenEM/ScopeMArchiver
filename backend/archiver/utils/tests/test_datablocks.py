@@ -108,8 +108,8 @@ def tar_infos_fixture(storage_paths_fixture) -> List[ArchiveInfo]:
     assert len(files) > 2
 
     tar_infos = [
-        ArchiveInfo(unpackedSize=0, packedSize=0, path=Path("")),
-        ArchiveInfo(unpackedSize=0, packedSize=0, path=Path("")),
+        ArchiveInfo(unpackedSize=0, packedSize=0, path=Path(""), fileCount=2),
+        ArchiveInfo(unpackedSize=0, packedSize=0, path=Path(""), fileCount=2),
     ]
 
     tar1_path = tar_folder / "tar1.tar.gz"
