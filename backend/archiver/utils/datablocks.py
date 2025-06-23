@@ -133,7 +133,7 @@ def create_tarfiles(
         current_tar_info.packedSize = current_tar_info.path.stat().st_size
         return current_tar_info
 
-    with ThreadPoolExecutor(max_workers=4) as executor:
+    with ThreadPoolExecutor(max_workers=Variables().ARCHIVER_NUM_WORKERS) as executor:
         future_to_key = {executor.submit(create_tar, idx, files): (idx, files)
                          for (idx, files) in partition_files_flat(src_folder, target_size)}
         for future in as_completed(future_to_key):
@@ -347,7 +347,7 @@ def create_datablock_entries(
                 time=str(datetime.datetime.now(datetime.UTC).isoformat()),
             )
 
-        with ThreadPoolExecutor(max_workers=4) as executor:
+        with ThreadPoolExecutor(max_workers=Variables().ARCHIVER_NUM_WORKERS) as executor:
             future_to_key = {executor.submit(create_datafile_list_entry, tar_info): tar_info for tar_info in tarball.getmembers()}
 
             for future in as_completed(future_to_key):
