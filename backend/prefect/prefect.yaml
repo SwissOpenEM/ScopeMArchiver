@@ -79,6 +79,7 @@ deployments:
       image_pull_policy: Never 
       volumes:
         - "{{ $PREFECT_WORKER_LTS_VOLUME_NAME }}:{{ LTS_ROOT_FOLDER }}"
+        - "{{ $PREFECT_ARCHIVER_HOST_SCRATCH }}:{{ ARCHIVER_SCRATCH_FOLDER }}"
       networks:
         - "{{ $PREFECT_NETWORK }}"
     # There is a bug and this does not work as described
@@ -106,6 +107,7 @@ deployments:
       image_pull_policy: Never 
       volumes:
         - "{{ $PREFECT_WORKER_LTS_VOLUME_NAME }}:{{ LTS_ROOT_FOLDER }}"
+        - "{{ $PREFECT_ARCHIVER_HOST_SCRATCH }}:{{ ARCHIVER_SCRATCH_FOLDER }}"
       networks:
         - "{{ $PREFECT_NETWORK }}"
     # There is a bug and this does not work as described

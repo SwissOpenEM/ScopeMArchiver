@@ -1,17 +1,24 @@
+import math
+from pathlib import Path
 import time
 from typing import List
 from functools import partial
 import asyncio
 from uuid import UUID
-from pydantic import SecretStr
 
 
 from prefect import flow, task, State, Task, Flow
 from prefect.client.schemas.objects import TaskRun, FlowRun
 
-from archiver.config.variables import Variables
+from prefect.artifacts import (
+    create_progress_artifact,
+    update_progress_artifact,
+)
 
-from .utils import report_archival_error
+from archiver.config.variables import Variables
+from archiver.utils.datablocks import ArchiveInfo
+
+from .utils import StoragePaths, report_archival_error
 from .task_utils import (
     generate_task_name_dataset,
     generate_flow_name_job_id,
@@ -35,8 +42,9 @@ from archiver.utils.datablocks import wait_for_free_space
 from archiver.utils.model import OrigDataBlock, DataBlock
 import archiver.utils.datablocks as datablocks_operations
 from archiver.config.concurrency_limits import ConcurrencyLimits
-from archiver.utils.s3_storage_interface import get_s3_client
+from archiver.utils.s3_storage_interface import Bucket, get_s3_client
 from archiver.utils.log import getLogger
+
 
 def on_get_origdatablocks_error(dataset_id: str, task: Task, task_run: TaskRun, state: State):
     """Callback for get_origdatablocks tasks. Reports a user error."""
@@ -45,19 +53,175 @@ def on_get_origdatablocks_error(dataset_id: str, task: Task, task_run: TaskRun, 
 
 
 @task(task_run_name=generate_task_name_dataset)
-def create_datablocks(dataset_id: str, origDataBlocks: List[OrigDataBlock]) -> List[DataBlock]:
-    """Prefect task to create datablocks.
-
-    Args:
-        dataset_id (str): dataset id
-        origDataBlocks (List[OrigDataBlock]): List of OrigDataBlocks (Pydantic Model)
-
-    Returns:
-        List[DataBlock]: List of DataBlocks (Pydantic Model)
-    """
+def download_origdatablocks(dataset_id: str, origDataBlocks: List[OrigDataBlock]):
 
     s3_client = get_s3_client()
-    return datablocks_operations.create_datablocks(s3_client, dataset_id, origDataBlocks)
+
+    if len(origDataBlocks) == 0:
+        return []
+
+    if all(
+        False
+        for _ in datablocks_operations.list_datablocks(
+            s3_client,
+            StoragePaths.relative_raw_files_folder(dataset_id),
+            Bucket.landingzone_bucket(),
+        )
+    ):
+        raise Exception(
+            f"""No objects found in landing zone at {
+                StoragePaths.relative_raw_files_folder(dataset_id)
+            } for dataset {dataset_id}. Storage endpoint: {s3_client.url}"""
+        )
+
+    raw_files_scratch_folder = StoragePaths.scratch_archival_raw_files_folder(dataset_id)
+    raw_files_scratch_folder.mkdir(parents=True, exist_ok=True)
+
+    progress_artifact_id = create_progress_artifact(
+        progress=0.0,
+        description="Download progress",
+    )
+
+    total_file_count = 0
+    for b in origDataBlocks:
+        total_file_count += len(b.dataFileList)
+
+    def update_progress(p):
+        update_progress.last_progress = 0
+        progress = math.floor(100.0 * p / total_file_count)
+        if (progress > update_progress.last_progress):
+            update_progress.last_progress = progress
+            update_progress_artifact(artifact_id=progress_artifact_id, progress=progress)
+
+    getLogger().info(f"Downloading {total_file_count} objects from bucket {Bucket.landingzone_bucket()}")
+    # files with full path are downloaded to scratch root
+    file_paths = datablocks_operations.download_objects_from_s3(
+        s3_client,
+        prefix=StoragePaths.relative_raw_files_folder(dataset_id),
+        bucket=Bucket.landingzone_bucket(),
+        destination_folder=raw_files_scratch_folder,
+        progress_callback=update_progress
+    )
+    getLogger().info(f"Downloaded {len(file_paths)} objects from {Bucket.landingzone_bucket()}")
+
+    return file_paths
+
+
+# @task(task_run_name=generate_task_name_dataset)
+# def create_datablocks(dataset_id: str, origDataBlocks: List[OrigDataBlock], file_paths: List[Path]) -> List[DataBlock]:
+#     """Prefect task to create datablocks.
+
+#     Args:
+#         dataset_id (str): dataset id
+#         origDataBlocks (List[OrigDataBlock]): List of OrigDataBlocks (Pydantic Model)
+
+#     Returns:
+#         List[DataBlock]: List of DataBlocks (Pydantic Model)
+#     """
+
+#     s3_client = get_s3_client()
+
+#     progress_artifact_id = create_progress_artifact(
+#         progress=0.0,
+#         description="Create datablocks from datafiles",
+#     )
+
+#     return datablocks_operations.create_datablocks(s3_client, dataset_id, origDataBlocks, file_paths, update_progress)
+
+
+@task(task_run_name=generate_task_name_dataset)
+def create_tarfiles(dataset_id: str) -> List[ArchiveInfo]:
+    datablocks_scratch_folder = StoragePaths.scratch_archival_datablocks_folder(dataset_id)
+    datablocks_scratch_folder.mkdir(parents=True, exist_ok=True)
+
+    GB_TO_B = 1024 * 1024 * 1024
+
+    raw_files_scratch_folder = StoragePaths.scratch_archival_raw_files_folder(dataset_id)
+    raw_files_scratch_folder.mkdir(parents=True, exist_ok=True)
+
+    progress_artifact_id = create_progress_artifact(
+        progress=0.0,
+        description="Creating tar files",
+    )
+
+    def update_progress(progress):
+        update_progress.last_progress = 0
+        progress = math.floor(100.0 * progress)
+        if (progress > update_progress.last_progress):
+            update_progress.last_progress = progress
+            update_progress_artifact(artifact_id=progress_artifact_id, progress=progress)
+
+    return datablocks_operations.create_tarfiles(
+        dataset_id=dataset_id,
+        src_folder=raw_files_scratch_folder,
+        dst_folder=datablocks_scratch_folder,
+        target_size=Variables().ARCHIVER_TARGET_SIZE_GB * GB_TO_B,
+        progress_callback=update_progress
+    )
+
+
+@task(task_run_name=generate_task_name_dataset)
+def create_datablock_entries(dataset_id: str, orig_datablocks: List[OrigDataBlock], tar_files: List[ArchiveInfo]) -> List[DataBlock]:
+    datablocks_scratch_folder = StoragePaths.scratch_archival_datablocks_folder(dataset_id)
+    progress_artifact_id = create_progress_artifact(
+        progress=0.0,
+        description="Creating tar files",
+    )
+
+    def update_progress(progress):
+        update_progress.last_progress = 0
+        progress = math.floor(100.0 * progress)
+        if (progress > update_progress.last_progress):
+            update_progress.last_progress = progress
+            update_progress_artifact(artifact_id=progress_artifact_id, progress=progress)
+
+    return datablocks_operations.create_datablock_entries(dataset_id,
+                                                          datablocks_scratch_folder,
+                                                          orig_datablocks,
+                                                          tar_files,
+                                                          update_progress)
+
+
+@task(task_run_name=generate_task_name_dataset)
+def upload_datablocks_to_s3(dataset_id: str) -> List[Path]:
+    s3_client = get_s3_client()
+    prefix = StoragePaths.relative_datablocks_folder(dataset_id)
+    datablocks_scratch_folder = StoragePaths.scratch_archival_datablocks_folder(dataset_id)
+    progress_artifact_id = create_progress_artifact(
+        progress=0.0,
+        description="Upload datablocks to s3",
+    )
+
+    def update_progress(progress):
+        update_progress.last_progress = 0
+        progress = math.floor(100.0 * progress)
+        if (progress > update_progress.last_progress):
+            update_progress.last_progress = progress
+            update_progress_artifact(artifact_id=progress_artifact_id, progress=progress)
+
+    return datablocks_operations.upload_objects_to_s3(s3_client=s3_client,
+                                                      prefix=prefix,
+                                                      bucket=Bucket.staging_bucket(),
+                                                      source_folder=datablocks_scratch_folder,
+                                                      ext=".gz",
+                                                      progress_callback=update_progress)
+
+
+@task(task_run_name=generate_task_name_dataset)
+def verify_objects(dataset_id: str, uploaded_objects: List[Path]) -> List[DataBlock]:
+    s3_client = get_s3_client()
+    prefix = StoragePaths.relative_datablocks_folder(dataset_id)
+    datablocks_scratch_folder = StoragePaths.scratch_archival_datablocks_folder(dataset_id)
+
+    missing_objects = datablocks_operations.verify_objects(
+        s3_client=s3_client,
+        uploaded_objects=uploaded_objects,
+        minio_prefix=prefix,
+        bucket=Bucket.staging_bucket(),
+        source_folder=datablocks_scratch_folder
+    )
+    if len(missing_objects) > 0:
+        raise SystemError(f"{len(missing_objects)} datablocks missing")
 
 
 @task(task_run_name=generate_sleep_for_task_name)
@@ -128,7 +292,7 @@ def move_datablock_to_lts_flow(dataset_id: str, datablock: DataBlock):
     wait = check_free_space_in_LTS.submit()
 
     checksum = move_data_to_LTS.submit(dataset_id=dataset_id, datablock=datablock, wait_for=[wait])  # type: ignore
- 
+
     getLogger().info(f"Wait {Variables().ARCHIVER_LTS_WAIT_BEFORE_VERIFY_S}s before verifying datablock")
     sleep = sleep_for.submit(Variables().ARCHIVER_LTS_WAIT_BEFORE_VERIFY_S, wait_for=[checksum])
 
@@ -142,7 +306,7 @@ def move_datablock_to_lts_flow(dataset_id: str, datablock: DataBlock):
 
 
 @flow(name="create_datablocks", flow_run_name=generate_subflow_run_name_job_id_dataset_id)
-def create_datablocks_flow(dataset_id: str, scicat_token: SecretStr) -> List[DataBlock]:
+def create_datablocks_flow(dataset_id: str) -> List[DataBlock]:
     """Prefect (sub-)flow to create datablocks (.tar.gz files) for files of a dataset and register them in Scicat.
 
     Args:
@@ -151,6 +315,8 @@ def create_datablocks_flow(dataset_id: str, scicat_token: SecretStr) -> List[Dat
     Returns:
         List[DataBlock]: List of created and registered datablocks
     """
+
+    scicat_token = get_scicat_access_token.submit()
 
     dataset_update = update_scicat_archival_dataset_lifecycle.submit(
         dataset_id=dataset_id,
@@ -162,13 +328,32 @@ def create_datablocks_flow(dataset_id: str, scicat_token: SecretStr) -> List[Dat
         on_failure=[partial(on_get_origdatablocks_error, dataset_id)]
     ).submit(dataset_id=dataset_id, token=scicat_token, wait_for=[dataset_update])  # type: ignore
 
-    datablocks_future = create_datablocks.submit(dataset_id=dataset_id, origDataBlocks=orig_datablocks)  # type: ignore
+    files = download_origdatablocks.submit(dataset_id=dataset_id, origDataBlocks=orig_datablocks)
 
-    register_datablocks.submit(
+    tarfiles_future = create_tarfiles.submit(dataset_id, wait_for=[files])
+    datablocks_future = create_datablock_entries.submit(dataset_id, orig_datablocks, tarfiles_future)
+
+    uploaded_files = upload_datablocks_to_s3.submit(dataset_id, wait_for=[datablocks_future])
+
+    verify_future = verify_objects.submit(dataset_id, uploaded_files)
+
+    # Prefect issue: https://github.com/PrefectHQ/prefect/issues/12028
+    # Exceptions are not propagated correctly
+    files.result()
+    tarfiles_future.result()
+    datablocks_future.result()
+    uploaded_files.result()
+    verify_future.result()
+
+    scicat_token = get_scicat_access_token.submit(wait_for=[datablocks_future])
+
+    register_future = register_datablocks.submit(
         datablocks=datablocks_future,  # type: ignore
         dataset_id=dataset_id,
         token=scicat_token,
-    ).wait()
+    )
+
+    register_future.result()
 
     return datablocks_future.result()
 
@@ -208,9 +393,10 @@ def cleanup_dataset(flow: Flow, flow_run: FlowRun, state: State):
     on_completion=[cleanup_dataset],
     on_cancellation=[on_dataset_flow_failure],
 )
-def archive_single_dataset_flow(dataset_id: str, scicat_token: SecretStr):
+def archive_single_dataset_flow(dataset_id: str):
+
     try:
-        datablocks = create_datablocks_flow(dataset_id, scicat_token=scicat_token)
+        datablocks = create_datablocks_flow(dataset_id)
     except Exception as e:
         raise e
 
@@ -220,7 +406,7 @@ def archive_single_dataset_flow(dataset_id: str, scicat_token: SecretStr):
         wait = check_free_space_in_LTS.submit()
 
         checksum = move_data_to_LTS.submit(dataset_id=dataset_id, datablock=datablock, wait_for=[wait])  # type: ignore
-    
+
         getLogger().info(f"Wait {Variables().ARCHIVER_LTS_WAIT_BEFORE_VERIFY_S}s before verifying datablock")
         sleep = sleep_for.submit(Variables().ARCHIVER_LTS_WAIT_BEFORE_VERIFY_S, wait_for=[checksum])
 
@@ -233,12 +419,13 @@ def archive_single_dataset_flow(dataset_id: str, scicat_token: SecretStr):
         )  # type: ignore
         tasks.append(w)
 
+    access_token = get_scicat_access_token.submit(wait_for=tasks)
     update_scicat_archival_dataset_lifecycle.submit(
         dataset_id=dataset_id,
         status=SciCatClient.ARCHIVESTATUSMESSAGE.DATASET_ON_ARCHIVEDISK,
         archivable=False,
         retrievable=True,
-        token=scicat_token,
+        token=access_token,
         wait_for=tasks
     ).result()
 
@@ -293,7 +480,7 @@ def archive_datasets_flow(job_id: UUID, dataset_ids: List[str] | None = None):
         e: _description_
     """
     dataset_ids: List[str] = dataset_ids or []
-    access_token = get_scicat_access_token()
+    access_token = get_scicat_access_token.submit()
 
     job_update = update_scicat_archival_job_status.submit(
         job_id=job_id,
@@ -307,7 +494,9 @@ def archive_datasets_flow(job_id: UUID, dataset_ids: List[str] | None = None):
     dataset_ids = dataset_ids_future.result()
 
     for id in dataset_ids:
-        archive_single_dataset_flow(dataset_id=id, scicat_token=access_token)
+        archive_single_dataset_flow(dataset_id=id)
+
+    access_token = get_scicat_access_token.submit()
 
     update_scicat_archival_job_status.submit(
         job_id=job_id,

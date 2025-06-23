@@ -8,12 +8,12 @@ import time
 import datetime
 import hashlib
 
-from typing import Dict, Generator, List
+from typing import Callable, Dict, Generator, List
 from pathlib import Path
 
 from archiver.utils.s3_storage_interface import S3Storage, Bucket
 from archiver.utils.model import OrigDataBlock, DataBlock, DataFile
-from archiver.utils.log import getLogger, log
+from archiver.utils.log import getLogger, log, log_debug
 from archiver.config.variables import Variables
 from archiver.flows.utils import DatasetError, SystemError, StoragePaths
 
@@ -83,12 +83,13 @@ def partition_files_flat(folder: Path, target_size_bytes: int) -> Generator[List
     yield part
 
 
-@log
+@log_debug
 def create_tarfiles(
     dataset_id: str,
     src_folder: Path,
     dst_folder: Path,
     target_size: int,
+    progress_callback: Callable[[float], None] = None
 ) -> List[ArchiveInfo]:
     """Create datablocks, i.e. .tar.gz files, from all files in a folder. Folder structures are kept and symlnks not resolved.
     The created tar files will be named according to the dataset they belong to.
@@ -110,6 +111,9 @@ def create_tarfiles(
     if not any(Path(src_folder).iterdir()):
         raise SystemError(f"Empty folder {src_folder} found.")
 
+    total_file_count = sum(len(files) for _, _, files in os.walk(src_folder))
+    current_file_count = 0
+
     for files in partition_files_flat(src_folder, target_size):
         current_tar_info = ArchiveInfo(
             unpackedSize=0,
@@ -121,6 +125,10 @@ def create_tarfiles(
             full_path = src_folder.joinpath(relative_file_path)
             current_tar_info.unpackedSize += full_path.stat().st_size
             current_tarfile.add(name=full_path, arcname=relative_file_path)
+            current_file_count += 1
+            if progress_callback is not None:
+                progress_callback(1.0 * current_file_count / total_file_count)
+
         current_tarfile.close()
         current_tar_info.packedSize = current_tar_info.path.stat().st_size
         tarballs.append(current_tar_info)
@@ -128,7 +136,7 @@ def create_tarfiles(
     return tarballs
 
 
-@log
+@log_debug
 def calculate_md5_checksum(filename: Path, chunksize: int = 1024 * 1025) -> str:
     """Calculate an md5 hash of a file
 
@@ -148,7 +156,7 @@ def calculate_md5_checksum(filename: Path, chunksize: int = 1024 * 1025) -> str:
     return m.hexdigest()
 
 
-@log
+@log_debug
 def download_object_from_s3(
     client: S3Storage, bucket: Bucket, folder: Path, object_name: str, target_path: Path
 ):
@@ -184,7 +192,7 @@ def list_datablocks(client: S3Storage, prefix: Path, bucket: Bucket) -> List[S3S
 
 @log
 def download_objects_from_s3(
-    client: S3Storage, prefix: Path, bucket: Bucket, destination_folder: Path
+    client: S3Storage, prefix: Path, bucket: Bucket, destination_folder: Path, progress_callback
 ) -> List[Path]:
     """Download objects form s3 storage to folder
 
@@ -198,22 +206,11 @@ def download_objects_from_s3(
     """
     destination_folder.mkdir(parents=True, exist_ok=True)
 
-    files: List[Path] = []
-
-    for item in client.list_objects(bucket, str(prefix)):
-        item_name = Path(item.Name).name
-        local_filepath = destination_folder / item_name
-        local_filepath.parent.mkdir(parents=True, exist_ok=True)
-        client.fget_object(
-            bucket=bucket,
-            folder=str(prefix),
-            object_name=item.Name,
-            target_path=local_filepath,
-        )
-        files.append(local_filepath)
+    files = client.download_objects(minio_prefix=prefix, bucket=bucket,
+                                    destination_folder=destination_folder, progress_callback=progress_callback)
 
     if len(files) == 0:
-        raise SystemError(f"No files found in bucket {bucket} at {prefix}")
+        raise SystemError(f"No files found in bucket {bucket.name} at {prefix}")
 
     return files
 
@@ -230,6 +227,7 @@ def find_missing_datablocks_in_s3(client: S3Storage, datablocks: List[DataBlock]
     ]
 
     return datablocks_not_in_retrieval_bucket
+
 
 @log
 def reset_expiry_date(client: S3Storage, filenames: List[str], bucket: Bucket):
@@ -250,12 +248,20 @@ def upload_objects_to_s3(
     bucket: Bucket,
     source_folder: Path,
     ext: str | None = None,
+    progress_callback: Callable[[float], None] = None
 ) -> List[Path]:
     uploaded_files: List[Path] = []
-    for filepath in (f for f in source_folder.iterdir() if not ext or f.suffix == ext):
+
+    files_to_upload = [f for f in source_folder.iterdir() if not ext or f.suffix == ext]
+
+    total_files = len(files_to_upload)
+
+    for filepath in files_to_upload:
         minio_path: Path = prefix / filepath.name
         client.fput_object(source_folder / filepath.name, minio_path, bucket)
         uploaded_files.append(filepath)
+        if progress_callback is not None:
+            progress_callback(1.0 * len(uploaded_files) / total_files)
     return uploaded_files
 
 
@@ -271,6 +277,7 @@ def create_datablock_entries(
     folder: Path,
     origDataBlocks: List[OrigDataBlock],
     tar_infos: List[ArchiveInfo],
+    progress_callback: Callable[[float], None] = None
 ) -> List[DataBlock]:
     """Create datablock entries compliant with schema provided by scicat
 
@@ -506,83 +513,6 @@ def verify_datablock(datablock: DataBlock, datablock_path: Path):
 
 
 @log
-def create_datablocks(
-    s3_client: S3Storage, dataset_id: str, origDataBlocks: List[OrigDataBlock]
-) -> List[DataBlock]:
-    if len(origDataBlocks) == 0:
-        return []
-
-    if all(
-        False
-        for _ in list_datablocks(
-            s3_client,
-            StoragePaths.relative_raw_files_folder(dataset_id),
-            Bucket.landingzone_bucket(),
-        )
-    ):
-        raise Exception(
-            f"""No objects found in landing zone at {
-                StoragePaths.relative_raw_files_folder(dataset_id)
-            } for dataset {dataset_id}. Storage endpoint: {s3_client.url}"""
-        )
-
-    raw_files_scratch_folder = StoragePaths.scratch_archival_raw_files_folder(dataset_id)
-    raw_files_scratch_folder.mkdir(parents=True, exist_ok=True)
-
-    # files with full path are downloaded to scratch root
-    file_paths = download_objects_from_s3(
-        s3_client,
-        prefix=StoragePaths.relative_raw_files_folder(dataset_id),
-        bucket=Bucket.landingzone_bucket(),
-        destination_folder=raw_files_scratch_folder,
-    )
-
-    getLogger().info(f"Downloaded {len(file_paths)} objects from {Bucket.landingzone_bucket()}")
-
-    datablocks_scratch_folder = StoragePaths.scratch_archival_datablocks_folder(dataset_id)
-    datablocks_scratch_folder.mkdir(parents=True, exist_ok=True)
-
-    GB_TO_B = 1024 * 1024 * 1024
-
-    archive_infos = create_tarfiles(
-        dataset_id=dataset_id,
-        src_folder=raw_files_scratch_folder,
-        dst_folder=datablocks_scratch_folder,
-        target_size=Variables().ARCHIVER_TARGET_SIZE_GB * GB_TO_B,
-    )
-
-    getLogger().info(f"Created {len(archive_infos)} datablocks from {len(file_paths)} objects")
-
-    datablocks = create_datablock_entries(
-        dataset_id,
-        StoragePaths.scratch_archival_datablocks_folder(dataset_id),
-        origDataBlocks,
-        archive_infos,
-    )
-
-    uploaded_objects = upload_objects_to_s3(
-        s3_client,
-        prefix=StoragePaths.relative_datablocks_folder(dataset_id),
-        bucket=Bucket.staging_bucket(),
-        source_folder=datablocks_scratch_folder,
-        ext=".gz",
-    )
-
-    missing_objects = verify_objects(
-        s3_client,
-        uploaded_objects,
-        minio_prefix=StoragePaths.relative_datablocks_folder(dataset_id),
-        bucket=Bucket.staging_bucket(),
-        source_folder=datablocks_scratch_folder,
-    )
-
-    if len(missing_objects) > 0:
-        raise Exception(f"{len(missing_objects)} datablocks missing")
-
-    return datablocks
-
-
-@log
 def cleanup_lts_folder(dataset_id: str) -> None:
     lts_folder = StoragePaths.lts_datablocks_folder(dataset_id)
     shutil.rmtree(lts_folder, ignore_errors=True)
@@ -621,7 +551,6 @@ def verify_objects(
     uploaded_objects: List[Path],
     minio_prefix: Path,
     bucket: Bucket,
-    source_folder: Path,
 ) -> List[Path]:
     missing_files: List[Path] = []
     for f in uploaded_objects:
