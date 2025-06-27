@@ -17,7 +17,7 @@ services:
     environment:
       # Fixes bug in docker/requests package
       - EXTRA_PIP_PACKAGES=requests==2.31.0
-      - PREFECT_LOGGING_LEVEL=DEBUG
+      - PREFECT_LOGGING_LEVEL=${PREFECT_LOGGING_LEVEL}
       - PREFECT_API_URL=http://prefect-server:4200/api
     labels:
       - "traefik.enable=false"
@@ -39,7 +39,7 @@ services:
     environment:
       # Fixes bug in docker/requests package
       - EXTRA_PIP_PACKAGES=requests==2.31.0
-      - PREFECT_LOGGING_LEVEL=DEBUG
+      - PREFECT_LOGGING_LEVEL=${PREFECT_LOGGING_LEVEL}
       - PREFECT_API_URL=http://prefect-server:4200/api
     labels:
       - "traefik.enable=false"
