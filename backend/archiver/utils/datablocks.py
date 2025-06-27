@@ -462,6 +462,8 @@ def copy_file_to_folder(src_file: Path, dst_folder: Path):
         raise SystemError(f"Destination folder {dst_folder} is not a folder")
 
     getLogger().info(f"Start Copy operation. src:{src_file}, dst{dst_folder}")
+    
+    expected_dst_file = dst_folder / src_file.name
 
     with subprocess.Popen(
         ["rsync",
@@ -480,9 +482,11 @@ def copy_file_to_folder(src_file: Path, dst_folder: Path):
 
         popen.stdout.close()
         return_code = popen.wait()
-        getLogger().info(f"Finished with return code : {return_code}")
+        if return_code > 0:
+            getLogger().error(f"Finished with return code : {return_code}")
+        else:
+            getLogger().info(f"Finished with return code : {return_code}")
 
-        expected_dst_file = dst_folder / src_file.name
 
     if not expected_dst_file.exists():
         raise SystemError(f"Copying did not produce file {expected_dst_file}")
