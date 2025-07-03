@@ -8,6 +8,13 @@ def generate_task_name_dataset():
 
     return f"{task_name}-dataset_id-{dataset_id}"
 
+def generate_task_name_datablock():
+    task_name = task_run.task_name
+    parameters = task_run.get_parameters()
+    datablock = parameters["datablock"]
+
+    return f"{task_name}-datablock_id-{datablock.id}"
+
 
 def generate_task_name_job():
     task_name = task_run.task_name

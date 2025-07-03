@@ -14,7 +14,7 @@ from archiver.utils.s3_storage_interface import get_s3_client
 from archiver.utils.s3_storage_interface import Bucket
 
 
-from .task_utils import generate_flow_name_dataset, generate_flow_name_job_id, generate_task_name_dataset
+from .task_utils import generate_flow_name_dataset, generate_flow_name_job_id, generate_task_name_dataset, generate_task_name_datablock
 from .utils import report_retrieval_error
 from archiver.scicat.scicat_interface import SciCatClient
 from archiver.utils.model import DataBlock, JobResultObject
@@ -40,8 +40,10 @@ def on_get_datablocks_error(dataset_id: str, task: Task, task_run: TaskRun, stat
 
 
 @task(
-    task_run_name=generate_task_name_dataset,
+    task_run_name=generate_task_name_datablock,
     tags=[ConcurrencyLimits().LTS_READ_TAG],
+      retries=5,
+      retry_delay_seconds=[60, 120, 240, 480, 960]
 )
 def copy_datablock_from_LTS_to_scratch(dataset_id: str, datablock: DataBlock):
     datablocks_operations.copy_from_LTS_to_scratch_retrieval(dataset_id, datablock)

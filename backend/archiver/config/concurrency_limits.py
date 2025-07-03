@@ -13,7 +13,7 @@ class ConcurrencyLimits(BaseSettings):
     LTS_WRITE_TAG: str = "write-to-lts-share"
 
     LTS_READ_LIMIT: int = 1
-    LTS_READ_TAG: str = "read-to-lts-share"
+    LTS_READ_TAG: str = "read-from-lts-share"
 
 
 def register_concurrency_limits(limits: ConcurrencyLimits):
