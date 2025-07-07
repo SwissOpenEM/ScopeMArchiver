@@ -216,17 +216,17 @@ secrets:
   github_pass:
     file: ./.secrets/githubpass.txt
   scicat_user:
-    file: ./.secrets/scicatuser.txt
+    file: ${SCICAT_USER_FILE}
   scicat_pass:
-    file: ./.secrets/scicatpass.txt
+    file: ${SCICAT_PASSWORD_FILE}
   minio_user:
     file: ./.secrets/miniouser.txt
   minio_password:
     file: ./.secrets/miniopass.txt
   idp_client_secret:
-    file: ./.secrets/idpclientsecret.txt
+    file: ${IDP_CLIENT_SECRET_FILE}
   idp_password:
-    file: ./.secrets/idppassword.txt
+    file: ${IDP_PASSWORD_FILE}
   job_endpoint_username:
     file: ./.secrets/jobsusername.txt
   job_endpoint_password:
