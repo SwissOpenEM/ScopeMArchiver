@@ -29,6 +29,7 @@ class Settings(BaseSettings):
     PREFECT_API_URL: str = "http://prefect.io"
 
     SCICAT_API: str = "https://scopem-openem.ethz.ch/scicat/backend/api/v3"
+    SCICAT_INGESTOR_GROUP: str = "unx-openem"
 
     JOB_ENDPOINT_USERNAME: SecretStr
     JOB_ENDPOINT_PASSWORD: SecretStr

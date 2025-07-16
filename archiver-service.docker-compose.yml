@@ -13,6 +13,13 @@ services:
       - UVICORN_LOG_LEVEL=info
       - UVICORN_RELOAD=False
       - MINIO_ENDPOINT=${MINIO_EXTERNAL_ENDPOINT}
+      - SCICAT_API=${SCICAT_ENDPOINT}
+      - IDP_URL=${IDP_URL}
+      - IDP_USERNAME=${IDP_USERNAME}
+      - IDP_REALM=${IDP_REALM}
+      - IDP_AUDIENCE=${IDP_AUDIENCE}
+      - IDP_CLIENT_ID=${IDP_CLIENT_ID}
+      - SCICAT_INGESTOR_GROUP=${SCICAT_INGESTOR_GROUP}
     secrets:
       - minio_user
       - minio_password

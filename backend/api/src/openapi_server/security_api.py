@@ -201,7 +201,7 @@ def check_scicat_token(token) -> bool:
         # return False
         raise HTTPException(status_code=401, detail=detail) from e
 
-    if "ingestor" not in groups:
+    if GetSettings().SCICAT_INGESTOR_GROUP not in groups:
         detail = "SciCat user does have ingestor role"
         _LOGGER.error(detail)
         # return False
