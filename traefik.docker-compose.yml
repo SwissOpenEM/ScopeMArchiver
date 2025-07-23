@@ -15,8 +15,8 @@ services:
       - "443:443"
       - "80:80"
     volumes:
-      - ${CERTIFICATE_FILE:-/dev/null}:/opt/certs/cert_scopem-openem.ethz.ch.pem
-      - ${CERTIFICATE_KEY_FILE:-/dev/null}:/opt/certs/cert_scopem-openem.ethz.ch.key
+      - ${CERTIFICATE_FILE:-/dev/null}:/opt/certs/cert.pem
+      - ${CERTIFICATE_KEY_FILE:-/dev/null}:/opt/certs/cert.key
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
     labels:
       - "traefik.enable=true"
@@ -66,15 +66,15 @@ configs:
     content: |
       tls:
         certificates:
-          - certFile: /opt/certs/cert_scopem-openem.ethz.ch.pem
-            keyFile: /opt/certs/cert_scopem-openem.ethz.ch.key
+          - certFile: /opt/certs/cert.pem
+            keyFile: /opt/certs/cert.key
             stores: 
               - default
         stores:
           default:
             defaultCertificate:
-              certFile: /opt/certs/cert_scopem-openem.ethz.ch.pem
-              keyFile: /opt/certs/cert_scopem-openem.ethz.ch.key
+              certFile: /opt/certs/cert.pem
+              keyFile: /opt/certs/cert.key
 secrets:
   authentik_token:
     file: ./.secrets/authentik_token
