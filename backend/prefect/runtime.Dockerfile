@@ -47,6 +47,7 @@ RUN mkdir ${LTS_ROOT_FOLDER}
 ARG UID=123
 ARG GID=123
 RUN chown -R ${UID}:${GID} /app
+RUN chown -R ${UID}:${GID} /tmp/LTS
 
 ARG USER=app
 RUN useradd -rm -d /home/${USER} -s /bin/bash  -u ${UID} ${USER}

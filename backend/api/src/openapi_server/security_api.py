@@ -16,6 +16,8 @@ from fastapi.security import (  # noqa: F401
 from openapi_server.models.create_service_token_resp import CreateServiceTokenResp
 from openapi_server.settings import GetSettings
 
+from openapi_server.impl.scicat import get_scicat_api_prefix, get_scicat_endpoint
+
 from starlette.status import HTTP_401_UNAUTHORIZED
 
 bearer_security = HTTPBearer()
@@ -23,7 +25,7 @@ bearer_security = HTTPBearer()
 _LOGGER = getLogger("uvicorn.security")
 
 
-def get_token_BearerAuth(
+async def get_token_BearerAuth(
     credentials: HTTPAuthorizationCredentials = Security(bearer_security),
 ):
     if not credentials:
@@ -33,7 +35,7 @@ def get_token_BearerAuth(
         )
 
     token = credentials.credentials
-    payload = validate_token(token)
+    payload = await validate_token(token)
     return payload
 
 
@@ -58,7 +60,7 @@ def get_public_key_from_jwks(kid, jwks):
     return None
 
 
-def validate_token(token: str, fallback_validator=None) -> dict:
+async def validate_token(token: str, fallback_validator=None) -> dict:
     """
     Validates a JWT Bearer token.
 
@@ -89,7 +91,7 @@ def validate_token(token: str, fallback_validator=None) -> dict:
             raise HTTPException(status_code=401, detail=detail)
 
         # we assume we got a SciCat token, not a token from Keycloak
-        if fallback_validator(token):
+        if await fallback_validator(token):
             return {}, None
         else:
             detail = "Not a valid SciCat token"
@@ -164,7 +166,7 @@ def generate_token() -> CreateServiceTokenResp:
         raise HTTPException(status_code=500, detail=detail)
 
 
-def get_token_SciCatAuth(
+async def get_token_SciCatAuth(
     credentials: HTTPAuthorizationCredentials = Security(bearer_security),
 ):
     if not credentials:
@@ -173,15 +175,19 @@ def get_token_SciCatAuth(
             detail="Authorization token is missing",
         )
     token = credentials.credentials
-    payload = validate_token(token, check_scicat_token)
+    payload = await validate_token(token, check_scicat_token)
     return payload
 
 
-def get_scicat_user_info(token) -> dict:
-    settings = GetSettings()
+async def get_scicat_user_info(token) -> dict:
+    scicat_endpoint = await get_scicat_endpoint()
+    scicat_api_prefix = await get_scicat_api_prefix()
+
+    scicat_path = f"{scicat_endpoint}{scicat_api_prefix}"
+
     try:
         headers = {"Authorization": f"Bearer {token}"}
-        response = requests.get(f"{settings.SCICAT_API}/users/my/identity", headers=headers)
+        response = requests.get(f"{scicat_path}/users/my/identity", headers=headers)
         response.raise_for_status()
 
     except requests.exceptions.RequestException as e:
@@ -191,8 +197,8 @@ def get_scicat_user_info(token) -> dict:
     return response.json()
 
 
-def check_scicat_token(token) -> bool:
-    scicat_userinfo = get_scicat_user_info(token)
+async def check_scicat_token(token) -> bool:
+    scicat_userinfo = await get_scicat_user_info(token)
     try:
         groups = scicat_userinfo["profile"]["accessGroups"]
     except KeyError as e:
@@ -201,7 +207,7 @@ def check_scicat_token(token) -> bool:
         # return False
         raise HTTPException(status_code=401, detail=detail) from e
 
-    if "ingestor" not in groups:
+    if GetSettings().SCICAT_INGESTOR_GROUP not in groups:
         detail = "SciCat user does have ingestor role"
         _LOGGER.error(detail)
         # return False

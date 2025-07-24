@@ -5,12 +5,14 @@ from typing import List
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 import requests
-from openapi_server.models.health_livez_get200_response import HealthLivezGet200Response
 
+from openapi_server.models.health_livez_get200_response import HealthLivezGet200Response
 from openapi_server.models.health_readyz_get200_response import HealthReadyzGet200Response
 
 from openapi_server.apis.health_api_base import BaseHealthApi
 from openapi_server.settings import GetSettings
+
+from openapi_server.impl.scicat import get_scicat_api_prefix, get_scicat_endpoint
 
 _LOGGER = getLogger("uvicorn.health")
 
@@ -46,18 +48,22 @@ def run_healthcheck(check: HealthCheck) -> HealthCheckError | None:
 
 
 class BaseDefaultApiImpl(BaseHealthApi):
-    def getHealthChecks(self):
+    async def getHealthChecks(self):
+        scicat_endpoint = await get_scicat_endpoint()
+        scicat_api_prefix = await get_scicat_api_prefix()
+        scicat_path = f"{scicat_endpoint}{scicat_api_prefix}"
+
         return [
             HealthCheck(
                 description="Minio", endpoint=f"https://{GetSettings().MINIO_ENDPOINT}/minio/health/live"
             ),
             HealthCheck(description="Prefect", endpoint=f"{GetSettings().PREFECT_API_URL}/health"),
-            HealthCheck(description="Scicat", endpoint=f"{GetSettings().SCICAT_API}/health"),
+            HealthCheck(description="Scicat", endpoint=f"{scicat_path}/health"),
         ]
 
     async def health_readyz_get(self):
         errors = HealthCheckErrors()
-        for check in self.getHealthChecks():
+        for check in await self.getHealthChecks():
             error = run_healthcheck(check)
             if error is not None:
                 errors.errors.append(error)

@@ -1,2 +1,2 @@
-def mock_validate_token(*args, **kwargs):
+async def mock_validate_token(*args, **kwargs):
     return "token"

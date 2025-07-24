@@ -13,6 +13,12 @@ services:
       - UVICORN_LOG_LEVEL=info
       - UVICORN_RELOAD=False
       - MINIO_ENDPOINT=${MINIO_EXTERNAL_ENDPOINT}
+      - IDP_URL=${IDP_URL}
+      - IDP_USERNAME=${IDP_USERNAME}
+      - IDP_REALM=${IDP_REALM}
+      - IDP_AUDIENCE=${IDP_AUDIENCE}
+      - IDP_CLIENT_ID=${IDP_CLIENT_ID}
+      - SCICAT_INGESTOR_GROUP=${SCICAT_INGESTOR_GROUP}
     secrets:
       - minio_user
       - minio_password
@@ -137,7 +143,7 @@ services:
       - SCICAT_PASSWORD_FILE=/run/secrets/scicat_pass
     volumes:
       - type: bind
-        source: ./backend/prefect/vars.toml
+        source: ${PREFECT_VARS_FILE}
         target: /var/local/vars.toml
       - type: bind
         source: ./backend/prefect/concurrency-limits.toml
@@ -216,17 +222,17 @@ secrets:
   github_pass:
     file: ./.secrets/githubpass.txt
   scicat_user:
-    file: ./.secrets/scicatuser.txt
+    file: ${SCICAT_USER_FILE}
   scicat_pass:
-    file: ./.secrets/scicatpass.txt
+    file: ${SCICAT_PASSWORD_FILE}
   minio_user:
     file: ./.secrets/miniouser.txt
   minio_password:
     file: ./.secrets/miniopass.txt
   idp_client_secret:
-    file: ./.secrets/idpclientsecret.txt
+    file: ${IDP_CLIENT_SECRET_FILE}
   idp_password:
-    file: ./.secrets/idppassword.txt
+    file: ${IDP_PASSWORD_FILE}
   job_endpoint_username:
     file: ./.secrets/jobsusername.txt
   job_endpoint_password:
