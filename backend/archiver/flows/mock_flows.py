@@ -80,7 +80,7 @@ def create_dummy_dataset(
         creationTime=datetime.datetime.now(datetime.UTC).isoformat(),
         type="raw",
         creationLocation="ETHZ",
-        datasetlifecycle=DatasetLifecycle(id=dataset_id, archivable=True, isOnCentralDisk=True),
+        datasetlifecycle=DatasetLifecycle(id=dataset_id, archivable=True, isOnCentralDisk=True, storageLocation="ETHZ"),
         # origdatablocks=[origdatablock]
     )
     j = dataset.model_dump_json(exclude_none=True)

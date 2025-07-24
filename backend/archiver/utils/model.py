@@ -196,6 +196,8 @@ class DatasetLifecycle(BaseModel):
     # Set to true when checksum tests after retrieve of datasets were successful ,
     retrieveIntegrityCheck: Optional[bool] = None
 
+    storageLocation: Optional[str] = "ETHZ"
+
 
 class Dataset(BaseModel):
     pid: Optional[str] = None

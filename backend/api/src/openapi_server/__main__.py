@@ -91,12 +91,5 @@ if __name__ == "__main__":
 
     _LOGGER.info(f"Version: {__version__}")
 
-    # TODO: for testing purposes only. To be removed later.
-    try:
-        token = generate_token()
-        _LOGGER.info(f"Test Bearer token: {token.access_token}")
-    except Exception as e:
-        _LOGGER.error(f"failed to get test bearer token: {e}")
-
     server = uvicorn.Server(uvi_config)
     server.run()
