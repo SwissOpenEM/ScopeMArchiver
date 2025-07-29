@@ -71,8 +71,8 @@ def create_dummy_dataset(
         pid=dataset_id,
         # createdAt=datetime.datetime.now(datetime.UTC).isoformat(),
         principalInvestigator="testPI",
-        ownerGroup="ingestor",
-        owner="ingestor",
+        ownerGroup="archivemanager",
+        owner="scopemArchiver",
         sourceFolder=str(dataset_root),
         contactEmail="testuser@testfacility.com",
         size=1234,
@@ -105,7 +105,7 @@ def create_dummy_dataset(
     orig_data_blocks = []
 
     current_origdatablock = OrigDataBlock(
-        datasetId=dataset_id, size=0, ownerGroup="ingestor", dataFileList=[]
+        datasetId=dataset_id, size=0, ownerGroup="scopemArchiver", dataFileList=[]
     )
 
     for file in raw_files_folder.iterdir():
@@ -122,7 +122,7 @@ def create_dummy_dataset(
         if current_origdatablock.size > datablock_size_MB * 1024 * 1024:
             orig_data_blocks.append(current_origdatablock)
             current_origdatablock = OrigDataBlock(
-                datasetId=dataset_id, size=0, ownerGroup="ingestor", dataFileList=[]
+                datasetId=dataset_id, size=0, ownerGroup="archivemanager", dataFileList=[]
             )
 
     for origdatablock in orig_data_blocks:
@@ -166,11 +166,11 @@ def scicat_create_retrieval_job(dataset: str, token: SecretStr) -> uuid.UUID:
 
     job = Job(
         jobParams={
-            "username": "ingestor",
-            "datasetList": [DatasetListEntry(pid=str(dataset), files=[])],
+            "username": "scopemArchiver",
         },
+        datasetList=[DatasetListEntry(pid=str(dataset), files=[])],
         type="retrieve",
-        ownerGroup="ingestor",
+        ownerGroup="archivemanager",
     )
     # TODO: this entry point needs alignment with SciCat
     host = Variables().SCICAT_ENDPOINT
@@ -191,11 +191,11 @@ def scicat_create_archival_job(dataset: str, token: SecretStr) -> uuid.UUID:
 
     job = Job(
         jobParams={
-            "username": "ingestor",
-            "datasetList": [DatasetListEntry(pid=str(dataset), files=[])],
+            "username": "scopemArchiver",
         },
+        datasetList=[DatasetListEntry(pid=str(dataset), files=[])],
         type="archive",
-        ownerGroup="ingestor",
+        ownerGroup="archivemanager",
     )
 
     j = job.model_dump_json(exclude_none=True)
@@ -411,7 +411,7 @@ def end_to_end_test_flow(
 
     ASSERT(scicat_archival_job_status.get("type") == "archive")
 
-    ASSERT(scicat_archival_job_status.get("statusCode") in ["jobCreated", "jobSubmitted", "inProgress"])
+    ASSERT(scicat_archival_job_status.get("jobStatusMessage") in ["jobCreated", "jobSubmitted", "inProgress"])
 
     wait_for_flow.submit(scicat_job_id=scicat_archival_job_id).wait()
     getLogger().info("Archiving Flow finished")
@@ -424,7 +424,7 @@ def end_to_end_test_flow(
     getLogger().info(f"Scicat job status {scicat_archival_job_status}")
 
     ASSERT(scicat_archival_job_status.get("type") == "archive")
-    ASSERT(scicat_archival_job_status.get("statusCode") == "finishedSuccessful")
+    ASSERT(scicat_archival_job_status.get("jobStatusMessage") == "finishedSuccessful")
 
     # Verify Scicat datasetlifecycle
     dataset_future = get_scicat_dataset.submit(dataset_pid=dataset_pid, token=scicat_token)
@@ -450,7 +450,7 @@ def end_to_end_test_flow(
     getLogger().info(scicat_retrieval_job_status)
     ASSERT(scicat_retrieval_job_status is not None)
     ASSERT(scicat_retrieval_job_status.get("type") == "retrieve")
-    ASSERT(scicat_retrieval_job_status.get("statusCode") in ["jobCreated", "jobSubmitted", "inProgress"])
+    ASSERT(scicat_retrieval_job_status.get("jobStatusMessage") in ["jobCreated", "jobSubmitted", "inProgress"])
 
     wait_for_flow.submit(scicat_job_id=scicat_retrieval_job_id).wait()
 
@@ -461,7 +461,7 @@ def end_to_end_test_flow(
     scicat_retrieval_job_status = scicat_retrieval_job_status_future.result()
     ASSERT(scicat_retrieval_job_status is not None)
     ASSERT(scicat_retrieval_job_status.get("type") == "retrieve")
-    ASSERT(scicat_retrieval_job_status.get("statusCode") == "finishedSuccessful")
+    ASSERT(scicat_retrieval_job_status.get("jobStatusMessage") == "finishedSuccessful")
     ASSERT(scicat_retrieval_job_status.get("jobResultObject") is not None)
     jobResult = scicat_retrieval_job_status.get("jobResultObject").get("result")
     ASSERT(len(jobResult) > 0)
