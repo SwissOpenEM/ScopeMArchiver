@@ -27,6 +27,7 @@ COPY --from=builder --chown=app:app /archiver /archiver
 
 COPY ./prefect/config.py /
 
+ENV PYTHONPATH="/archiver"
 ENV PATH="/archiver/.venv/bin:$PATH"
 # Run our flow script when the container starts
 ENTRYPOINT ["python", "config.py"]

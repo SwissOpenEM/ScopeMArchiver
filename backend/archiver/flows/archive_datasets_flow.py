@@ -19,7 +19,7 @@ from prefect.artifacts import (
 from config.variables import Variables
 from utils.datablocks import ArchiveInfo
 
-from .utils import StoragePaths, report_archival_error
+from .flow_utils import StoragePaths, report_archival_error
 from .task_utils import (
     generate_task_name_dataset,
     generate_flow_name_job_id,

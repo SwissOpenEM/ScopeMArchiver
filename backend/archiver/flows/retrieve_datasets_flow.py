@@ -15,7 +15,7 @@ from utils.s3_storage_interface import Bucket
 
 
 from .task_utils import generate_flow_name_dataset, generate_flow_name_job_id, generate_task_name_dataset, generate_task_name_datablock
-from .utils import report_retrieval_error
+from .flow_utils import report_retrieval_error
 from scicat.scicat_interface import SciCatClient
 from utils.model import DataBlock, JobResultObject
 from scicat.scicat_tasks import (

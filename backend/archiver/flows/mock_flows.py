@@ -21,7 +21,7 @@ from utils.s3_storage_interface import Bucket, get_s3_client
 from utils.model import OrigDataBlock, DataFile, Dataset, DatasetLifecycle
 
 from utils.log import getLogger, log
-from flows.utils import StoragePaths
+from .flow_utils import StoragePaths
 from scicat.scicat_tasks import get_scicat_access_token
 from utils.model import DatasetListEntry, Job
 from .task_utils import generate_task_name_dataset

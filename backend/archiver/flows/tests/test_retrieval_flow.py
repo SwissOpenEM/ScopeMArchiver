@@ -24,7 +24,7 @@ from flows.tests.helpers import (
     expected_jobresultsobject,
 )
 from scicat.scicat_interface import SciCatClient
-from flows.utils import StoragePaths
+from flows.flow_utils import StoragePaths
 from utils.model import DataBlock
 from config.variables import Variables
 # fmt: on

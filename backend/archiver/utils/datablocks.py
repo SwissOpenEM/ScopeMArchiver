@@ -16,7 +16,7 @@ from utils.s3_storage_interface import S3Storage, Bucket
 from utils.model import OrigDataBlock, DataBlock, DataFile
 from utils.log import getLogger, log, log_debug
 from config.variables import Variables
-from flows.utils import DatasetError, SystemError, StoragePaths
+from flows.flow_utils import DatasetError, SystemError, StoragePaths
 
 
 @log

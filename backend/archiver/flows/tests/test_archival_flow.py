@@ -8,7 +8,7 @@ from prefect.testing.utilities import prefect_test_harness
 from flows.archive_datasets_flow import archive_datasets_flow
 from scicat.scicat_interface import SciCatClient
 from flows.tests.scicat_unittest_mock import ScicatMock, mock_scicat_client
-from flows.utils import DatasetError, SystemError
+from flows.flow_utils import DatasetError, SystemError
 from flows.tests.helpers import (
     mock_s3client,
     create_datablocks,

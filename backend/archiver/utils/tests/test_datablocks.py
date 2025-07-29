@@ -12,7 +12,7 @@ from flows.tests.helpers import mock_s3client
 from utils.datablocks import ArchiveInfo
 import utils.datablocks as datablock_operations
 from utils.model import OrigDataBlock, DataBlock, DataFile
-from flows.utils import StoragePaths, SystemError
+from flows.flow_utils import StoragePaths, SystemError
 
 
 test_dataset_id = "testprefix/1234.4567"
@@ -400,8 +400,8 @@ def mock_download_objects_from_s3(*args, **kwargs):
     return [True]
 
 
-@patch("archiver.utils.datablocks.find_object_in_s3", mock_find_object_in_s3)
-@patch("archiver.utils.datablocks.download_object_from_s3", mock_download_objects_from_s3)
+@patch("utils.datablocks.find_object_in_s3", mock_find_object_in_s3)
+@patch("utils.datablocks.download_object_from_s3", mock_download_objects_from_s3)
 def test_move_data_to_LTS(storage_paths_fixture, datablock_fixture):
     for datablock in datablock_fixture:
         datablock_operations.move_data_to_LTS(test_dataset_id, datablock)
@@ -427,11 +427,11 @@ def mock_verify_objects(*args, **kwargs):
     return []
 
 
-@patch("archiver.flows.retrieve_datasets_flow.get_s3_client", mock_s3client)
-@patch("archiver.utils.datablocks.list_datablocks", mock_list_s3_objects)
-@patch("archiver.utils.datablocks.download_objects_from_s3", mock_download_objects_from_s3)
-@patch("archiver.utils.datablocks.upload_objects_to_s3", mock_upload_objects_to_s3)
-@patch("archiver.utils.datablocks.verify_objects", mock_verify_objects)
+@patch("flows.retrieve_datasets_flow.get_s3_client", mock_s3client)
+@patch("utils.datablocks.list_datablocks", mock_list_s3_objects)
+@patch("utils.datablocks.download_objects_from_s3", mock_download_objects_from_s3)
+@patch("utils.datablocks.upload_objects_to_s3", mock_upload_objects_to_s3)
+@patch("utils.datablocks.verify_objects", mock_verify_objects)
 def test_create_datablocks(
     storage_paths_fixture,
     origDataBlocks_fixture: List[OrigDataBlock],
