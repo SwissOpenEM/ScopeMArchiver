@@ -7,7 +7,7 @@ from pydantic import SecretStr
 
 import urllib.parse
 
-from archiver.utils.model import (
+from utils.model import (
     Job,
     JobResultObject,
     DataBlock,
@@ -15,8 +15,8 @@ from archiver.utils.model import (
     DatasetLifecycle,
     OrigDataBlock,
 )
-from archiver.utils.log import log
-from archiver.config.blocks import Blocks
+from utils.log import log
+from config.blocks import Blocks
 
 
 class SciCatClient:
@@ -182,6 +182,18 @@ class SciCatClient:
             result = self._session.post(
                 f"{self._ENDPOINT}{self.API}/datasets/{safe_dataset_id}/datablocks",
                 data=d.model_dump_json(exclude_none=True),
+                headers=headers,
+            )
+            # returns none if status_code is 200
+            result.raise_for_status()
+
+    @log
+    def delete_datablocks(self, dataset_id: str, data_blocks: List[DataBlock], token: SecretStr) -> None:
+        headers = self._headers(token)
+        safe_dataset_id = self._safe_dataset_id(dataset_id)
+        for d in data_blocks:
+            result = self._session.delete(
+                f"{self._ENDPOINT}{self.API}/datasets/{safe_dataset_id}/datablocks/{d.id}",
                 headers=headers,
             )
             # returns none if status_code is 200

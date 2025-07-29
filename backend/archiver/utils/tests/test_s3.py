@@ -4,7 +4,7 @@ from pathlib import Path
 from moto import mock_aws
 from pydantic import SecretStr
 import pytest
-from archiver.utils.s3_storage_interface import S3Storage, Bucket
+from utils.s3_storage_interface import S3Storage, Bucket
 
 
 @pytest.fixture(scope="function")

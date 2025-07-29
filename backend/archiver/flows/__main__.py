@@ -1,8 +1,8 @@
 from prefect import serve
 
-from .archive_datasets_flow import archive_datasets_flow
-from .retrieve_datasets_flow import retrieve_datasets_flow
-from .mock_flows import create_test_dataset_flow, end_to_end_test_flow
+from archive_datasets_flow import archive_datasets_flow
+from retrieve_datasets_flow import retrieve_datasets_flow
+from mock_flows import create_test_dataset_flow, end_to_end_test_flow
 
 
 if __name__ == "__main__":

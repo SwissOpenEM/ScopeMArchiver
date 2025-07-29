@@ -2,7 +2,7 @@ from pathlib import Path
 from prefect.variables import Variable
 import os
 
-from archiver.utils.log import getLogger
+from utils.log import getLogger
 
 from pydantic_settings import (
     BaseSettings,

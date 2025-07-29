@@ -16,35 +16,37 @@ from prefect.artifacts import (
     update_progress_artifact,
 )
 
-from archiver.config.variables import Variables
-from archiver.utils.datablocks import ArchiveInfo
+from config.variables import Variables
+from utils.datablocks import ArchiveInfo
 
-from .utils import StoragePaths, report_archival_error
+from .flow_utils import StoragePaths, report_archival_error
 from .task_utils import (
     generate_task_name_dataset,
     generate_flow_name_job_id,
     generate_subflow_run_name_job_id_dataset_id,
     generate_sleep_for_task_name
 )
-from archiver.scicat.scicat_interface import SciCatClient
-from archiver.scicat.scicat_tasks import (
+from scicat.scicat_interface import SciCatClient
+from scicat.scicat_tasks import (
     update_scicat_archival_job_status,
     update_scicat_archival_dataset_lifecycle,
     get_origdatablocks,
     register_datablocks,
     get_scicat_access_token,
     get_job_datasetlist,
+    reset_dataset
 )
-from archiver.scicat.scicat_tasks import (
+from scicat.scicat_tasks import (
     report_job_failure_system_error,
-    report_dataset_user_error,
+    report_dataset_user_error
 )
-from archiver.utils.datablocks import wait_for_free_space
-from archiver.utils.model import OrigDataBlock, DataBlock
-import archiver.utils.datablocks as datablocks_operations
-from archiver.config.concurrency_limits import ConcurrencyLimits
-from archiver.utils.s3_storage_interface import Bucket, get_s3_client
-from archiver.utils.log import getLogger
+
+from utils.datablocks import wait_for_free_space
+from utils.model import OrigDataBlock, DataBlock
+import utils.datablocks as datablocks_operations
+from config.concurrency_limits import ConcurrencyLimits
+from utils.s3_storage_interface import Bucket, get_s3_client
+from utils.log import getLogger
 
 
 def on_get_origdatablocks_error(dataset_id: str, task: Task, task_run: TaskRun, state: State):
@@ -106,28 +108,6 @@ def download_origdatablocks(dataset_id: str, origDataBlocks: List[OrigDataBlock]
     getLogger().info(f"Downloaded {len(file_paths)} objects from {Bucket.landingzone_bucket()}")
 
     return file_paths
-
-
-# @task(task_run_name=generate_task_name_dataset)
-# def create_datablocks(dataset_id: str, origDataBlocks: List[OrigDataBlock], file_paths: List[Path]) -> List[DataBlock]:
-#     """Prefect task to create datablocks.
-
-#     Args:
-#         dataset_id (str): dataset id
-#         origDataBlocks (List[OrigDataBlock]): List of OrigDataBlocks (Pydantic Model)
-
-#     Returns:
-#         List[DataBlock]: List of DataBlocks (Pydantic Model)
-#     """
-
-#     s3_client = get_s3_client()
-
-#     progress_artifact_id = create_progress_artifact(
-#         progress=0.0,
-#         description="Create datablocks from datafiles",
-#     )
-
-#     return datablocks_operations.create_datablocks(s3_client, dataset_id, origDataBlocks, file_paths, update_progress)
 
 
 @task(task_run_name=generate_task_name_dataset)
@@ -388,13 +368,20 @@ def on_dataset_flow_failure(flow: Flow, flow_run: FlowRun, state: State):
         task_run=None,
         token=scicat_token,
     )
+    try:
+        reset_dataset(
+            dataset_id=flow_run.parameters["dataset_id"],
+            token=scicat_token
+        )
+    except Exception as e:
+        getLogger().error(f"failed to reset datablocks {e}")
     datablocks_operations.cleanup_lts_folder(flow_run.parameters["dataset_id"])
     datablocks_operations.cleanup_scratch(flow_run.parameters["dataset_id"])
     try:
         s3_client = get_s3_client()
         datablocks_operations.cleanup_s3_staging(s3_client, flow_run.parameters["dataset_id"])
-    except:
-        pass
+    except Exception as e:
+        getLogger().error(f"failed to cleanup staging {e}")
 
 
 def cleanup_dataset(flow: Flow, flow_run: FlowRun, state: State):
@@ -402,8 +389,8 @@ def cleanup_dataset(flow: Flow, flow_run: FlowRun, state: State):
         s3_client = get_s3_client()
         datablocks_operations.cleanup_s3_landingzone(s3_client, flow_run.parameters["dataset_id"])
         datablocks_operations.cleanup_s3_staging(s3_client, flow_run.parameters["dataset_id"])
-    except:
-        pass
+    except Exception as e:
+        getLogger().error(f"failed to cleanup staging or landingzone {e}")
     datablocks_operations.cleanup_scratch(flow_run.parameters["dataset_id"])
 
 

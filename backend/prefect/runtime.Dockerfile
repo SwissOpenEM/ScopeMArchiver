@@ -53,5 +53,6 @@ ARG USER=app
 RUN useradd -rm -d /home/${USER} -s /bin/bash  -u ${UID} ${USER}
 USER ${USER}
 
+ENV PYTHONPATH="/app/backend/archiver"
 ENV PATH="/app/backend/archiver/.venv/bin:$PATH"
 CMD ["/bin/bash"]

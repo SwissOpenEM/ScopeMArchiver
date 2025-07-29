@@ -1,18 +1,18 @@
 from typing import List, Dict, Any
 
 from pydantic import SecretStr
-from archiver.utils.model import DataFile, OrigDataBlock, DataBlock
-from archiver.utils.model import (
+from utils.model import DataFile, OrigDataBlock, DataBlock
+from utils.model import (
     Job,
     Dataset,
     DatasetLifecycle,
     JobResultObject,
     JobResultEntry,
 )
-from archiver.scicat.scicat_interface import SciCatClient
+from scicat.scicat_interface import SciCatClient
 from pathlib import Path
 
-from archiver.utils.s3_storage_interface import S3Storage
+from utils.s3_storage_interface import S3Storage
 
 
 def mock_s3client() -> S3Storage:

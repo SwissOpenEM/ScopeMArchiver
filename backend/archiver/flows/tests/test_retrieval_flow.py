@@ -5,22 +5,29 @@ from uuid import UUID, uuid4
 from prefect.testing.utilities import prefect_test_harness
 from prefect.exceptions import UnfinishedRun
 
-from archiver.flows.retrieve_datasets_flow import retrieve_datasets_flow
-from archiver.flows.tests.scicat_unittest_mock import ScicatMock, mock_scicat_client
-from archiver.flows.tests.helpers import (
+# In order to disable retries for the test, the task needs to be patched
+# There does not seem to be a working way to configure this
+from flows.retrieve_datasets_flow import copy_datablock_from_LTS_to_scratch
+copy_datablock_from_LTS_to_scratch.retries = 0
+
+# fmt: off
+from flows.retrieve_datasets_flow import retrieve_datasets_flow
+from flows.tests.scicat_unittest_mock import ScicatMock, mock_scicat_client
+from flows.tests.helpers import (
     create_datablocks,
     create_orig_datablocks,
     mock_s3client,
 )
-from archiver.flows.tests.helpers import (
+from flows.tests.helpers import (
     expected_retrieval_dataset_lifecycle,
     expected_job_status,
     expected_jobresultsobject,
 )
-from archiver.scicat.scicat_interface import SciCatClient
-from archiver.flows.utils import StoragePaths
-from archiver.utils.model import DataBlock
-from archiver.config.variables import Variables
+from scicat.scicat_interface import SciCatClient
+from flows.flow_utils import StoragePaths
+from utils.model import DataBlock
+from config.variables import Variables
+# fmt: on
 
 
 def mock_get_datablock_path_in_LTS(datablock: DataBlock):
@@ -54,22 +61,22 @@ def mock_find_missing_datablocks_in_s3(*args, **kwargs):
         (uuid4(), "somePrefix/456"),
     ],
 )
-@patch("archiver.scicat.scicat_tasks.scicat_client", mock_scicat_client)
+@patch("scicat.scicat_tasks.scicat_client", mock_scicat_client)
 @patch(
-    "archiver.utils.datablocks.get_datablock_path_in_LTS",
+    "utils.datablocks.get_datablock_path_in_LTS",
     mock_get_datablock_path_in_LTS,
 )
-@patch("archiver.utils.datablocks.wait_for_file_accessible", mock_wait_for_file_accessible)
-@patch("archiver.utils.datablocks.find_missing_datablocks_in_s3", mock_find_missing_datablocks_in_s3)
-@patch("archiver.utils.datablocks.copy_file_to_folder")
-@patch("archiver.scicat.scicat_tasks.create_presigned_url", mock_create_presigned_url)
-@patch("archiver.utils.datablocks.verify_datablock_content")
-@patch("archiver.utils.datablocks.upload_datablock")
-@patch("archiver.utils.datablocks.cleanup_lts_folder")
-@patch("archiver.utils.datablocks.cleanup_scratch")
-@patch("archiver.utils.datablocks.cleanup_s3_staging")
-@patch("archiver.utils.datablocks.cleanup_s3_landingzone")
-@patch("archiver.utils.datablocks.cleanup_s3_retrieval")
+@patch("utils.datablocks.wait_for_file_accessible", mock_wait_for_file_accessible)
+@patch("utils.datablocks.find_missing_datablocks_in_s3", mock_find_missing_datablocks_in_s3)
+@patch("utils.datablocks.copy_file_to_folder")
+@patch("scicat.scicat_tasks.create_presigned_url", mock_create_presigned_url)
+@patch("utils.datablocks.verify_datablock_content")
+@patch("utils.datablocks.upload_datablock")
+@patch("utils.datablocks.cleanup_lts_folder")
+@patch("utils.datablocks.cleanup_scratch")
+@patch("utils.datablocks.cleanup_s3_staging")
+@patch("utils.datablocks.cleanup_s3_landingzone")
+@patch("utils.datablocks.cleanup_s3_retrieval")
 async def test_scicat_api_retrieval(
     mock_cleanup_s3_retrieval: MagicMock,
     mock_cleanup_s3_landingzone: MagicMock,
@@ -161,19 +168,19 @@ async def test_scicat_api_retrieval(
         (uuid4(), "somePrefix/456"),
     ],
 )
-@patch("archiver.scicat.scicat_tasks.scicat_client", mock_scicat_client)
-@patch("archiver.utils.datablocks.find_missing_datablocks_in_s3", mock_find_missing_datablocks_in_s3)
-@patch("archiver.utils.datablocks.get_datablock_path_in_LTS", mock_raise_system_error)
-@patch("archiver.utils.datablocks.wait_for_file_accessible", mock_wait_for_file_accessible)
-@patch("archiver.utils.datablocks.copy_file_to_folder")
-@patch("archiver.scicat.scicat_tasks.create_presigned_url", mock_create_presigned_url)
-@patch("archiver.utils.datablocks.verify_datablock_content")
-@patch("archiver.utils.datablocks.upload_datablock")
-@patch("archiver.utils.datablocks.cleanup_lts_folder")
-@patch("archiver.utils.datablocks.cleanup_scratch")
-@patch("archiver.utils.datablocks.cleanup_s3_staging")
-@patch("archiver.utils.datablocks.cleanup_s3_landingzone")
-@patch("archiver.utils.datablocks.cleanup_s3_retrieval")
+@patch("scicat.scicat_tasks.scicat_client", mock_scicat_client)
+@patch("utils.datablocks.find_missing_datablocks_in_s3", mock_find_missing_datablocks_in_s3)
+@patch("utils.datablocks.get_datablock_path_in_LTS", mock_raise_system_error)
+@patch("utils.datablocks.wait_for_file_accessible", mock_wait_for_file_accessible)
+@patch("utils.datablocks.copy_file_to_folder")
+@patch("scicat.scicat_tasks.create_presigned_url", mock_create_presigned_url)
+@patch("utils.datablocks.verify_datablock_content")
+@patch("utils.datablocks.upload_datablock")
+@patch("utils.datablocks.cleanup_lts_folder")
+@patch("utils.datablocks.cleanup_scratch")
+@patch("utils.datablocks.cleanup_s3_staging")
+@patch("utils.datablocks.cleanup_s3_landingzone")
+@patch("utils.datablocks.cleanup_s3_retrieval")
 async def test_datablock_not_found(
     mock_cleanup_s3_retrieval: MagicMock,
     mock_cleanup_s3_landingzone: MagicMock,

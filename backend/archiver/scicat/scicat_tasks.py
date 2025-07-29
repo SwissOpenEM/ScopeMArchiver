@@ -5,17 +5,17 @@ from pydantic import SecretStr
 from datetime import timedelta
 from pathlib import Path
 
-from archiver.scicat.scicat_interface import SciCatClient
-from archiver.config.variables import Variables
-from archiver.utils.model import (
+from scicat.scicat_interface import SciCatClient
+from config.variables import Variables
+from utils.model import (
     DataBlock,
     OrigDataBlock,
     JobResultEntry,
     JobResultObject,
 )
-from archiver.utils.log import log
-from archiver.flows.task_utils import generate_task_name_dataset, generate_task_name_job
-from archiver.utils.s3_storage_interface import Bucket, S3Storage, get_s3_client
+from utils.log import log
+from flows.task_utils import generate_task_name_dataset, generate_task_name_job
+from utils.s3_storage_interface import Bucket, S3Storage, get_s3_client
 
 
 from prefect.artifacts import create_link_artifact
@@ -94,7 +94,7 @@ def update_scicat_archival_dataset_lifecycle(
 def update_scicat_retrieval_dataset_lifecycle(
     dataset_id: str, status: SciCatClient.RETRIEVESTATUSMESSAGE, token: SecretStr
 ) -> None:
-    # Due to a bug in Scicat, archivable and retrieveable need to passed as well to the patch request
+    # Due to a bug in Scicat, archivable and retrievable need to passed as well to the patch request
     scicat_client().update_retrieval_dataset_lifecycle(
         dataset_id=dataset_id,
         status=status,
@@ -188,6 +188,14 @@ def report_job_failure_system_error(
         job_result_object=None,
         token=token,
     )
+
+
+def reset_dataset(
+    dataset_id: str,
+    token: SecretStr
+):
+    data_blocks = scicat_client().get_datablocks(dataset_id=dataset_id, token=token)
+    scicat_client().delete_datablocks(dataset_id=dataset_id, data_blocks=data_blocks, token=token)
 
 
 @task

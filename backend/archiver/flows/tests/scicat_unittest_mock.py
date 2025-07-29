@@ -3,9 +3,9 @@ import requests_mock
 from uuid import UUID
 import urllib.parse
 
-from archiver.scicat.scicat_interface import SciCatClient
-from archiver.utils.model import OrigDataBlock, DataBlock
-from archiver.utils.model import DatasetListEntry, Job
+from scicat.scicat_interface import SciCatClient
+from utils.model import OrigDataBlock, DataBlock
+from utils.model import DatasetListEntry, Job
 
 
 def mock_scicat_get_token() -> str:
@@ -64,8 +64,8 @@ class ScicatMock(requests_mock.Mocker):
         )
 
         json_list = []
-        for o in origDataBlocks:
-            json_list.append(o.model_dump_json())
+        for d in origDataBlocks:
+            json_list.append(d.model_dump_json())
 
         self.matchers["origdatablocks"] = self.get(
             f"{self.ENDPOINT}{self.API_PREFIX}/datasets/{safe_dataset_url}/origdatablocks",
@@ -73,13 +73,20 @@ class ScicatMock(requests_mock.Mocker):
         )
 
         json_list = []
-        for o in datablocks:
-            json_list.append(o.model_dump_json())
+        for d in datablocks:
+            json_list.append(d.model_dump_json())
 
         self.matchers["get_datablocks"] = self.get(
             f"{self.ENDPOINT}{self.API_PREFIX}/datasets/{safe_dataset_url}/datablocks",
             json=json_list,
         )
+
+        self.matchers["delete_datablocks"] = []
+
+        for d in datablocks:
+            self.matchers["delete_datablocks"].append(self.delete(
+                f"{self.ENDPOINT}{self.API_PREFIX}/datasets/{safe_dataset_url}/datablocks/{d.id}")
+            )
 
     @property
     def jobs_matcher(self):
@@ -96,6 +103,10 @@ class ScicatMock(requests_mock.Mocker):
     @property
     def datablocks_get_matcher(self):
         return self.matchers["get_datablocks"]
+
+    @property
+    def datablocks_delete_matcher(self):
+        return self.matchers["delete_datablocks"]
 
     @property
     def origdatablocks_matcher(self):
