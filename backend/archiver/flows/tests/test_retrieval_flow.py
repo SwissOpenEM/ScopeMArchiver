@@ -5,6 +5,12 @@ from uuid import UUID, uuid4
 from prefect.testing.utilities import prefect_test_harness
 from prefect.exceptions import UnfinishedRun
 
+# In order to disable retries for the test, the task needs to be patched
+# There does not seem to be a working way to configure this
+from archiver.flows.retrieve_datasets_flow import copy_datablock_from_LTS_to_scratch
+copy_datablock_from_LTS_to_scratch.retries = 0
+
+# fmt: off
 from archiver.flows.retrieve_datasets_flow import retrieve_datasets_flow
 from archiver.flows.tests.scicat_unittest_mock import ScicatMock, mock_scicat_client
 from archiver.flows.tests.helpers import (
