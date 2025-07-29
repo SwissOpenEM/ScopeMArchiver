@@ -4,8 +4,8 @@ from pydantic import SecretStr
 from prefect import State
 from prefect.client.schemas.objects import TaskRun
 
-from archiver.config.variables import Variables
-from archiver.scicat.scicat_tasks import (
+from config.variables import Variables
+from scicat.scicat_tasks import (
     report_dataset_system_error,
     report_dataset_user_error,
     report_dataset_retrieval_error

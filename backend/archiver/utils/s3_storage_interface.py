@@ -15,8 +15,8 @@ from pydantic import SecretStr
 
 from .log import log_debug, log
 
-from archiver.config.variables import Variables
-from archiver.config.blocks import Blocks
+from config.variables import Variables
+from config.blocks import Blocks
 
 
 @dataclass

@@ -12,11 +12,11 @@ import hashlib
 from typing import Callable, Dict, Generator, List
 from pathlib import Path
 
-from archiver.utils.s3_storage_interface import S3Storage, Bucket
-from archiver.utils.model import OrigDataBlock, DataBlock, DataFile
-from archiver.utils.log import getLogger, log, log_debug
-from archiver.config.variables import Variables
-from archiver.flows.utils import DatasetError, SystemError, StoragePaths
+from utils.s3_storage_interface import S3Storage, Bucket
+from utils.model import OrigDataBlock, DataBlock, DataFile
+from utils.log import getLogger, log, log_debug
+from config.variables import Variables
+from flows.utils import DatasetError, SystemError, StoragePaths
 
 
 @log
@@ -462,7 +462,7 @@ def copy_file_to_folder(src_file: Path, dst_folder: Path):
         raise SystemError(f"Destination folder {dst_folder} is not a folder")
 
     getLogger().info(f"Start Copy operation. src:{src_file}, dst{dst_folder}")
-    
+
     expected_dst_file = dst_folder / src_file.name
 
     with subprocess.Popen(
@@ -486,7 +486,6 @@ def copy_file_to_folder(src_file: Path, dst_folder: Path):
             getLogger().error(f"Finished with return code : {return_code}")
         else:
             getLogger().info(f"Finished with return code : {return_code}")
-
 
     if not expected_dst_file.exists():
         raise SystemError(f"Copying did not produce file {expected_dst_file}")

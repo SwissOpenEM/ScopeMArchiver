@@ -8,11 +8,11 @@ from pathlib import Path
 import tempfile
 from unittest.mock import patch
 
-from archiver.flows.tests.helpers import mock_s3client
-from archiver.utils.datablocks import ArchiveInfo
-import archiver.utils.datablocks as datablock_operations
-from archiver.utils.model import OrigDataBlock, DataBlock, DataFile
-from archiver.flows.utils import StoragePaths, SystemError
+from flows.tests.helpers import mock_s3client
+from utils.datablocks import ArchiveInfo
+import utils.datablocks as datablock_operations
+from utils.model import OrigDataBlock, DataBlock, DataFile
+from flows.utils import StoragePaths, SystemError
 
 
 test_dataset_id = "testprefix/1234.4567"

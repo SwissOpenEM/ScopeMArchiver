@@ -9,8 +9,8 @@ from typing import Dict, Optional, Any
 from uuid import UUID
 from pydantic import SecretStr
 
-from archiver.utils.model import Job, DatasetListEntry
-from archiver.utils.s3_storage_interface import S3Storage, Bucket
+from utils.model import Job, DatasetListEntry
+from utils.s3_storage_interface import S3Storage, Bucket
 
 from prefect import State
 from prefect.client.schemas.objects import FlowRun, State

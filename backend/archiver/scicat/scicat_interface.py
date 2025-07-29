@@ -7,7 +7,7 @@ from pydantic import SecretStr
 
 import urllib.parse
 
-from archiver.utils.model import (
+from utils.model import (
     Job,
     JobResultObject,
     DataBlock,
@@ -15,8 +15,8 @@ from archiver.utils.model import (
     DatasetLifecycle,
     OrigDataBlock,
 )
-from archiver.utils.log import log
-from archiver.config.blocks import Blocks
+from utils.log import log
+from config.blocks import Blocks
 
 
 class SciCatClient:

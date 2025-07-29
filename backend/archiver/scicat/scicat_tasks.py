@@ -5,17 +5,17 @@ from pydantic import SecretStr
 from datetime import timedelta
 from pathlib import Path
 
-from archiver.scicat.scicat_interface import SciCatClient
-from archiver.config.variables import Variables
-from archiver.utils.model import (
+from scicat.scicat_interface import SciCatClient
+from config.variables import Variables
+from utils.model import (
     DataBlock,
     OrigDataBlock,
     JobResultEntry,
     JobResultObject,
 )
-from archiver.utils.log import log
-from archiver.flows.task_utils import generate_task_name_dataset, generate_task_name_job
-from archiver.utils.s3_storage_interface import Bucket, S3Storage, get_s3_client
+from utils.log import log
+from flows.task_utils import generate_task_name_dataset, generate_task_name_job
+from utils.s3_storage_interface import Bucket, S3Storage, get_s3_client
 
 
 from prefect.artifacts import create_link_artifact

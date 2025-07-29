@@ -5,11 +5,11 @@ from uuid import UUID, uuid4
 import pytest
 from prefect.testing.utilities import prefect_test_harness
 
-from archiver.flows.archive_datasets_flow import archive_datasets_flow
-from archiver.scicat.scicat_interface import SciCatClient
-from archiver.flows.tests.scicat_unittest_mock import ScicatMock, mock_scicat_client
-from archiver.flows.utils import DatasetError, SystemError
-from archiver.flows.tests.helpers import (
+from flows.archive_datasets_flow import archive_datasets_flow
+from scicat.scicat_interface import SciCatClient
+from flows.tests.scicat_unittest_mock import ScicatMock, mock_scicat_client
+from flows.utils import DatasetError, SystemError
+from flows.tests.helpers import (
     mock_s3client,
     create_datablocks,
     create_orig_datablocks,
@@ -46,23 +46,23 @@ def mock_list(*args, **kwargs):
         (uuid4(), "somePrefix/456"),
     ],
 )
-@patch("archiver.scicat.scicat_tasks.scicat_client", mock_scicat_client)
-@patch("archiver.utils.datablocks.list_datablocks", mock_list)
-@patch("archiver.utils.datablocks.download_objects_from_s3", mock_list)
-@patch("archiver.utils.datablocks.create_tarfiles", mock_void_function)
-@patch("archiver.utils.datablocks.create_datablock_entries", mock_create_datablock_entries)
-@patch("archiver.utils.datablocks.upload_objects_to_s3", mock_void_function)
-@patch("archiver.utils.datablocks.verify_objects", mock_empty_list)
-@patch("archiver.utils.datablocks.calculate_checksum", mock_empty_list)
-@patch("archiver.utils.datablocks.move_data_to_LTS", mock_void_function)
-@patch("archiver.utils.datablocks.copy_file_from_LTS", mock_void_function)
-@patch("archiver.utils.datablocks.verify_checksum", mock_void_function)
-@patch("archiver.utils.datablocks.verify_datablock_content", mock_void_function)
-@patch("archiver.utils.datablocks.cleanup_lts_folder")
-@patch("archiver.utils.datablocks.cleanup_scratch")
-@patch("archiver.utils.datablocks.cleanup_s3_staging")
-@patch("archiver.utils.datablocks.cleanup_s3_landingzone")
-@patch("archiver.utils.datablocks.cleanup_s3_retrieval")
+@patch("scicat.scicat_tasks.scicat_client", mock_scicat_client)
+@patch("utils.datablocks.list_datablocks", mock_list)
+@patch("utils.datablocks.download_objects_from_s3", mock_list)
+@patch("utils.datablocks.create_tarfiles", mock_void_function)
+@patch("utils.datablocks.create_datablock_entries", mock_create_datablock_entries)
+@patch("utils.datablocks.upload_objects_to_s3", mock_void_function)
+@patch("utils.datablocks.verify_objects", mock_empty_list)
+@patch("utils.datablocks.calculate_checksum", mock_empty_list)
+@patch("utils.datablocks.move_data_to_LTS", mock_void_function)
+@patch("utils.datablocks.copy_file_from_LTS", mock_void_function)
+@patch("utils.datablocks.verify_checksum", mock_void_function)
+@patch("utils.datablocks.verify_datablock_content", mock_void_function)
+@patch("utils.datablocks.cleanup_lts_folder")
+@patch("utils.datablocks.cleanup_scratch")
+@patch("utils.datablocks.cleanup_s3_staging")
+@patch("utils.datablocks.cleanup_s3_landingzone")
+@patch("utils.datablocks.cleanup_s3_retrieval")
 def test_scicat_api_archiving(
     mock_cleanup_s3_retrieval: MagicMock,
     mock_cleanup_s3_landingzone: MagicMock,
@@ -138,18 +138,18 @@ def test_scicat_api_archiving(
         (uuid4(), "somePrefix/456"),
     ],
 )
-@patch("archiver.scicat.scicat_tasks.scicat_client", mock_scicat_client)
-@patch("archiver.utils.datablocks.list_datablocks", raise_user_error)
-@patch("archiver.utils.datablocks.download_objects_from_s3", mock_list)
-@patch("archiver.utils.datablocks.create_tarfiles", mock_void_function)
-@patch("archiver.utils.datablocks.create_datablock_entries", mock_create_datablock_entries)
-@patch("archiver.utils.datablocks.upload_objects_to_s3", mock_void_function)
-@patch("archiver.utils.datablocks.verify_objects", mock_empty_list)
-@patch("archiver.utils.datablocks.cleanup_lts_folder")
-@patch("archiver.utils.datablocks.cleanup_scratch")
-@patch("archiver.utils.datablocks.cleanup_s3_staging")
-@patch("archiver.utils.datablocks.cleanup_s3_landingzone")
-@patch("archiver.utils.datablocks.cleanup_s3_retrieval")
+@patch("scicat.scicat_tasks.scicat_client", mock_scicat_client)
+@patch("utils.datablocks.list_datablocks", raise_user_error)
+@patch("utils.datablocks.download_objects_from_s3", mock_list)
+@patch("utils.datablocks.create_tarfiles", mock_void_function)
+@patch("utils.datablocks.create_datablock_entries", mock_create_datablock_entries)
+@patch("utils.datablocks.upload_objects_to_s3", mock_void_function)
+@patch("utils.datablocks.verify_objects", mock_empty_list)
+@patch("utils.datablocks.cleanup_lts_folder")
+@patch("utils.datablocks.cleanup_scratch")
+@patch("utils.datablocks.cleanup_s3_staging")
+@patch("utils.datablocks.cleanup_s3_landingzone")
+@patch("utils.datablocks.cleanup_s3_retrieval")
 def test_create_datablocks_user_error(
     mock_cleanup_s3_retrieval: MagicMock,
     mock_cleanup_s3_landingzone: MagicMock,
@@ -217,19 +217,19 @@ def test_create_datablocks_user_error(
         (uuid4(), "somePrefix/456"),
     ],
 )
-@patch("archiver.scicat.scicat_tasks.scicat_client", mock_scicat_client)
-@patch("archiver.utils.datablocks.list_datablocks", mock_list)
-@patch("archiver.utils.datablocks.download_objects_from_s3", mock_list)
-@patch("archiver.utils.datablocks.create_tarfiles", mock_void_function)
-@patch("archiver.utils.datablocks.create_datablock_entries", mock_create_datablock_entries)
-@patch("archiver.utils.datablocks.upload_objects_to_s3", mock_void_function)
-@patch("archiver.utils.datablocks.verify_objects", mock_empty_list)
-@patch("archiver.utils.datablocks.move_data_to_LTS", raise_system_error)
-@patch("archiver.utils.datablocks.cleanup_lts_folder")
-@patch("archiver.utils.datablocks.cleanup_scratch")
-@patch("archiver.utils.datablocks.cleanup_s3_staging")
-@patch("archiver.utils.datablocks.cleanup_s3_landingzone")
-@patch("archiver.utils.datablocks.cleanup_s3_retrieval")
+@patch("scicat.scicat_tasks.scicat_client", mock_scicat_client)
+@patch("utils.datablocks.list_datablocks", mock_list)
+@patch("utils.datablocks.download_objects_from_s3", mock_list)
+@patch("utils.datablocks.create_tarfiles", mock_void_function)
+@patch("utils.datablocks.create_datablock_entries", mock_create_datablock_entries)
+@patch("utils.datablocks.upload_objects_to_s3", mock_void_function)
+@patch("utils.datablocks.verify_objects", mock_empty_list)
+@patch("utils.datablocks.move_data_to_LTS", raise_system_error)
+@patch("utils.datablocks.cleanup_lts_folder")
+@patch("utils.datablocks.cleanup_scratch")
+@patch("utils.datablocks.cleanup_s3_staging")
+@patch("utils.datablocks.cleanup_s3_landingzone")
+@patch("utils.datablocks.cleanup_s3_retrieval")
 def test_move_to_LTS_failure(
     mock_cleanup_s3_retrieval: MagicMock,
     mock_cleanup_s3_landingzone: MagicMock,
@@ -301,20 +301,20 @@ def test_move_to_LTS_failure(
         (uuid4(), "somePrefix/456"),
     ],
 )
-@patch("archiver.scicat.scicat_tasks.scicat_client", mock_scicat_client)
-@patch("archiver.utils.datablocks.list_datablocks", mock_list)
-@patch("archiver.utils.datablocks.download_objects_from_s3", mock_list)
-@patch("archiver.utils.datablocks.create_tarfiles", mock_void_function)
-@patch("archiver.utils.datablocks.create_datablock_entries", mock_create_datablock_entries)
-@patch("archiver.utils.datablocks.upload_objects_to_s3", mock_void_function)
-@patch("archiver.utils.datablocks.verify_objects", mock_empty_list)
-@patch("archiver.utils.datablocks.move_data_to_LTS", mock_void_function)
-@patch("archiver.utils.datablocks.verify_checksum", mock_void_function)
-@patch("archiver.utils.datablocks.cleanup_lts_folder")
-@patch("archiver.utils.datablocks.cleanup_scratch")
-@patch("archiver.utils.datablocks.cleanup_s3_staging")
-@patch("archiver.utils.datablocks.cleanup_s3_landingzone")
-@patch("archiver.utils.datablocks.cleanup_s3_retrieval")
+@patch("scicat.scicat_tasks.scicat_client", mock_scicat_client)
+@patch("utils.datablocks.list_datablocks", mock_list)
+@patch("utils.datablocks.download_objects_from_s3", mock_list)
+@patch("utils.datablocks.create_tarfiles", mock_void_function)
+@patch("utils.datablocks.create_datablock_entries", mock_create_datablock_entries)
+@patch("utils.datablocks.upload_objects_to_s3", mock_void_function)
+@patch("utils.datablocks.verify_objects", mock_empty_list)
+@patch("utils.datablocks.move_data_to_LTS", mock_void_function)
+@patch("utils.datablocks.verify_checksum", mock_void_function)
+@patch("utils.datablocks.cleanup_lts_folder")
+@patch("utils.datablocks.cleanup_scratch")
+@patch("utils.datablocks.cleanup_s3_staging")
+@patch("utils.datablocks.cleanup_s3_landingzone")
+@patch("utils.datablocks.cleanup_s3_retrieval")
 def test_LTS_validation_failure(
     mock_cleanup_s3_retrieval: MagicMock,
     mock_cleanup_s3_landingzone: MagicMock,

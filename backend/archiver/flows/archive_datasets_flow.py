@@ -16,8 +16,8 @@ from prefect.artifacts import (
     update_progress_artifact,
 )
 
-from archiver.config.variables import Variables
-from archiver.utils.datablocks import ArchiveInfo
+from config.variables import Variables
+from utils.datablocks import ArchiveInfo
 
 from .utils import StoragePaths, report_archival_error
 from .task_utils import (
@@ -26,25 +26,27 @@ from .task_utils import (
     generate_subflow_run_name_job_id_dataset_id,
     generate_sleep_for_task_name
 )
-from archiver.scicat.scicat_interface import SciCatClient
-from archiver.scicat.scicat_tasks import (
+from scicat.scicat_interface import SciCatClient
+from scicat.scicat_tasks import (
     update_scicat_archival_job_status,
     update_scicat_archival_dataset_lifecycle,
     get_origdatablocks,
     register_datablocks,
     get_scicat_access_token,
     get_job_datasetlist,
+    reset_dataset
 )
-from archiver.scicat.scicat_tasks import (
+from scicat.scicat_tasks import (
     report_job_failure_system_error,
-    report_dataset_user_error,
+    report_dataset_user_error
 )
-from archiver.utils.datablocks import wait_for_free_space
-from archiver.utils.model import OrigDataBlock, DataBlock
-import archiver.utils.datablocks as datablocks_operations
-from archiver.config.concurrency_limits import ConcurrencyLimits
-from archiver.utils.s3_storage_interface import Bucket, get_s3_client
-from archiver.utils.log import getLogger
+
+from utils.datablocks import wait_for_free_space
+from utils.model import OrigDataBlock, DataBlock
+import utils.datablocks as datablocks_operations
+from config.concurrency_limits import ConcurrencyLimits
+from utils.s3_storage_interface import Bucket, get_s3_client
+from utils.log import getLogger
 
 
 def on_get_origdatablocks_error(dataset_id: str, task: Task, task_run: TaskRun, state: State):

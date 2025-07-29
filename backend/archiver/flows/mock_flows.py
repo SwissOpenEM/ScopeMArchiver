@@ -15,15 +15,15 @@ from prefect.client.schemas.objects import FlowRun
 import urllib
 import asyncio
 
-from archiver.config.variables import Variables
-from archiver.utils.datablocks import upload_objects_to_s3
-from archiver.utils.s3_storage_interface import Bucket, get_s3_client
-from archiver.utils.model import OrigDataBlock, DataFile, Dataset, DatasetLifecycle
+from config.variables import Variables
+from utils.datablocks import upload_objects_to_s3
+from utils.s3_storage_interface import Bucket, get_s3_client
+from utils.model import OrigDataBlock, DataFile, Dataset, DatasetLifecycle
 
-from archiver.utils.log import getLogger, log
-from archiver.flows.utils import StoragePaths
-from archiver.scicat.scicat_tasks import get_scicat_access_token
-from archiver.utils.model import DatasetListEntry, Job
+from utils.log import getLogger, log
+from flows.utils import StoragePaths
+from scicat.scicat_tasks import get_scicat_access_token
+from utils.model import DatasetListEntry, Job
 from .task_utils import generate_task_name_dataset
 
 from prefect.flow_runs import wait_for_flow_run

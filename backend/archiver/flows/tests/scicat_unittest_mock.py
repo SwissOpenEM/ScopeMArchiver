@@ -3,9 +3,9 @@ import requests_mock
 from uuid import UUID
 import urllib.parse
 
-from archiver.scicat.scicat_interface import SciCatClient
-from archiver.utils.model import OrigDataBlock, DataBlock
-from archiver.utils.model import DatasetListEntry, Job
+from scicat.scicat_interface import SciCatClient
+from utils.model import OrigDataBlock, DataBlock
+from utils.model import DatasetListEntry, Job
 
 
 def mock_scicat_get_token() -> str:
