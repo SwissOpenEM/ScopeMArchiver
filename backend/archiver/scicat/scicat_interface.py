@@ -188,6 +188,18 @@ class SciCatClient:
             result.raise_for_status()
 
     @log
+    def delete_datablocks(self, dataset_id: str, data_blocks: List[DataBlock], token: SecretStr) -> None:
+        headers = self._headers(token)
+        safe_dataset_id = self._safe_dataset_id(dataset_id)
+        for d in data_blocks:
+            result = self._session.delete(
+                f"{self._ENDPOINT}{self.API}/datasets/{safe_dataset_id}/datablocks/{d.id}",
+                headers=headers,
+            )
+            # returns none if status_code is 200
+            result.raise_for_status()
+
+    @log
     def get_origdatablocks(self, dataset_id: str, token: SecretStr) -> List[OrigDataBlock]:
         headers = self._headers(token)
         safe_dataset_id = self._safe_dataset_id(dataset_id)

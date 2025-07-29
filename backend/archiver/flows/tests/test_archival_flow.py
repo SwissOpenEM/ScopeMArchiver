@@ -102,6 +102,7 @@ def test_scicat_api_archiving(
         assert m.jobs_matcher.call_count == 2
         assert m.datasets_matcher.call_count == 2
         assert m.datablocks_post_matcher.call_count == num_expected_datablocks
+        assert all([d.call_count == 0 for d in m.datablocks_delete_matcher])
 
         assert m.jobs_matcher.request_history[0].json() == expected_job_status(
             "archive", SciCatClient.JOBSTATUSCODE.IN_PROGRESS
@@ -185,6 +186,7 @@ def test_create_datablocks_user_error(
         assert m.jobs_matcher.call_count == 2
         assert m.datasets_matcher.call_count == 2
         assert m.datablocks_post_matcher.call_count == num_expected_datablocks
+        assert all([d.call_count == 1 for d in m.datablocks_delete_matcher])
 
         assert m.jobs_matcher.request_history[0].json() == expected_job_status(
             "archive", SciCatClient.JOBSTATUSCODE.IN_PROGRESS
@@ -264,6 +266,7 @@ def test_move_to_LTS_failure(
         assert m.jobs_matcher.call_count == 2
         assert m.datasets_matcher.call_count == 2
         assert m.datablocks_post_matcher.call_count == num_expected_datablocks
+        assert all([d.call_count == 1 for d in m.datablocks_delete_matcher])
 
         assert m.jobs_matcher.request_history[0].json() == expected_job_status(
             "archive", SciCatClient.JOBSTATUSCODE.IN_PROGRESS
@@ -349,6 +352,7 @@ def test_LTS_validation_failure(
         assert m.jobs_matcher.call_count == 2
         assert m.datasets_matcher.call_count == 2
         assert m.datablocks_post_matcher.call_count == num_expected_datablocks
+        assert all([d.call_count == 1 for d in m.datablocks_delete_matcher])
 
         assert m.jobs_matcher.request_history[0].json() == expected_job_status(
             "archive", SciCatClient.JOBSTATUSCODE.IN_PROGRESS
