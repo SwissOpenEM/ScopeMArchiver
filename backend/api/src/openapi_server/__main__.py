@@ -15,7 +15,6 @@ from openapi_server.apis.archiving_api import router as ArchivingApiRouter
 from openapi_server.apis.s3upload_api import router as S3UploadApiRouter
 from openapi_server.apis.service_token_api import router as ServiceTokenRouter
 from openapi_server.apis.health_api import router as HealthApiRouter
-from openapi_server.security_api import generate_token
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from .settings import GetSettings
@@ -90,13 +89,6 @@ if __name__ == "__main__":
     )
 
     _LOGGER.info(f"Version: {__version__}")
-
-    # TODO: for testing purposes only. To be removed later.
-    try:
-        token = generate_token()
-        _LOGGER.info(f"Test Bearer token: {token.access_token}")
-    except Exception as e:
-        _LOGGER.error(f"failed to get test bearer token: {e}")
 
     server = uvicorn.Server(uvi_config)
     server.run()
