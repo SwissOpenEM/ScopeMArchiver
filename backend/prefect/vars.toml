@@ -20,4 +20,4 @@ MINIO_URL_EXPIRATION_DAYS = 7
 [scicat]
 SCICAT_ENDPOINT = "https://scopem-openem.ethz.ch/scicat/backend"
 SCICAT_API_PREFIX = "/api/v3" # Route prefix of Scicat instance
-SCICAT_JOBS_API_PREFIX = "/api/v4" # jobs endpoints have the new prefix
+SCICAT_JOBS_API_PREFIX = "/api/v3" # jobs endpoints have the new prefix
