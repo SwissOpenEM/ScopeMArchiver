@@ -91,7 +91,7 @@ def create_tarfiles(
     src_folder: Path,
     dst_folder: Path,
     target_size: int,
-    progress_callback: Callable[[float], None] = None
+    progress_callback: Callable[[float], None] = None,
 ) -> List[ArchiveInfo]:
     """Create datablocks, i.e. .tar.gz files, from all files in a folder. Folder structures are kept and symlnks not resolved.
     The created tar files will be named according to the dataset they belong to.
@@ -121,7 +121,7 @@ def create_tarfiles(
             unpackedSize=0,
             packedSize=0,
             path=Path(dst_folder / Path(f"{tar_name}_{idx}.tar.gz")),
-            fileCount=len(files)
+            fileCount=len(files),
         )
         current_tarfile: tarfile.TarFile = tarfile.open(current_tar_info.path, "w")
         for relative_file_path in files:
@@ -134,8 +134,10 @@ def create_tarfiles(
         return current_tar_info
 
     with ThreadPoolExecutor(max_workers=Variables().ARCHIVER_NUM_WORKERS) as executor:
-        future_to_key = {executor.submit(create_tar, idx, files): (idx, files)
-                         for (idx, files) in partition_files_flat(src_folder, target_size)}
+        future_to_key = {
+            executor.submit(create_tar, idx, files): (idx, files)
+            for (idx, files) in partition_files_flat(src_folder, target_size)
+        }
         for future in as_completed(future_to_key):
             exception = future.exception()
 
@@ -227,8 +229,12 @@ def download_objects_from_s3(
     """
     destination_folder.mkdir(parents=True, exist_ok=True)
 
-    files = client.download_objects(minio_prefix=prefix, bucket=bucket,
-                                    destination_folder=destination_folder, progress_callback=progress_callback)
+    files = client.download_objects(
+        minio_prefix=prefix,
+        bucket=bucket,
+        destination_folder=destination_folder,
+        progress_callback=progress_callback,
+    )
 
     if len(files) == 0:
         raise SystemError(f"No files found in bucket {bucket.name} at {prefix}")
@@ -237,14 +243,17 @@ def download_objects_from_s3(
 
 
 @log
-def find_missing_datablocks_in_s3(client: S3Storage, datablocks: List[DataBlock], bucket: Bucket) -> List[DataBlock]:
-
+def find_missing_datablocks_in_s3(
+    client: S3Storage, datablocks: List[DataBlock], bucket: Bucket
+) -> List[DataBlock]:
     datablocks_not_in_retrieval_bucket = [
-        datablock for datablock in datablocks
+        datablock
+        for datablock in datablocks
         if client.stat_object(
             bucket=bucket,
             filename=f"{datablock.archiveId}",
-        ) is None
+        )
+        is None
     ]
 
     return datablocks_not_in_retrieval_bucket
@@ -252,14 +261,12 @@ def find_missing_datablocks_in_s3(client: S3Storage, datablocks: List[DataBlock]
 
 @log
 def reset_expiry_date(client: S3Storage, filenames: List[str], bucket: Bucket):
-
     retention_period = Variables().MINIO_URL_EXPIRATION_DAYS
 
     for filename in filenames:
         client.reset_expiry_date(
-            bucket_name=bucket.name,
-            filename=f"{filename}",
-            retention_period_days=retention_period)
+            bucket_name=bucket.name, filename=f"{filename}", retention_period_days=retention_period
+        )
 
 
 @log
@@ -269,7 +276,7 @@ def upload_objects_to_s3(
     bucket: Bucket,
     source_folder: Path,
     ext: str | None = None,
-    progress_callback: Callable[[float], None] = None
+    progress_callback: Callable[[float], None] = None,
 ) -> List[Path]:
     uploaded_files: List[Path] = []
 
@@ -298,7 +305,7 @@ def create_datablock_entries(
     folder: Path,
     origDataBlocks: List[OrigDataBlock],
     tar_infos: List[ArchiveInfo],
-    progress_callback: Callable[[float], None] = None
+    progress_callback: Callable[[float], None] = None,
 ) -> List[DataBlock]:
     """Create datablock entries compliant with schema provided by scicat
 
@@ -348,7 +355,10 @@ def create_datablock_entries(
             )
 
         with ThreadPoolExecutor(max_workers=Variables().ARCHIVER_NUM_WORKERS) as executor:
-            future_to_key = {executor.submit(create_datafile_list_entry, tar_info): tar_info for tar_info in tarball.getmembers()}
+            future_to_key = {
+                executor.submit(create_datafile_list_entry, tar_info): tar_info
+                for tar_info in tarball.getmembers()
+            }
 
             for future in as_completed(future_to_key):
                 exception = future.exception()
@@ -466,13 +476,17 @@ def copy_file_to_folder(src_file: Path, dst_folder: Path):
     expected_dst_file = dst_folder / src_file.name
 
     with subprocess.Popen(
-        ["rsync",
-         "-rcvh",  # r: recursive, c: checksum, v: verbose, h: human readable format
-         "--stats",  # file transfer stats
-         "--no-perms",  # don't preserve the file permissions of the source files
-         "--no-owner",  # don't preserve the owner
-         "--no-group",  # don't preserve the group ownership
-         "--mkpath", str(src_file), str(dst_folder)],
+        [
+            "rsync",
+            "-rcvh",  # r: recursive, c: checksum, v: verbose, h: human readable format
+            "--stats",  # file transfer stats
+            "--no-perms",  # don't preserve the file permissions of the source files
+            "--no-owner",  # don't preserve the owner
+            "--no-group",  # don't preserve the group ownership
+            "--mkpath",
+            str(src_file),
+            str(dst_folder),
+        ],
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         universal_newlines=True,
@@ -493,7 +507,6 @@ def copy_file_to_folder(src_file: Path, dst_folder: Path):
 
 @log
 def verify_datablock_content(datablock: DataBlock, datablock_path: str):
-
     expected_checksums: Dict[str, str] = {
         datafile.path: datafile.chk or "" for datafile in datablock.dataFileList or []
     }

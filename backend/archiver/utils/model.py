@@ -37,7 +37,8 @@ class Job(BaseModel):
     jobParams: Optional[object] = None
     # Defines current status of job lifecycle,
     jobStatusMessage: Optional[str] = None
-    # Array of objects with keys: pid, files. The value for the pid key defines the dataset ID, the value for the files key is an array of file names. This array is either an empty array, implying that all files within the dataset are selected or an explicit list of dataset-relative file paths, which should be selected,
+    # v3
+    # # Array of objects with keys: pid, files. The value for the pid key defines the dataset ID, the value for the files key is an array of file names. This array is either an empty array, implying that all files within the dataset are selected or an explicit list of dataset-relative file paths, which should be selected,
     datasetList: Optional[List[DatasetListEntry]] = None
     # Detailed return value after job is finished ,
     jobResultObject: Optional[JobResultObject] = None
@@ -53,14 +54,6 @@ class Job(BaseModel):
     ownerGroup: Optional[str] = None
     accessGroups: Optional[List[str]] = None
     instrumentGroup: Optional[str] = None
-    # isPublished: bool
-    # ownerUser: str
-    # type: str
-    statusCode: Optional[str] = None
-    statusMessage: Optional[str] = None
-    # datasetsValidation: bool
-    # contactEmail: str
-    # configuration: Dict[str, Any]
 
 
 class DataFile(BaseModel):
@@ -217,8 +210,9 @@ class Dataset(BaseModel):
     type: Optional[str] = None
     creationLocation: Optional[str] = None
     origdatablocks: Optional[List[OrigDataBlock]] = None
-    principalInvestigator: Optional[str] = None
     datasetName: Optional[str] = None
+    # only for v3
+    principalInvestigator: Optional[str] = None
 
 
 class StorageObject(BaseModel):

@@ -24,7 +24,7 @@ from .task_utils import (
     generate_task_name_dataset,
     generate_flow_name_job_id,
     generate_subflow_run_name_job_id_dataset_id,
-    generate_sleep_for_task_name
+    generate_sleep_for_task_name,
 )
 from scicat.scicat_interface import SciCatClient
 from scicat.scicat_tasks import (
@@ -34,12 +34,9 @@ from scicat.scicat_tasks import (
     register_datablocks,
     get_scicat_access_token,
     get_job_datasetlist,
-    reset_dataset
+    reset_dataset,
 )
-from scicat.scicat_tasks import (
-    report_job_failure_system_error,
-    report_dataset_user_error
-)
+from scicat.scicat_tasks import report_job_failure_system_error, report_dataset_user_error
 
 from utils.datablocks import wait_for_free_space
 from utils.model import OrigDataBlock, DataBlock
@@ -57,7 +54,6 @@ def on_get_origdatablocks_error(dataset_id: str, task: Task, task_run: TaskRun, 
 
 @task(task_run_name=generate_task_name_dataset)
 def download_origdatablocks(dataset_id: str, origDataBlocks: List[OrigDataBlock]):
-
     s3_client = get_s3_client()
 
     if len(origDataBlocks) == 0:
@@ -92,7 +88,7 @@ def download_origdatablocks(dataset_id: str, origDataBlocks: List[OrigDataBlock]
     def update_progress(p):
         update_progress.last_progress = 0
         progress = math.floor(100.0 * p / total_file_count)
-        if (progress > update_progress.last_progress):
+        if progress > update_progress.last_progress:
             update_progress.last_progress = progress
             update_progress_artifact(artifact_id=progress_artifact_id, progress=progress)
 
@@ -103,7 +99,7 @@ def download_origdatablocks(dataset_id: str, origDataBlocks: List[OrigDataBlock]
         prefix=StoragePaths.relative_raw_files_folder(dataset_id),
         bucket=Bucket.landingzone_bucket(),
         destination_folder=raw_files_scratch_folder,
-        progress_callback=update_progress
+        progress_callback=update_progress,
     )
     getLogger().info(f"Downloaded {len(file_paths)} objects from {Bucket.landingzone_bucket()}")
 
@@ -128,7 +124,7 @@ def create_tarfiles(dataset_id: str) -> List[ArchiveInfo]:
     def update_progress(progress):
         update_progress.last_progress = 0
         progress = math.floor(100.0 * progress)
-        if (progress > update_progress.last_progress):
+        if progress > update_progress.last_progress:
             update_progress.last_progress = progress
             update_progress_artifact(artifact_id=progress_artifact_id, progress=progress)
 
@@ -137,12 +133,14 @@ def create_tarfiles(dataset_id: str) -> List[ArchiveInfo]:
         src_folder=raw_files_scratch_folder,
         dst_folder=datablocks_scratch_folder,
         target_size=Variables().ARCHIVER_TARGET_SIZE_GB * GB_TO_B,
-        progress_callback=update_progress
+        progress_callback=update_progress,
     )
 
 
 @task(task_run_name=generate_task_name_dataset)
-def create_datablock_entries(dataset_id: str, orig_datablocks: List[OrigDataBlock], tar_files: List[ArchiveInfo]) -> List[DataBlock]:
+def create_datablock_entries(
+    dataset_id: str, orig_datablocks: List[OrigDataBlock], tar_files: List[ArchiveInfo]
+) -> List[DataBlock]:
     datablocks_scratch_folder = StoragePaths.scratch_archival_datablocks_folder(dataset_id)
     progress_artifact_id = create_progress_artifact(
         progress=0.0,
@@ -152,15 +150,13 @@ def create_datablock_entries(dataset_id: str, orig_datablocks: List[OrigDataBloc
     def update_progress(progress):
         update_progress.last_progress = 0
         progress = math.floor(100.0 * progress)
-        if (progress > update_progress.last_progress):
+        if progress > update_progress.last_progress:
             update_progress.last_progress = progress
             update_progress_artifact(artifact_id=progress_artifact_id, progress=progress)
 
-    return datablocks_operations.create_datablock_entries(dataset_id,
-                                                          datablocks_scratch_folder,
-                                                          orig_datablocks,
-                                                          tar_files,
-                                                          update_progress)
+    return datablocks_operations.create_datablock_entries(
+        dataset_id, datablocks_scratch_folder, orig_datablocks, tar_files, update_progress
+    )
 
 
 @task(task_run_name=generate_task_name_dataset)
@@ -176,16 +172,18 @@ def upload_datablocks_to_s3(dataset_id: str) -> List[Path]:
     def update_progress(progress):
         update_progress.last_progress = 0
         progress = math.floor(100.0 * progress)
-        if (progress > update_progress.last_progress):
+        if progress > update_progress.last_progress:
             update_progress.last_progress = progress
             update_progress_artifact(artifact_id=progress_artifact_id, progress=progress)
 
-    return datablocks_operations.upload_objects_to_s3(client=s3_client,
-                                                      prefix=prefix,
-                                                      bucket=Bucket.staging_bucket(),
-                                                      source_folder=datablocks_scratch_folder,
-                                                      ext=".gz",
-                                                      progress_callback=update_progress)
+    return datablocks_operations.upload_objects_to_s3(
+        client=s3_client,
+        prefix=prefix,
+        bucket=Bucket.staging_bucket(),
+        source_folder=datablocks_scratch_folder,
+        ext=".gz",
+        progress_callback=update_progress,
+    )
 
 
 @task(task_run_name=generate_task_name_dataset)
@@ -205,8 +203,8 @@ def verify_objects(dataset_id: str, uploaded_objects: List[Path]) -> List[DataBl
 
 @task(task_run_name=generate_sleep_for_task_name)
 def sleep_for(time_in_seconds: int):
-    """ Sleeps for a given amount of time. Required to wait for the LTS to update its internal state.
-        Needs to be blocking as it should prevent the following task to run.
+    """Sleeps for a given amount of time. Required to wait for the LTS to update its internal state.
+    Needs to be blocking as it should prevent the following task to run.
     """
     time.sleep(time_in_seconds)
 
@@ -233,10 +231,12 @@ def move_data_to_LTS(dataset_id: str, datablock: DataBlock):
     datablocks_operations.move_data_to_LTS(dataset_id, datablock)
 
 
-@task(task_run_name=generate_task_name_dataset,
-      tags=[ConcurrencyLimits().LTS_READ_TAG],
-      retries=5,
-      retry_delay_seconds=[60, 120, 240, 480, 960])
+@task(
+    task_run_name=generate_task_name_dataset,
+    tags=[ConcurrencyLimits().LTS_READ_TAG],
+    retries=5,
+    retry_delay_seconds=[60, 120, 240, 480, 960],
+)
 def copy_datablock_from_LTS(dataset_id: str, datablock: DataBlock):
     """Prefect task to move a datablock (.tar.gz file) to the LTS. Concurrency of this task is limited to 2 instances
     at the same time.
@@ -244,9 +244,7 @@ def copy_datablock_from_LTS(dataset_id: str, datablock: DataBlock):
     datablocks_operations.copy_file_from_LTS(dataset_id, datablock)
 
 
-@task(
-    task_run_name=generate_task_name_dataset
-)
+@task(task_run_name=generate_task_name_dataset)
 def verify_checksum(dataset_id: str, datablock: DataBlock, checksum: str) -> None:
     return datablocks_operations.verify_checksum(
         dataset_id=dataset_id, datablock=datablock, expected_checksum=checksum
@@ -278,7 +276,6 @@ def move_datablocks_to_lts_flow(dataset_id: str, datablocks: List[DataBlock]):
     all_tasks = []
 
     for datablock in datablocks:
-
         checksum = calculate_checksum.submit(dataset_id=dataset_id, datablock=datablock)
         free_space = check_free_space_in_LTS.submit(wait_for=[checksum])
 
@@ -369,10 +366,7 @@ def on_dataset_flow_failure(flow: Flow, flow_run: FlowRun, state: State):
         token=scicat_token,
     )
     try:
-        reset_dataset(
-            dataset_id=flow_run.parameters["dataset_id"],
-            token=scicat_token
-        )
+        reset_dataset(dataset_id=flow_run.parameters["dataset_id"], token=scicat_token)
     except Exception as e:
         getLogger().error(f"failed to reset datablocks {e}")
     datablocks_operations.cleanup_lts_folder(flow_run.parameters["dataset_id"])
@@ -403,7 +397,6 @@ def cleanup_dataset(flow: Flow, flow_run: FlowRun, state: State):
     on_cancellation=[on_dataset_flow_failure],
 )
 def archive_single_dataset_flow(dataset_id: str):
-
     datablocks = create_datablocks_flow(dataset_id)
 
     move_datablocks_to_lts_flow(dataset_id=dataset_id, datablocks=datablocks)
@@ -414,7 +407,7 @@ def archive_single_dataset_flow(dataset_id: str):
         status=SciCatClient.ARCHIVESTATUSMESSAGE.DATASET_ON_ARCHIVEDISK,
         archivable=False,
         retrievable=True,
-        token=access_token
+        token=access_token,
     ).result()
 
 

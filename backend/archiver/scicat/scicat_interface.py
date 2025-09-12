@@ -59,10 +59,15 @@ class SciCatClient:
         RETRIEVE = "retrieve"
 
     def __init__(
-        self, endpoint: str = "http://scicat.example.com", api_prefix: str = "", jobs_api_prefix: str = ""
+        self,
+        endpoint: str = "http://scicat.example.com",
+        datasets_api_prefix: str = "",
+        api_prefix: str = "",
+        jobs_api_prefix: str = "",
     ):
         self._ENDPOINT = endpoint
         self._API_PREFIX = api_prefix
+        self._DATASETS_API_PREFIX = datasets_api_prefix
         self._JOBS_API_PREFIX = jobs_api_prefix
 
         self._session = requests.Session()
@@ -97,6 +102,10 @@ class SciCatClient:
     def JOBS_API_PREFIX(self):
         return self._JOBS_API_PREFIX
 
+    @property
+    def DATASETS_API_PREFIX(self):
+        return self._DATASETS_API_PREFIX
+
     @log
     def update_job_status(
         self,
@@ -106,9 +115,7 @@ class SciCatClient:
         job_result_object: JobResultObject | None,
         token: SecretStr,
     ) -> None:
-        job = Job(
-            statusCode=str(status_code), statusMessage=str(status_message), jobResultObject=job_result_object
-        )
+        job = Job(jobStatusMessage=str(status_message), jobResultObject=job_result_object)
 
         headers = self._headers(token)
 
@@ -141,7 +148,7 @@ class SciCatClient:
         headers = self._headers(token)
         safe_dataset_id = self._safe_dataset_id(dataset_id)
         result = self._session.patch(
-            f"{self._ENDPOINT}{self.API}/datasets/{safe_dataset_id}",
+            f"{self._ENDPOINT}{self.DATASETS_API_PREFIX}/datasets/{safe_dataset_id}",
             data=dataset.model_dump_json(exclude_none=True),
             headers=headers,
         )
@@ -167,7 +174,7 @@ class SciCatClient:
         headers = self._headers(token)
         safe_dataset_id = self._safe_dataset_id(dataset_id)
         result = self._session.patch(
-            f"{self._ENDPOINT}{self.API}/datasets/{safe_dataset_id}",
+            f"{self._ENDPOINT}{self.DATASETS_API_PREFIX}/datasets/{safe_dataset_id}",
             data=dataset.model_dump_json(exclude_none=True),
             headers=headers,
         )
@@ -180,7 +187,7 @@ class SciCatClient:
         safe_dataset_id = self._safe_dataset_id(dataset_id)
         for d in data_blocks:
             result = self._session.post(
-                f"{self._ENDPOINT}{self.API}/datasets/{safe_dataset_id}/datablocks",
+                f"{self._ENDPOINT}{self.DATASETS_API_PREFIX}/datasets/{safe_dataset_id}/datablocks",
                 data=d.model_dump_json(exclude_none=True),
                 headers=headers,
             )
@@ -193,7 +200,7 @@ class SciCatClient:
         safe_dataset_id = self._safe_dataset_id(dataset_id)
         for d in data_blocks:
             result = self._session.delete(
-                f"{self._ENDPOINT}{self.API}/datasets/{safe_dataset_id}/datablocks/{d.id}",
+                f"{self._ENDPOINT}{self.DATASETS_API_PREFIX}/datasets/{safe_dataset_id}/datablocks/{d.id}",
                 headers=headers,
             )
             # returns none if status_code is 200
@@ -204,7 +211,7 @@ class SciCatClient:
         headers = self._headers(token)
         safe_dataset_id = self._safe_dataset_id(dataset_id)
         result = self._session.get(
-            f"{self._ENDPOINT}{self.API}/datasets/{safe_dataset_id}/origdatablocks",
+            f"{self._ENDPOINT}{self.DATASETS_API_PREFIX}/datasets/{safe_dataset_id}/origdatablocks",
             headers=headers,
         )
         # returns none if status_code is 200
@@ -224,7 +231,11 @@ class SciCatClient:
         result = self._session.get(f"{self._ENDPOINT}{self.JOBS_API_PREFIX}/jobs/{job_id}", headers=headers)
         # returns none if status_code is 200
         result.raise_for_status()
-        datasets = result.json()["jobParams"]["datasetList"]
+        # v3
+        datasets = result.json().get("datasetList", [])
+        if not datasets:
+            # #v4
+            datasets = result.json().get("jobParams")["datasetList"]
         final_list = [d["pid"] for d in datasets]
         return final_list
 
@@ -233,7 +244,7 @@ class SciCatClient:
         headers = self._headers(token)
         safe_dataset_id = self._safe_dataset_id(dataset_id)
         result = self._session.get(
-            f"{self._ENDPOINT}{self.API}/datasets/{safe_dataset_id}/datablocks",
+            f"{self._ENDPOINT}{self.DATASETS_API_PREFIX}/datasets/{safe_dataset_id}/datablocks",
             headers=headers,
         )
         # returns none if status_code is 200

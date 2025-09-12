@@ -8,6 +8,7 @@ from prefect.exceptions import UnfinishedRun
 # In order to disable retries for the test, the task needs to be patched
 # There does not seem to be a working way to configure this
 from flows.retrieve_datasets_flow import copy_datablock_from_LTS_to_scratch
+
 copy_datablock_from_LTS_to_scratch.retries = 0
 
 # fmt: off

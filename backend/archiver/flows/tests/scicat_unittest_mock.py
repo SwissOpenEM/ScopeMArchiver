@@ -15,6 +15,7 @@ def mock_scicat_get_token() -> str:
 def mock_scicat_client() -> SciCatClient:
     scicat_instance = SciCatClient(
         endpoint=ScicatMock.ENDPOINT,
+        datasets_api_prefix=ScicatMock.API_PREFIX,
         api_prefix=ScicatMock.API_PREFIX,
         jobs_api_prefix=ScicatMock.JOBS_API_PREFIX,
     )
@@ -42,17 +43,16 @@ class ScicatMock(requests_mock.Mocker):
 
         self.matchers["jobs"] = self.patch(f"{self.ENDPOINT}{self.JOBS_API_PREFIX}/jobs/{job_id}", json=None)
 
-        datasetList = [DatasetListEntry(
-            pid=dataset_id,
-            files=[]
-        )]
+        datasetList = [DatasetListEntry(pid=dataset_id, files=[])]
         job_json = Job(
             id=str(job_id),
             jobParams={"datasetList": datasetList},  # v4
-            datasetList=datasetList  # v3
+            datasetList=datasetList,  # v3
         ).model_dump()
         job_json["id"] = str(job_json["id"])
-        self.matchers["jobs_get"] = self.get(f"{self.ENDPOINT}{self.JOBS_API_PREFIX}/jobs/{job_id}", json=job_json)
+        self.matchers["jobs_get"] = self.get(
+            f"{self.ENDPOINT}{self.JOBS_API_PREFIX}/jobs/{job_id}", json=job_json
+        )
 
         self.matchers["datasets"] = self.patch(
             f"{self.ENDPOINT}{self.API_PREFIX}/datasets/{safe_dataset_url}", json=None
@@ -84,8 +84,8 @@ class ScicatMock(requests_mock.Mocker):
         self.matchers["delete_datablocks"] = []
 
         for d in datablocks:
-            self.matchers["delete_datablocks"].append(self.delete(
-                f"{self.ENDPOINT}{self.API_PREFIX}/datasets/{safe_dataset_url}/datablocks/{d.id}")
+            self.matchers["delete_datablocks"].append(
+                self.delete(f"{self.ENDPOINT}{self.API_PREFIX}/datasets/{safe_dataset_url}/datablocks/{d.id}")
             )
 
     @property

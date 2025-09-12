@@ -80,7 +80,9 @@ def create_dummy_dataset(
         creationTime=datetime.datetime.now(datetime.UTC).isoformat(),
         type="raw",
         creationLocation="ETHZ",
-        datasetlifecycle=DatasetLifecycle(id=dataset_id, archivable=True, isOnCentralDisk=True, storageLocation="ETHZ"),
+        datasetlifecycle=DatasetLifecycle(
+            id=dataset_id, archivable=True, isOnCentralDisk=True, storageLocation="ETHZ"
+        ),
         # origdatablocks=[origdatablock]
     )
     j = dataset.model_dump_json(exclude_none=True)
@@ -94,7 +96,7 @@ def create_dummy_dataset(
         "Content-Type": "application/json",
     }
     host = Variables().SCICAT_ENDPOINT
-    api = Variables().SCICAT_API_PREFIX
+    api = Variables().SCICAT_DATASETS_API_PREFIX
     resp = requests.post(
         f"{host}{api}/datasets/",
         data=j,
@@ -172,7 +174,6 @@ def scicat_create_retrieval_job(dataset: str, token: SecretStr) -> uuid.UUID:
         type="retrieve",
         ownerGroup="archivemanager",
     )
-    # TODO: this entry point needs alignment with SciCat
     host = Variables().SCICAT_ENDPOINT
     api = Variables().SCICAT_JOBS_API_PREFIX
     response = requests.post(
@@ -198,12 +199,11 @@ def scicat_create_archival_job(dataset: str, token: SecretStr) -> uuid.UUID:
         ownerGroup="archivemanager",
     )
 
-    j = job.model_dump_json(exclude_none=True)
     host = Variables().SCICAT_ENDPOINT
     api = Variables().SCICAT_JOBS_API_PREFIX
     response = requests.post(
         url=f"{host}{api}{SCICAT_JOB_PATH}",
-        data=j,
+        data=job.model_dump_json(exclude_none=True),
         headers=headers(token),
     )
     response.raise_for_status()
@@ -424,7 +424,7 @@ def end_to_end_test_flow(
     getLogger().info(f"Scicat job status {scicat_archival_job_status}")
 
     ASSERT(scicat_archival_job_status.get("type") == "archive")
-    ASSERT(scicat_archival_job_status.get("jobStatusMessage") == "finishedSuccessful")
+    ASSERT(scicat_archival_job_status.get("jobStatusMessage") == "jobFinished")
 
     # Verify Scicat datasetlifecycle
     dataset_future = get_scicat_dataset.submit(dataset_pid=dataset_pid, token=scicat_token)
@@ -450,7 +450,9 @@ def end_to_end_test_flow(
     getLogger().info(scicat_retrieval_job_status)
     ASSERT(scicat_retrieval_job_status is not None)
     ASSERT(scicat_retrieval_job_status.get("type") == "retrieve")
-    ASSERT(scicat_retrieval_job_status.get("jobStatusMessage") in ["jobCreated", "jobSubmitted", "inProgress"])
+    ASSERT(
+        scicat_retrieval_job_status.get("jobStatusMessage") in ["jobCreated", "jobSubmitted", "inProgress"]
+    )
 
     wait_for_flow.submit(scicat_job_id=scicat_retrieval_job_id).wait()
 
@@ -461,7 +463,7 @@ def end_to_end_test_flow(
     scicat_retrieval_job_status = scicat_retrieval_job_status_future.result()
     ASSERT(scicat_retrieval_job_status is not None)
     ASSERT(scicat_retrieval_job_status.get("type") == "retrieve")
-    ASSERT(scicat_retrieval_job_status.get("jobStatusMessage") == "finishedSuccessful")
+    ASSERT(scicat_retrieval_job_status.get("jobStatusMessage") == "jobFinished")
     ASSERT(scicat_retrieval_job_status.get("jobResultObject") is not None)
     jobResult = scicat_retrieval_job_status.get("jobResultObject").get("result")
     ASSERT(len(jobResult) > 0)

@@ -55,22 +55,29 @@ def create_datablocks(num_blocks: int = 10, num_files_per_block: int = 10) -> Li
     return blocks
 
 
-def expected_job_status(job_type: str, status: SciCatClient.JOBSTATUSMESSAGE) -> Dict[str, Any]:
+def expected_job_status(job_type: str, status: SciCatClient.JOBSTATUSMESSAGE | SciCatClient.JOBSTATUSCODE) -> Dict[str, Any]:
     match status:
         case SciCatClient.JOBSTATUSCODE.IN_PROGRESS:
-            return Job(statusCode="inProgress", statusMessage="jobStarted").model_dump(exclude_none=True)
+            return Job(jobStatusMessage="jobStarted").model_dump(exclude_none=True)
         case SciCatClient.JOBSTATUSCODE.FINISHED_SUCCESSFULLY:
-            return Job(statusCode="finishedSuccessful", statusMessage="jobFinished").model_dump(
+            return Job(jobStatusMessage="jobFinished").model_dump(
                 exclude_none=True
             )
         case SciCatClient.JOBSTATUSCODE.FINISHED_UNSUCCESSFULLY:
-            return Job(statusCode="finishedUnsuccessful", statusMessage="jobFinished").model_dump(
+            return Job(jobStatusMessage="jobFinished").model_dump(
                 exclude_none=True
             )
         case SciCatClient.JOBSTATUSCODE.FINISHED_WITHDATASET_ERRORS:
-            return Job(statusCode="finishedWithDatasetErrors", statusMessage="jobFinished").model_dump(
+            return Job(jobStatusMessage="jobFinished").model_dump(
                 exclude_none=True
             )
+        case SciCatClient.JOBSTATUSMESSAGE.JOB_IN_PROGRESS:
+            return Job(jobStatusMessage="jobStarted").model_dump(
+                exclude_none=True)
+        case SciCatClient.JOBSTATUSMESSAGE.JOB_FINISHED:
+            return Job(jobStatusMessage="jobFinished").model_dump(exclude_none=True)
+
+    return {}
 
 
 def expected_archival_dataset_lifecycle(

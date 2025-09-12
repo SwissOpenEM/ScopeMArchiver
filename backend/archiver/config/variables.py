@@ -44,6 +44,7 @@ class PrefectVariablesModel(BaseSettings):
 
     SCICAT_ENDPOINT: str = ""
     SCICAT_API_PREFIX: str = ""
+    SCICAT_DATASETS_API_PREFIX: str = ""
     SCICAT_JOBS_API_PREFIX: str = ""
 
 
@@ -80,6 +81,10 @@ class Variables:
     @property
     def SCICAT_API_PREFIX(self) -> str:
         return self.__get("scicat_api_prefix") or ""
+
+    @property
+    def SCICAT_DATASETS_API_PREFIX(self) -> str:
+        return self.__get("scicat_datasets_api_prefix") or ""
 
     @property
     def SCICAT_JOBS_API_PREFIX(self) -> str:
