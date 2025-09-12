@@ -28,6 +28,7 @@ def getLogger():
 
 __attributes__ = ["getLogger"]
 
+
 def log(func):
     @functools.wraps(func)
     def wrapper_decorator(*args, **kwargs):
@@ -41,6 +42,7 @@ def log(func):
         return value
 
     return wrapper_decorator
+
 
 def log_debug(func):
     @functools.wraps(func)

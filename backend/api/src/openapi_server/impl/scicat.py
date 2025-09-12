@@ -42,6 +42,14 @@ async def get_scicat_api_prefix():
     return await Variable.get("scicat_api_prefix")
 
 
+async def get_scicat_jobs_api_prefix():
+    return await Variable.get("scicat_jobs_api_prefix")
+
+
+async def get_scicat_datasets_api_prefix():
+    return await Variable.get("scicat_datasets_api_prefix")
+
+
 def build_headers(token: SecretStr) -> dict[str, str]:
     return {
         "Authorization": f"Bearer {token.get_secret_value()}",
@@ -57,7 +65,7 @@ async def mark_dataset_as_archivable(dataset_id: str):
     user, password = await get_scicat_credentials()
 
     endpoint = await get_scicat_endpoint()
-    api_prefix = await get_scicat_api_prefix()
+    api_prefix = await get_scicat_datasets_api_prefix()
 
     token = await get_scicat_token(endpoint, api_prefix, user, password)
     data = {
@@ -83,7 +91,7 @@ async def start_archiving(owner_user: str, contact_email, owner_group: str, data
     user, password = await get_scicat_credentials()
 
     endpoint = await get_scicat_endpoint()
-    api_prefix = await get_scicat_api_prefix()
+    api_prefix = await get_scicat_jobs_api_prefix()
 
     token = await get_scicat_token(endpoint, api_prefix, user, password)
     data = {

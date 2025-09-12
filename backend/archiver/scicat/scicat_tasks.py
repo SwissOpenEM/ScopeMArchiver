@@ -29,6 +29,7 @@ def scicat_client() -> SciCatClient:
         scicat_instance = SciCatClient(
             endpoint=Variables().SCICAT_ENDPOINT,
             api_prefix=Variables().SCICAT_API_PREFIX,
+            datasets_api_prefix=Variables().SCICAT_DATASETS_API_PREFIX,
             jobs_api_prefix=Variables().SCICAT_JOBS_API_PREFIX,
         )
     return scicat_instance
@@ -190,10 +191,7 @@ def report_job_failure_system_error(
     )
 
 
-def reset_dataset(
-    dataset_id: str,
-    token: SecretStr
-):
+def reset_dataset(dataset_id: str, token: SecretStr):
     data_blocks = scicat_client().get_datablocks(dataset_id=dataset_id, token=token)
     scicat_client().delete_datablocks(dataset_id=dataset_id, data_blocks=data_blocks, token=token)
 

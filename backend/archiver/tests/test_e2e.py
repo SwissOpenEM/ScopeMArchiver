@@ -121,8 +121,11 @@ async def scicat_create_retrieval_job(dataset: str, token: SecretStr) -> UUID:
     job = Job(
         jobParams={
             "username": "ingestor",
-            "datasetList": [DatasetListEntry(pid=str(dataset), files=[])],
+            # v4
+            # "datasetList": [DatasetListEntry(pid=str(dataset), files=[])],
         },
+        # v3
+        datasetList=[DatasetListEntry(pid=str(dataset), files=[])],
         type="retrieve",
         ownerGroup="ingestor",
     )
@@ -143,8 +146,11 @@ async def scicat_create_archival_job(dataset: str, token: SecretStr) -> UUID:
     job = Job(
         jobParams={
             "username": "ingestor",
-            "datasetList": [DatasetListEntry(pid=str(dataset), files=[])],
+            # v4
+            # "datasetList": [DatasetListEntry(pid=str(dataset), files=[])],
         },
+        # v3
+        datasetList=[DatasetListEntry(pid=str(dataset), files=[])],
         type="archive",
         ownerGroup="ingestor",
     )
@@ -255,8 +261,8 @@ async def test_end_to_end(scicat_token_setup, set_env, s3_client):
     assert scicat_archival_job_status is not None
     assert scicat_archival_job_status.get("type") == "archive"
     assert (
-        scicat_archival_job_status.get("statusCode") == "jobCreated"
-        or scicat_archival_job_status.get("statusMessage") == "inProgress"
+        scicat_archival_job_status.get("jobSstatusCode") == "jobCreated"
+        or scicat_archival_job_status.get("jobStatusMessage") == "inProgress"
     )
 
     time.sleep(10)
@@ -269,7 +275,11 @@ async def test_end_to_end(scicat_token_setup, set_env, s3_client):
     scicat_archival_job_status = await get_scicat_job(job_id=scicat_archival_job_id, token=scicat_token_setup)
     assert scicat_archival_job_status is not None
     assert scicat_archival_job_status.get("type") == "archive"
-    assert scicat_archival_job_status.get("statusMessage") == "finishedSuccessful"
+    # v3
+    assert scicat_archival_job_status.get("jobStatusMessage") == "jobFinished"
+    # v4
+    # assert scicat_archival_job_status.get("statusMessage") == "jobFinished"
+    # assert scicat_archival_job_status.get("statusCode") == "finishedSuccessful"
 
     # Verify Scicat datasetlifecycle
     dataset = await get_scicat_dataset(dataset_pid=dataset_pid, token=scicat_token_setup)
@@ -307,7 +317,13 @@ async def test_end_to_end(scicat_token_setup, set_env, s3_client):
     )
     assert scicat_retrieval_job_status is not None
     assert scicat_retrieval_job_status.get("type") == "retrieve"
-    assert scicat_retrieval_job_status.get("statusMessage") == "finishedSuccessful"
+
+    # v3
+    assert scicat_archival_job_status.get("jobStatusMessage") == "jobFinished"
+    # v4
+    # assert scicat_retrieval_job_status.get("statusMessage") == "finishedSuccessful"
+    # assert scicat_archival_job_status.get("statusCode") == "finishedSuccessful"
+
     assert scicat_retrieval_job_status.get("jobResultObject") is not None
     jobResult = scicat_retrieval_job_status.get("jobResultObject").get("result")
     assert len(jobResult) == 1

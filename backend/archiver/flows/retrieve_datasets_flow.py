@@ -14,7 +14,12 @@ from utils.s3_storage_interface import get_s3_client
 from utils.s3_storage_interface import Bucket
 
 
-from .task_utils import generate_flow_name_dataset, generate_flow_name_job_id, generate_task_name_dataset, generate_task_name_datablock
+from .task_utils import (
+    generate_flow_name_dataset,
+    generate_flow_name_job_id,
+    generate_task_name_dataset,
+    generate_task_name_datablock,
+)
 from .flow_utils import report_retrieval_error
 from scicat.scicat_interface import SciCatClient
 from utils.model import DataBlock, JobResultObject
@@ -43,7 +48,7 @@ def on_get_datablocks_error(dataset_id: str, task: Task, task_run: TaskRun, stat
 @task(
     task_run_name=generate_task_name_datablock,
     tags=[ConcurrencyLimits().LTS_READ_TAG],
-    retry_delay_seconds=[60, 120, 240, 480, 960]
+    retry_delay_seconds=[60, 120, 240, 480, 960],
 )
 def copy_datablock_from_LTS_to_scratch(dataset_id: str, datablock: DataBlock):
     datablocks_operations.copy_from_LTS_to_scratch_retrieval(dataset_id, datablock)
@@ -86,11 +91,15 @@ def cleanup_dataset(flow: Flow, flow_run: FlowRun, state: State):
 @task()
 def find_missing_datablocks_in_s3(datablocks: List[DataBlock], bucket=Bucket("retrieval")) -> List[DataBlock]:
     s3_client = get_s3_client()
-    return datablocks_operations.find_missing_datablocks_in_s3(client=s3_client, datablocks=datablocks, bucket=bucket)
+    return datablocks_operations.find_missing_datablocks_in_s3(
+        client=s3_client, datablocks=datablocks, bucket=bucket
+    )
 
 
 @task()
-def reset_expiry_date(all_datablocks: List[DataBlock], missing_datablocks: List[DataBlock], bucket=Bucket("retrieval")):
+def reset_expiry_date(
+    all_datablocks: List[DataBlock], missing_datablocks: List[DataBlock], bucket=Bucket("retrieval")
+):
     s3_client = get_s3_client()
     filenames = list(set(d.archiveId for d in all_datablocks) - set(d.archiveId for d in missing_datablocks))
 
@@ -120,7 +129,9 @@ def retrieve_single_dataset_flow(dataset_id: str, job_id: UUID):
     missing_datablocks = find_missing_datablocks_in_s3.submit(datablocks=datablocks)
 
     retrieval_tasks = []
-    retrieval_tasks.append(reset_expiry_date.submit(all_datablocks=datablocks, missing_datablocks=missing_datablocks))
+    retrieval_tasks.append(
+        reset_expiry_date.submit(all_datablocks=datablocks, missing_datablocks=missing_datablocks)
+    )
 
     # TODO: check if enough space available in bucket
     # https://github.com/SwissOpenEM/ScopeMArchiver/issues/169
@@ -128,7 +139,9 @@ def retrieve_single_dataset_flow(dataset_id: str, job_id: UUID):
     # The error does not propagate correctly through the dependent tasks
     # https://github.com/PrefectHQ/prefect/issues/12028
     for datablock in missing_datablocks.result():
-        copy_to_scratch = copy_datablock_from_LTS_to_scratch.submit(dataset_id=dataset_id, datablock=datablock)
+        copy_to_scratch = copy_datablock_from_LTS_to_scratch.submit(
+            dataset_id=dataset_id, datablock=datablock
+        )
 
         verify_datablock = verify_data_on_scratch.submit(
             dataset_id=dataset_id, datablock=datablock, wait_for=[copy_to_scratch]
@@ -144,7 +157,7 @@ def retrieve_single_dataset_flow(dataset_id: str, job_id: UUID):
         dataset_id=dataset_id,
         status=SciCatClient.RETRIEVESTATUSMESSAGE.DATASET_RETRIEVED,
         token=scicat_token,
-        wait_for=retrieval_tasks
+        wait_for=retrieval_tasks,
     ).result()  # type: ignore
 
 
@@ -157,16 +170,18 @@ def on_job_flow_failure(flow: Flow, flow_run: FlowRun, state: State):
     )
 
 
-def find_oldest_dataset_flow(dataset_id: str, prefix: str = "retrieve_dataset", state: str = "Running") -> List[FlowRun]:
+def find_oldest_dataset_flow(
+    dataset_id: str, prefix: str = "retrieve_dataset", state: str = "Running"
+) -> List[FlowRun]:
     this_run_id = get_run_context().flow_run.id
     with get_client(sync_client=True) as client:
         flow_runs = client.read_flow_runs(
             flow_run_filter=FlowRunFilter(
-                id={'not_any_': [this_run_id]},
-                name={'like_': f"{prefix}-dataset_id-{dataset_id}"},
+                id={"not_any_": [this_run_id]},
+                name={"like_": f"{prefix}-dataset_id-{dataset_id}"},
                 state=dict(name=dict(any_=[state, "Scheduled"])),
             ),
-            sort=FlowRunSort.START_TIME_DESC
+            sort=FlowRunSort.START_TIME_DESC,
         )
         return flow_runs[0].id if len(flow_runs) > 0 else None
     return None
@@ -189,7 +204,6 @@ async def wait_for_retrieval_flow(flow_run_id: uuid.UUID):
     on_failure=[on_job_flow_failure],
 )
 async def retrieve_datasets_flow(job_id: UUID):
-
     access_token = get_scicat_access_token.submit()
 
     job_update = update_scicat_retrieval_job_status.submit(

@@ -8,7 +8,7 @@ from config.variables import Variables
 from scicat.scicat_tasks import (
     report_dataset_system_error,
     report_dataset_user_error,
-    report_dataset_retrieval_error
+    report_dataset_retrieval_error,
 )
 
 

@@ -74,7 +74,8 @@ class S3Storage:
             aws_access_key_id=self._USER.strip(),
             aws_secret_access_key=self._PASSWORD.get_secret_value().strip(),
             region_name=self._REGION,
-            config=Config(signature_version="s3v4", max_pool_connections=32))
+            config=Config(signature_version="s3v4", max_pool_connections=32),
+        )
         self._resource = boto3.resource(
             "s3",
             endpoint_url=f"https://{self._URL}" if self._URL is not None and self._URL != "" else None,
@@ -99,7 +100,8 @@ class S3Storage:
         presigned_url = self._minio.generate_presigned_url(
             "get_object",
             Params={"Bucket": bucket.name, "Key": filename},
-            ExpiresIn=Variables().MINIO_URL_EXPIRATION_DAYS * days_to_seconds,  # URL expiration time in seconds
+            ExpiresIn=Variables().MINIO_URL_EXPIRATION_DAYS
+            * days_to_seconds,  # URL expiration time in seconds
         )
         return presigned_url
 
@@ -109,20 +111,18 @@ class S3Storage:
 
     @log_debug
     def reset_expiry_date(self, bucket_name: str, filename: str, retention_period_days: int) -> None:
-
-        new_expiration_date = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=retention_period_days)
+        new_expiration_date = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(
+            days=retention_period_days
+        )
 
         # the only way to reset the expiration date is to copy the object to itself apparently
-        copy_source = {
-            'Bucket': bucket_name,
-            'Key': filename
-        }
+        copy_source = {"Bucket": bucket_name, "Key": filename}
         self._minio.copy_object(
             Bucket=bucket_name,
             Key=filename,
             CopySource=copy_source,
-            MetadataDirective='REPLACE',  # This is important to replace metadata
-            Expires=new_expiration_date.isoformat()
+            MetadataDirective="REPLACE",  # This is important to replace metadata
+            Expires=new_expiration_date.isoformat(),
         )
 
     @log_debug
@@ -138,11 +138,13 @@ class S3Storage:
         self._minio.download_file(Bucket=bucket.name, Key=object_name, Filename=str(target_path.absolute()))
 
     @log
-    def download_objects(self,
-                         minio_prefix: Path,
-                         bucket: Bucket,
-                         destination_folder: Path,
-                         progress_callback: Callable[[float], None] | None = None) -> List[Path]:
+    def download_objects(
+        self,
+        minio_prefix: Path,
+        bucket: Bucket,
+        destination_folder: Path,
+        progress_callback: Callable[[float], None] | None = None,
+    ) -> List[Path]:
         remote_bucket = self._resource.Bucket(bucket.name)
         objs = remote_bucket.objects.filter(Prefix=str(minio_prefix))
 
@@ -151,8 +153,12 @@ class S3Storage:
         count = 0
 
         with ThreadPoolExecutor(max_workers=Variables().ARCHIVER_NUM_WORKERS) as executor:
-            future_to_key = {executor.submit(download_file, self._minio, key, minio_prefix,
-                                             destination_folder, bucket): key for key in objs}
+            future_to_key = {
+                executor.submit(
+                    download_file, self._minio, key, minio_prefix, destination_folder, bucket
+                ): key
+                for key in objs
+            }
 
             for future in as_completed(future_to_key):
                 count = count + 1
@@ -173,8 +179,7 @@ class S3Storage:
 
     @log_debug
     def list_objects(self, bucket: Bucket, folder: str | None = None) -> List[S3Storage.ListedObject]:
-        ''' Lists up to 1000 objects in a bucket. This is an s3 limitation
-        '''
+        """Lists up to 1000 objects in a bucket. This is an s3 limitation"""
         f = folder or ""
         remote_bucket = self._resource.Bucket(bucket.name)
         objs = remote_bucket.objects.filter(Prefix=f)

@@ -447,29 +447,25 @@ def test_create_datablocks(
         for file in raw_file:
             full_path = Path(dir) / file
             relative_folder = Path(dir).relative_to(folder)
-            raw_files_scratch_folder.joinpath(relative_folder).mkdir(
-                parents=True, exist_ok=True
-            )
+            raw_files_scratch_folder.joinpath(relative_folder).mkdir(parents=True, exist_ok=True)
 
             shutil.copy(
                 full_path,
-                raw_files_scratch_folder
-                .joinpath(relative_folder)
-                .joinpath(file),
+                raw_files_scratch_folder.joinpath(relative_folder).joinpath(file),
             )
 
     tar_files = datablock_operations.create_tarfiles(
         dataset_id=dataset_id,
         src_folder=raw_files_scratch_folder,
         dst_folder=datablocks_scratch_folder,
-        target_size=500 * 1024 * 1024
+        target_size=500 * 1024 * 1024,
     )
 
     datablocks = datablock_operations.create_datablock_entries(
         dataset_id=dataset_id,
         folder=datablocks_scratch_folder,
         origDataBlocks=origDataBlocks_fixture,
-        tar_infos=tar_files
+        tar_infos=tar_files,
     )
 
     assert len(datablocks) == 1
