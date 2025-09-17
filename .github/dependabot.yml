@@ -1,0 +1,62 @@
+version: 2
+updates:
+  # Backend API – Python dependencies (managed with uv)
+  - package-ecosystem: "pip"
+    directory: "/backend/api"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 10
+    # uv uses a requirements.txt or a lock file; Dependabot works on the same files
+    # Restrict updates to minor and patch releases (no major bumps)
+    allow:
+      - dependency-type: "all"
+    # Optional: automatically merge safe updates
+    # automerge: true
+
+  # Backend Archiver – Python dependencies (managed with uv)
+  - package-ecosystem: "pip"
+    directory: "/backend/archiver"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 10
+    allow:
+      - dependency-type: "all"
+
+  # Enable version updates for GitHub Actions
+  - package-ecosystem: "github-actions"
+    # Workflow files stored in the default location of `.github/workflows`
+    # You don't need to specify `/.github/workflows` for `directory`. You can use `directory: "/"`.
+    directory: "/"
+    schedule:
+      interval: "weekly"
+  # Dockerfile in backend/api
+  - package-ecosystem: "docker"
+    directory: "/backend/api"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    # Allow all version updates (including major) for base images
+    allow:
+      - dependency-type: "all"
+
+  # Dockerfile in backend/prefect
+  - package-ecosystem: "docker"
+    directory: "/backend/prefect"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    allow:
+      - dependency-type: "all"
+  # Dockerfile in /
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    allow:
+      - dependency-type: "all"

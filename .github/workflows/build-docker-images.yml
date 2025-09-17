@@ -26,7 +26,7 @@ jobs:
       backend: ${{ steps.filter.outputs.backend }}
     steps:
       # For pull requests it's not necessary to checkout the code
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         if: github.event_name != 'pull_request'
       - uses: dorny/paths-filter@v3
         id: filter
@@ -53,15 +53,15 @@ jobs:
       run:
         working-directory: ./backend/api
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v6
         with:
           version: "0.6.1"
 
       - name: "Set up Python"
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version-file: backend/api/pyproject.toml
 
@@ -121,15 +121,15 @@ jobs:
       run:
         working-directory: ./backend/archiver
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v6
         with:
           version: "0.6.1"
 
       - name: "Set up Python"
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version-file: backend/archiver/pyproject.toml
 
@@ -188,7 +188,7 @@ jobs:
     if: ${{ needs.detect_changes.outputs.archiver == 'true' }} || github.event_name != 'pull_request'
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Log into registry ${{ env.REGISTRY }}
         # if: github.event_name != 'pull_request'
@@ -200,7 +200,7 @@ jobs:
 
       - name: Extract Docker metadata
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v5.8.0
         with:
           images: ${{ env.REGISTRY }}/${{ env.OPENEM_FLOWS_IMAGE_NAME }}
           tags: |
@@ -231,7 +231,7 @@ jobs:
     if: ${{ needs.detect_changes.outputs.prefect == 'true' }} || github.event_name != 'pull_request'
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Log into registry ${{ env.REGISTRY }}
         # if: github.event_name != 'pull_request'
@@ -243,7 +243,7 @@ jobs:
 
       - name: Extract Docker metadata
         id: meta
-        uses: docker/metadata-action@96383f45573cb7f253c731d3b3ab81c87ef81934 # v5.0.0
+        uses: docker/metadata-action@032a4b3bda1b716928481836ac5bfe36e1feaad6 # v5.0.0
         with:
           images: ${{ env.REGISTRY }}/${{ env.OPENEM_CONFIG_IMAGE_NAME }}
           tags: |
@@ -275,7 +275,7 @@ jobs:
     needs: test_service_api
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Generate API
         uses: addnab/docker-run-action@v3
@@ -325,7 +325,7 @@ jobs:
 
       - name: Extract Docker metadata
         id: meta
-        uses: docker/metadata-action@v5 # v5.0.0
+        uses: docker/metadata-action@v5.8.0 # v5.0.0
         with:
           images: ${{ env.REGISTRY }}/${{ env.OPENEM_BACKEND_IMAGE_NAME }}
           tags: |
