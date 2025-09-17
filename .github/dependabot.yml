@@ -9,7 +9,8 @@ updates:
     open-pull-requests-limit: 10
     # uv uses a requirements.txt or a lock file; Dependabot works on the same files
     # Restrict updates to minor and patch releases (no major bumps)
-    versioning-strategy: "increase"
+    allow:
+      - dependency-type: "all"
     # Optional: automatically merge safe updates
     # automerge: true
 
@@ -20,7 +21,8 @@ updates:
       interval: "weekly"
       day: "monday"
     open-pull-requests-limit: 10
-    versioning-strategy: "increase"
+    allow:
+      - dependency-type: "all"
 
   # Enable version updates for GitHub Actions
   - package-ecosystem: "github-actions"
@@ -29,3 +31,23 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+  # Dockerfile in backend/api
+  - package-ecosystem: "docker"
+    directory: "/backend/api"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    # Allow all version updates (including major) for base images
+    allow:
+      - dependency-type: "all"
+
+  # Dockerfile in backend/archiver
+  - package-ecosystem: "docker"
+    directory: "/backend/archiver"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    allow:
+      - dependency-type: "all"
