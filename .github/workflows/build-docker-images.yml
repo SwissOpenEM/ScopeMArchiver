@@ -200,7 +200,7 @@ jobs:
 
       - name: Extract Docker metadata
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v5.8.0
         with:
           images: ${{ env.REGISTRY }}/${{ env.OPENEM_FLOWS_IMAGE_NAME }}
           tags: |
@@ -243,7 +243,7 @@ jobs:
 
       - name: Extract Docker metadata
         id: meta
-        uses: docker/metadata-action@96383f45573cb7f253c731d3b3ab81c87ef81934 # v5.0.0
+        uses: docker/metadata-action@032a4b3bda1b716928481836ac5bfe36e1feaad6 # v5.0.0
         with:
           images: ${{ env.REGISTRY }}/${{ env.OPENEM_CONFIG_IMAGE_NAME }}
           tags: |
@@ -325,7 +325,7 @@ jobs:
 
       - name: Extract Docker metadata
         id: meta
-        uses: docker/metadata-action@v5 # v5.0.0
+        uses: docker/metadata-action@v5.8.0 # v5.0.0
         with:
           images: ${{ env.REGISTRY }}/${{ env.OPENEM_BACKEND_IMAGE_NAME }}
           tags: |
