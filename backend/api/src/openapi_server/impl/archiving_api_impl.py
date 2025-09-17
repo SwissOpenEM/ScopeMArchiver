@@ -18,7 +18,7 @@ class BaseArchivingApiImpl(BaseArchivingApi):
         create_job_body: CreateJobBody,
     ) -> CreateJobResp:
         try:
-            job_id = UUID(create_job_body.id)
+            job_id = UUID(str(create_job_body.id))
         except ValueError as e:
             _LOGGER.warning(e)
             return JSONResponse(
