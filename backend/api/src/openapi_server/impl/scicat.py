@@ -68,6 +68,7 @@ async def mark_dataset_as_archivable(dataset_id: str):
     api_prefix = await get_scicat_datasets_api_prefix()
 
     token = await get_scicat_token(endpoint, api_prefix, user, password)
+
     data = {"archiveStatusMessage": "datasetCreated", "archivable": True}
 
     headers = build_headers(token)
