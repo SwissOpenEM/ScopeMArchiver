@@ -17,7 +17,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 COPY ./ /app/backend/archiver/
 
 # docker executor needs prefect-docker
-RUN uv add prefect-docker==0.6.1
+RUN uv add prefect-docker==0.6.6
 
 FROM prefecthq/prefect:${PREFECT_VERSION} AS test_runner
 RUN mkdir -p /app/backend/archiver
