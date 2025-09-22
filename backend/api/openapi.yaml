@@ -424,7 +424,7 @@ components:
         Type:
           title: Type
           type: string
-          enum: [archive, retrieve]
+          enum: [archive, retrieve, publish]
       required:
         - Id
         - Type

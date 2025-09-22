@@ -31,6 +31,9 @@ class BaseArchivingApiImpl(BaseArchivingApi):
                     flowRun = await run_archiving_deployment(job_id=job_id)
                 case "retrieve":
                     flowRun = await run_retrieval_deployment(job_id=job_id)
+                case "publish":
+                    # a publish job is exactly the same as a retrieval
+                    flowRun = await run_retrieval_deployment(job_id=job_id)
                 case _:
                     return JSONResponse(status_code=500, content={"message": f"unknown job type {type}"})
 
