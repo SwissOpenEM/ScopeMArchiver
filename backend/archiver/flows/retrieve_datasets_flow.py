@@ -224,16 +224,14 @@ async def retrieve_datasets_flow(job_id: UUID):
         else:
             await wait_for_retrieval_flow(existing_run_id)
 
-    job_results_future = create_job_result_object_task.submit(dataset_ids=dataset_ids)
-    job_results = job_results_future.result()
-    job_results_object = JobResultObject(result=job_results)
+    job_results_object = create_job_result_object_task.submit(dataset_ids=dataset_ids)
 
-    access_token = get_scicat_access_token.submit(wait_for=[job_results_future])
+    access_token = get_scicat_access_token.submit(wait_for=[job_results_object])
 
     update_scicat_retrieval_job_status.submit(
         job_id=job_id,
         status_code=SciCatClient.JOBSTATUSCODE.FINISHED_SUCCESSFULLY,
         status_message=SciCatClient.JOBSTATUSMESSAGE.JOB_FINISHED,
-        jobResultObject=job_results_object,
+        jobResultObject=job_results_object.result(),
         token=access_token,
     ).wait()

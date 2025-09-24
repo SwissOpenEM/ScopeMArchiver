@@ -1,3 +1,4 @@
+import base64
 from typing import List
 from prefect import task
 from uuid import UUID
@@ -18,7 +19,8 @@ from flows.task_utils import generate_task_name_dataset, generate_task_name_job
 from utils.s3_storage_interface import Bucket, S3Storage, get_s3_client
 
 
-from prefect.artifacts import create_link_artifact
+from prefect.artifacts import create_link_artifact, create_markdown_artifact
+from utils.script_generation import generate_download_script
 
 scicat_instance: SciCatClient | None = None
 
@@ -197,7 +199,7 @@ def reset_dataset(dataset_id: str, token: SecretStr):
 
 
 @task
-def create_job_result_object_task(dataset_ids: List[str]) -> List[JobResultEntry]:
+def create_job_result_object_task(dataset_ids: List[str]) -> JobResultObject:
     access_token = get_scicat_access_token.submit()
     access_token.wait()
 
@@ -209,28 +211,52 @@ def create_job_result_object_task(dataset_ids: List[str]) -> List[JobResultEntry
         datablocks_future.wait()
         datablocks = datablocks_future.result()
 
-        dataset_job_results = create_job_result_object(dataset_id, datablocks)
+        dataset_job_results = create_job_result_entries(dataset_id, datablocks)
         job_results = job_results + dataset_job_results
 
-    return job_results
+    job_results_object = JobResultObject(result=job_results)
 
+    script = create_download_script(job_results);
+    job_results_object.downloadScript = base64.b64encode(bytes(script, 'utf-8'))
+
+    markdown = f"""Download script for all datablocks in this job\n```bash\n{script}\n```\n"""
+
+    create_markdown_artifact(
+        key=f"script", markdown=markdown)
+
+    return job_results_object
+
+def create_download_script(job_result_entries: List[JobResultEntry]) -> str:
+
+    dataset_to_datablocks = {}
+
+    for result in job_result_entries:
+        dataset_to_datablocks.setdefault(result.datasetId, []).append({"name" : Path(result.archiveId).name, "url" : result.url})
+
+    return generate_download_script(dataset_to_datablocks)
+    
+    
 
 def create_presigned_url(client: S3Storage, datablock: DataBlock):
     url = client.get_presigned_url(Bucket.retrieval_bucket(), datablock.archiveId)
     return url
 
+def sanitize_name(name: str) -> str:
+    invalid_chars = ["/", ".", "_"]
+    sanitized_name = ""
+    for c in invalid_chars:
+        sanitized_name = name.replace(c, "-")
+    return sanitized_name
 
 @log
-def create_job_result_object(dataset_id: str, datablocks: List[DataBlock]) -> List[JobResultEntry]:
+def create_job_result_entries(dataset_id: str, datablocks: List[DataBlock]) -> List[JobResultEntry]:
     s3_client = get_s3_client()
     job_result_entries: List[JobResultEntry] = []
     for datablock in datablocks:
         url = create_presigned_url(s3_client, datablock)
 
-        invalid_chars = ["/", ".", "_"]
-        sanitized_name = str(Path(datablock.archiveId).name)
-        for c in invalid_chars:
-            sanitized_name = sanitized_name.replace(c, "-")
+        sanitized_name = sanitize_name(str(Path(datablock.archiveId).stem))
+
         create_link_artifact(
             key=sanitized_name,
             link=url,
