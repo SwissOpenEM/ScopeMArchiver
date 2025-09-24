@@ -75,6 +75,21 @@ configs:
             defaultCertificate:
               certFile: /opt/certs/cert.pem
               keyFile: /opt/certs/cert.key
+      http:
+        routers:
+          external-api-router:
+            rule: "Host(`$HOST`) && PathPrefix(`/`)"
+            entryPoints:
+              - websecure
+            tls: ""
+            service: 
+              external-api-minio
+        services:
+          external-api-minio:
+            loadBalancer:
+              servers:
+                - url: "https://${MINIO_ENDPOINT}"
+              passHostHeader: true
 secrets:
   authentik_token:
     file: ./.secrets/authentik_token
