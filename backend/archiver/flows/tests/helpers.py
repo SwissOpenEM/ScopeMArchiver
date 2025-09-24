@@ -113,7 +113,7 @@ def expected_datablocks(dataset_id: str, idx: int):
 
     return DataBlock(
         id=f"Block_{idx}",
-        archiveId=f"/path/to/archived/Block_{idx}.tar.gz",
+        archiveId=f"/path/to/archived/Block_{idx}.tar",
         size=size_per_file * 10,
         packedSize=size_per_file * 10,
         version=str(1),
@@ -143,7 +143,7 @@ def mock_create_datablock_entries(
     for o in origDataBlocks:
         d = DataBlock(
             id=o.id,
-            archiveId=f"/path/to/archived/{o.id}.tar.gz",
+            archiveId=f"/path/to/archived/{o.id}.tar",
             size=o.size,
             packedSize=o.size,
             version=str(1),

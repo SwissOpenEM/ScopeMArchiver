@@ -340,7 +340,7 @@ def verify_data_from_minio(dataset_pid, datablock_name, datablock_url):
     # Verify retrieved datablock in MINIO
     retrieved_datablock = s3_client.stat_object(
         bucket=Bucket("retrieval"),
-        filename=f"openem-network/datasets/{dataset_pid}/datablocks/{dataset_pid}_0.tar.gz",
+        filename=f"openem-network/datasets/{dataset_pid}/datablocks/{dataset_pid}_0.tar",
     )
     assert retrieved_datablock is not None
     assert retrieved_datablock.Size > 80 * 1024 * 1024

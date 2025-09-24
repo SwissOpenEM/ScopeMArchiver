@@ -112,7 +112,7 @@ def tar_infos_fixture(storage_paths_fixture) -> List[ArchiveInfo]:
         ArchiveInfo(unpackedSize=0, packedSize=0, path=Path(""), fileCount=2),
     ]
 
-    tar1_path = tar_folder / "tar1.tar.gz"
+    tar1_path = tar_folder / "tar1.tar"
 
     tar_infos[0].path = tar1_path
 
@@ -128,7 +128,7 @@ def tar_infos_fixture(storage_paths_fixture) -> List[ArchiveInfo]:
 
         tar_infos[0].packedSize = tar1_path.stat().st_size
 
-    tar2_path = tar_folder / "tar2.tar.gz"
+    tar2_path = tar_folder / "tar2.tar"
     tar_infos[1].path = tar2_path
 
     if not tar2_path.exists():
@@ -354,7 +354,7 @@ def test_verify_datablock_content(datablock_fixture):
     # datablock does not exist
     with pytest.raises(SystemError):
         wrong_archive_id_datablock = datablock_fixture[0]
-        wrong_archive_id_datablock.archiveId = "DatablockDoesNotExist.tar.gz"
+        wrong_archive_id_datablock.archiveId = "DatablockDoesNotExist.tar"
         datablock_operations.verify_datablock_content(
             datablock=wrong_archive_id_datablock,
             datablock_path=datablock_folder / wrong_archive_id_datablock.archiveId,

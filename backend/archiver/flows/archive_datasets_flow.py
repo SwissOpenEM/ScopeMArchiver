@@ -181,7 +181,7 @@ def upload_datablocks_to_s3(dataset_id: str) -> List[Path]:
         prefix=prefix,
         bucket=Bucket.staging_bucket(),
         source_folder=datablocks_scratch_folder,
-        ext=".gz",
+        ext=".tar",
         progress_callback=update_progress,
     )
 
@@ -225,7 +225,7 @@ def calculate_checksum(dataset_id: str, datablock: DataBlock):
 
 @task(task_run_name=generate_task_name_dataset, tags=[ConcurrencyLimits().LTS_WRITE_TAG])
 def move_data_to_LTS(dataset_id: str, datablock: DataBlock):
-    """Prefect task to move a datablock (.tar.gz file) to the LTS. Concurrency of this task is limited to 2 instances
+    """Prefect task to move a datablock (.tar file) to the LTS. Concurrency of this task is limited to 2 instances
     at the same time.
     """
     datablocks_operations.move_data_to_LTS(dataset_id, datablock)
@@ -238,7 +238,7 @@ def move_data_to_LTS(dataset_id: str, datablock: DataBlock):
     retry_delay_seconds=[60, 120, 240, 480, 960],
 )
 def copy_datablock_from_LTS(dataset_id: str, datablock: DataBlock):
-    """Prefect task to move a datablock (.tar.gz file) to the LTS. Concurrency of this task is limited to 2 instances
+    """Prefect task to move a datablock (.tar file) to the LTS. Concurrency of this task is limited to 2 instances
     at the same time.
     """
     datablocks_operations.copy_file_from_LTS(dataset_id, datablock)
@@ -312,7 +312,7 @@ def move_datablocks_to_lts_flow(dataset_id: str, datablocks: List[DataBlock]):
 
 @flow(name="create_datablocks", flow_run_name=generate_subflow_run_name_job_id_dataset_id)
 def create_datablocks_flow(dataset_id: str) -> List[DataBlock]:
-    """Prefect (sub-)flow to create datablocks (.tar.gz files) for files of a dataset and register them in Scicat.
+    """Prefect (sub-)flow to create datablocks (.tar files) for files of a dataset and register them in Scicat.
 
     Args:
         dataset_id (str): Dataset id
