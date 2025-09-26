@@ -20,6 +20,7 @@ class JobResultEntry(BaseModel):
 
 class JobResultObject(BaseModel):
     result: Optional[List[JobResultEntry]]
+    downloadScript: Optional[str] = None
 
 
 class Job(BaseModel):

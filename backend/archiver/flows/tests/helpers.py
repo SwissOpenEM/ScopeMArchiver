@@ -1,3 +1,4 @@
+import base64
 from typing import List, Dict, Any
 
 from pydantic import SecretStr
@@ -13,6 +14,7 @@ from scicat.scicat_interface import SciCatClient
 from pathlib import Path
 
 from utils.s3_storage_interface import S3Storage
+from utils.script_generation import generate_download_script
 
 
 def mock_s3client() -> S3Storage:
@@ -113,7 +115,7 @@ def expected_datablocks(dataset_id: str, idx: int):
 
     return DataBlock(
         id=f"Block_{idx}",
-        archiveId=f"/path/to/archived/Block_{idx}.tar.gz",
+        archiveId=f"/path/to/archived/Block_{idx}.tar",
         size=size_per_file * 10,
         packedSize=size_per_file * 10,
         version=str(1),
@@ -133,7 +135,15 @@ def expected_jobresultsobject(dataset_id: str, datablocks: List[DataBlock]):
             )
         )
 
-    return JobResultObject(result=results).model_dump(exclude_none=True)
+    dataset_to_datablocks = {}
+
+    for result in results:
+        dataset_to_datablocks.setdefault(dataset_id, []).append({"name" : Path(result.archiveId).name, "url" : result.url})
+
+    script =  generate_download_script(dataset_to_datablocks)
+    script_b64 = base64.b64encode(bytes(script, 'utf-8'))
+
+    return JobResultObject(result=results, downloadScript=script_b64).model_dump(exclude_none=True)
 
 
 def mock_create_datablock_entries(
@@ -143,7 +153,7 @@ def mock_create_datablock_entries(
     for o in origDataBlocks:
         d = DataBlock(
             id=o.id,
-            archiveId=f"/path/to/archived/{o.id}.tar.gz",
+            archiveId=f"/path/to/archived/{o.id}.tar",
             size=o.size,
             packedSize=o.size,
             version=str(1),

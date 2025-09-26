@@ -93,7 +93,7 @@ def create_tarfiles(
     target_size: int,
     progress_callback: Callable[[float], None] = None,
 ) -> List[ArchiveInfo]:
-    """Create datablocks, i.e. .tar.gz files, from all files in a folder. Folder structures are kept and symlnks not resolved.
+    """Create datablocks, i.e. .tar files, from all files in a folder. Folder structures are kept and symlnks not resolved.
     The created tar files will be named according to the dataset they belong to.
 
     Args:
@@ -120,7 +120,7 @@ def create_tarfiles(
         current_tar_info = ArchiveInfo(
             unpackedSize=0,
             packedSize=0,
-            path=Path(dst_folder / Path(f"{tar_name}_{idx}.tar.gz")),
+            path=Path(dst_folder / Path(f"{tar_name}_{idx}.tar")),
             fileCount=len(files),
         )
         current_tarfile: tarfile.TarFile = tarfile.open(current_tar_info.path, "w")
