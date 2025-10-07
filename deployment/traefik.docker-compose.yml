@@ -36,6 +36,8 @@ services:
     configs:
       - source: traefik.yml
         target: /opt/traefik.yml
+    secrets:
+      - prometheus_auth
 
   authentik-proxy:
     image: ghcr.io/goauthentik/proxy
@@ -97,3 +99,5 @@ configs:
 secrets:
   authentik_token:
     file: ./.secrets/authentik_token
+  prometheus_auth:
+    file: ./.secrets/.htpasswd_prom
