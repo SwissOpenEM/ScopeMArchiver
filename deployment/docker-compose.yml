@@ -1,3 +1,4 @@
+name: scopemarchiver
 include:
   # Traefik
   - traefik.docker-compose.yml
@@ -8,10 +9,11 @@ include:
   # S3 storage
   # - minio.docker-compose.yml
   # Monitoring stack
-  # - monitoring.docker-compose.yml
+  - monitoring.docker-compose.yml
 
 
 networks:
   scopemarchiver_network:
     name: scopemarchiver_network
-    driver: bridge
+    # driver: bridge
+    external: true

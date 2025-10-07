@@ -1,0 +1,110 @@
+services:
+  grafana:
+    image: grafana/grafana-enterprise
+    container_name: grafana
+    restart: unless-stopped
+    expose:
+      - 3000
+    volumes:
+      - 'grafana_storage:/var/lib/grafana'
+      - ./provisioning:/etc/grafana/provisioning:ro
+      - ./dashboards:/var/lib/grafana/dashboards:ro
+    secrets:
+      - grafana_admin
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD__FILE: /run/secrets/grafana_admin
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_SERVER_ROOT_URL: http://${HOST}/grafana
+      DASHBOARD_IDS: "1860,6467"
+    env_file: ../.secrets/grafana_oauth.env
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.grafana.rule=Host(`${HOST}`) && PathPrefix(`/grafana`)"
+      - "traefik.http.middlewares.grafana-stripprefix.stripprefix.prefixes=/grafana"
+      - "traefik.http.routers.grafana.entrypoints=websecure"
+      - "traefik.http.routers.grafana.tls"
+      - "traefik.http.routers.grafana.middlewares=grafana-stripprefix"
+      - "traefik.http.services.grafana.loadbalancer.server.port=3000"
+    networks:
+      - scopemarchiver_network
+    configs:
+      - source: grafana.ini
+        target: /etc/grafana/grafana.ini
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    restart: unless-stopped
+    volumes:
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+      - '--web.enable-remote-write-receiver'
+    expose:
+      - 9090
+    networks:
+      - scopemarchiver_network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.prometheus.rule=Host(`${HOST}`) && PathPrefix(`/prometheus`)"
+      - "traefik.http.middlewares.prometheus-stripprefix.stripprefix.prefixes=/prometheus"
+      - "traefik.http.routers.prometheus.entrypoints=websecure"
+      - "traefik.http.routers.prometheus.tls"
+      - "traefik.http.services.prometheus.loadbalancer.server.port=9090"
+      - "traefik.http.middlewares.prometheus-auth.basicauth.usersFile=/run/secrets/prometheus_auth" # This file is definedin Traefik itself
+      - "traefik.http.routers.prometheus.middlewares=prometheus-stripprefix,prometheus-auth" 
+    configs:
+      - source: prometheus.yml
+        target: /etc/prometheus/prometheus.yml
+    secrets:
+      - minio_metrics
+
+volumes:
+  prometheus_data:
+    name: prometheus_data
+  grafana_storage: 
+    name: grafana_storage
+
+networks:
+  scopemarchiver_network:
+    external: true
+
+secrets:
+  grafana_admin:
+    file: ../.secrets/grafana_admin.txt
+  minio_metrics:
+    file: ../.secrets/minio_metrics.txt
+
+configs:
+  grafana.ini:
+   content: |
+    [auth.generic_oauth]
+      name = Authentik 
+      enabled = true
+      allow_sign_up = true
+      auth_url = https://authentik.ethz.ch/application/o/authorize/
+      token_url = https://authentik.ethz.ch/application/o/token/
+      api_url = https://authentik.ethz.ch/application/o/userinfo/
+      scopes = openid profile email
+      email_attribute_name = email
+      role_attribute_path = contains(groups, 'openem-group') && 'Editor' || 'Visitor'
+
+  prometheus.yml:
+    content: |
+      scrape_configs:
+        - job_name: minio
+          metrics_path: /minio/v2/metrics/cluster
+          scheme: https
+          authorization:
+            type: Bearer
+            credentials_file: /run/secrets/minio_metrics
+          static_configs:
+            - targets: ['scopem-openemdata.ethz.ch:9090']
+
+        - job_name: prometheus
+          static_configs:
+            - targets: ['prometheus:9090']

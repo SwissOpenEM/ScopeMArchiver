@@ -3,7 +3,7 @@ services:
     image: ${OPENEM_BACKEND_IMAGE_NAME}:${OPENEM_IMAGE_TAG}
     container_name: archiver-service-api
     build:
-      context: ./backend/api
+      context: ../backend/api
       dockerfile: ./Dockerfile
     environment:
       - PREFECT_LOGGING_LEVEL=${PREFECT_LOGGING_LEVEL}
@@ -120,7 +120,7 @@ services:
     image: ${PREFECT_CONFIG_IMAGE_NAME}:${OPENEM_IMAGE_TAG:-latest}
     container_name: prefect-config
     build:
-      context: ./backend/
+      context: ../backend/
       dockerfile: ./prefect/config.Dockerfile
       args:
         PREFECT_VERSION: ${PREFECT_VERSION}
@@ -146,7 +146,7 @@ services:
         source: ${PREFECT_VARS_FILE}
         target: /var/local/vars.toml
       - type: bind
-        source: ./backend/prefect/concurrency-limits.toml
+        source: ../backend/prefect/concurrency-limits.toml
         target: /var/local/concurrency-limits.toml
     command: "-v /var/local/vars.toml -s MINIO_USER_FILE MINIO_PASSWORD_FILE GITHUB_USER_FILE GITHUB_PASSWORD_FILE SCICAT_USER_FILE SCICAT_PASSWORD_FILE -l /var/local/concurrency-limits.toml"
     depends_on:
@@ -163,7 +163,7 @@ services:
     # Uses the runtime image: prefect will import the code and there it needs all packages installed
     image: ${PREFECT_RUNTIME_IMAGE_NAME}:${OPENEM_IMAGE_TAG:-latest}
     build:
-      context: ./backend/archiver
+      context: ../backend/archiver
       dockerfile: ../prefect/runtime.Dockerfile
       args:
         LTS_ROOT_FOLDER: ${LTS_ROOT_FOLDER}
@@ -201,16 +201,22 @@ services:
       - "traefik.enable=false"
 volumes:
   lts-mock-volume:
-    driver: local
+    name: scopemarchiver_lts-mock-volume
+    # driver: local
+    external: true
   nfs-lts-share:
     driver_opts:
       type: "nfs"
       o: "nfsvers=3,addr=lts22,nolock"
       device: ":/scopem_lts_nfs_test_lts22"
   postgres-volume-new:
-    driver: local
+    name: scopemarchiver_postgres-volume-new
+    # driver: local
+    external: true
   prefect-volume-new:
-    driver: local
+    name: scopemarchiver_prefect-volume-new
+    # driver: local
+    external: true
 
 secrets:
   postgres_user:

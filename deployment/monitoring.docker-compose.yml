@@ -1,0 +1,194 @@
+services:
+  node-exporter:
+    image: quay.io/prometheus/node-exporter:latest
+    container_name: node-exporter
+    restart: unless-stopped
+    network_mode: "host"
+    pid: "host"
+    expose:
+     - 9100
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/host:ro
+    command:
+      - --path.procfs=/host/proc
+      - --path.sysfs=/host/sys
+      - --path.rootfs=/host
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: cadvisor
+    volumes:
+    - /:/rootfs:ro
+    - /var/run:/var/run:rw
+    - /sys:/sys:ro
+    - /var/lib/docker/:/var/lib/docker:ro
+    expose:
+      - 8080
+    networks:
+      - scopemarchiver_network
+
+  otel-collector:
+    # This is the only way to add the basic auth pass used for prometheus remote write
+    # the otel config
+    env_file: .secrets/prom_remote_write.env
+    image: otel/opentelemetry-collector-contrib:latest
+    container_name: otel-collector
+    command: [
+        "--config=/etc/otel-collector-config.yaml",
+        ]
+    restart: unless-stopped
+    networks:
+      - scopemarchiver_network
+    configs:
+      - source: otel-collector-config.yml
+        target: /etc/otel-collector-config.yaml
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+configs:
+  otel-collector-config.yml:
+    content: |
+      receivers:
+        prometheus:
+          config:
+            scrape_configs:
+            - job_name: traefik
+              metrics_path: /metrics
+              scheme: http
+              static_configs:
+                - targets: ['traefik:8080']
+              relabel_configs:
+                - source_labels: [instance]
+                  regex: (.*)
+                  target_label: instance
+                  replacement: ${HOST}
+
+            - job_name: node-exporter
+              relabel_configs:
+                - source_labels: [instance]
+                  regex: (.*)
+                  target_label: instance
+                  replacement: ${HOST}
+              scheme: http
+              static_configs:
+                - targets: ['host.docker.internal:9100']
+              metric_relabel_configs:
+                # Drop very high-cardinality per-device disk stats you often don't need
+                - source_labels: [__name__]
+                  regex: 'node_disk_reads_completed_total|node_disk_writes_completed_total|node_disk_read_bytes_total|node_disk_written_bytes_total|node_disk_io_now|node_disk_io_time_seconds_total'
+                  action: drop
+
+                # Drop per-mountpoint filesystem metrics for ephemeral mounts
+                - source_labels: [__name__]
+                  regex: 'node_filesystem_files|node_filesystem_files_free'
+                  action: drop
+
+                # # Drop per-CPU metrics if you only care about aggregated CPU (avoid explosion on many CPUs)
+                # - source_labels: [__name__]
+                #   regex: 'node_cpu_seconds_total'
+                #   action: drop
+
+                # Drop per-network-interface metrics if only aggregate is needed
+                - source_labels: [__name__]
+                  regex: 'node_network_receive_packets_total|node_network_transmit_packets_total|node_network_receive_errs_total|node_network_transmit_errs_total'
+                  action: drop
+
+                # Drop inode and ephemeral FS labels if unnecessary
+                - source_labels: [__name__]
+                  regex: 'node_filesystem_*'
+                  action: drop
+
+                # Common exporter internals and build info
+                - source_labels: [__name__]
+                  regex: 'go_.*|process_.*|promhttp_.*|.*_build_info$|.*_version$'
+                  action: drop
+
+            - job_name: cadvisor
+              relabel_configs:
+                - source_labels: [instance]
+                  regex: (.*)
+                  target_label: instance
+                  replacement: ${HOST}
+              scheme: http
+              metrics_path: /metrics
+              static_configs:
+                - targets: ["cadvisor:8080"]
+              metric_relabel_configs:
+                # Drop verbose container filesystem metrics (high-cardinality / short-lived)
+                - source_labels: [__name__]
+                  regex: 'container_fs_io_.*|container_fs_limit_bytes|container_fs_usage_bytes|container_fs_inodes_free|container_fs_inodes|container_fs_reads_total|container_fs_writes_total|container_fs_reads_bytes_total|container_fs_writes_bytes_total'
+                  action: drop
+
+                # Drop per-container label lists and annotations (very high cardinality)
+                - source_labels: [__name__]
+                  regex: 'kube_pod_labels|container_labels'
+                  action: drop
+
+                # Drop less-useful throttling/blkio metrics often noisy
+                - source_labels: [__name__]
+                  regex: 'container_cpu_cfs_throttled_periods_total|container_cpu_cfs_throttled_seconds_total|container_blkio_.*'
+                  action: drop
+
+                # Drop ephemeral per-container filesystem metrics you likely don't need
+                - source_labels: [__name__]
+                  regex: 'container_fs_.*_total|container_fs_.*_used'
+                  action: drop
+
+                # Generic exporter internals if present
+                - source_labels: [__name__]
+                  regex: 'go_.*|process_.*|promhttp_.*'
+                  action: drop
+
+
+            - job_name: otel-collector
+              relabel_configs:
+                - source_labels: [instance]
+                  regex: (.*)
+                  target_label: instance
+                  replacement: ${HOST}
+              static_configs:
+                - targets: ['127.0.0.1:8888']
+
+      processors:
+        batch:
+          timeout: 10s
+          send_batch_size: 1000
+        attributes:
+          actions:
+            - key: service.name
+              action: upsert
+              value: docker-app
+            - key: telemetry.sdk.language
+              action: delete
+        memory_limiter:
+          check_interval: 1s
+          limit_mib: 1024
+          spike_limit_mib: 64
+        resource:
+          attributes:
+            - key: deployment.environment
+              value: production
+              action: upsert
+
+      exporters:
+        prometheusremotewrite:
+          auth:
+            authenticator: basicauth/prom_remote_write
+          endpoint: "https://scopem-openem2.ethz.ch/prometheus/api/v1/write"
+          timeout: 30s
+
+
+      service:
+        extensions: [basicauth/prom_remote_write]
+        pipelines:
+          metrics:
+            receivers: [prometheus]
+            processors: [memory_limiter, resource, batch]
+            exporters: [prometheusremotewrite]
+
+      extensions:
+        basicauth/prom_remote_write:
+          client_auth:
+            username: prom
+            password: $${env:PROM_REMOTE_WRITE_PW}
