@@ -1,4 +1,4 @@
-FROM python:3.13-slim AS builder
+FROM python:3.14-slim AS builder
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 WORKDIR /archiver/
@@ -21,7 +21,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-editable
 
 
-FROM python:3.13-slim AS runtime
+FROM python:3.14-slim AS runtime
 # # Copy the environment, but not the source code
 COPY --from=builder --chown=app:app /archiver /archiver
 
