@@ -13,7 +13,6 @@ from openapi_server.models.presigned_url_body import PresignedUrlBody
 from openapi_server.models.presigned_url_resp import PresignedUrlResp
 
 from openapi_server.apis.s3upload_api_base import BaseS3uploadApi
-from openapi_server.settings import GetSettings
 
 from .s3 import (
     complete_multipart_upload,
@@ -24,7 +23,13 @@ from .s3 import (
 
 from logging import getLogger
 
+from prefect.variables import Variable
+
 _LOGGER = getLogger("uvicorn.presignedurls")
+
+
+async def get_landingzone_bucket():
+    return await Variable.get("minio_landingzone_bucket")
 
 
 class BaseS3UploadApiImpl(BaseS3uploadApi):
@@ -33,7 +38,8 @@ class BaseS3UploadApiImpl(BaseS3uploadApi):
         complete_upload_body: CompleteUploadBody,
     ) -> CompleteUploadResp:
         try:
-            return complete_multipart_upload(GetSettings().MINIO_LANDINGZONE_BUCKET, complete_upload_body)
+            bucket = await get_landingzone_bucket()
+            return complete_multipart_upload(bucket, complete_upload_body)
         except Exception as e:
             _LOGGER.error(str(e))
             return JSONResponse(
@@ -45,8 +51,9 @@ class BaseS3UploadApiImpl(BaseS3uploadApi):
         abort_upload_body: AbortUploadBody,
     ) -> AbortUploadResp:
         try:
+            bucket = await get_landingzone_bucket()
             abort_multipart_upload(
-                bucket_name=GetSettings().MINIO_LANDINGZONE_BUCKET,
+                bucket_name=bucket,
                 object_name=abort_upload_body.object_name,
                 upload_id=abort_upload_body.upload_id,
             )
@@ -66,9 +73,10 @@ class BaseS3UploadApiImpl(BaseS3uploadApi):
         presigned_url_body: PresignedUrlBody,
     ) -> PresignedUrlResp:
         try:
+            bucket = await get_landingzone_bucket()
             if presigned_url_body.parts == 1:
                 url = create_presigned_url(
-                    bucket_name=GetSettings().MINIO_LANDINGZONE_BUCKET,
+                    bucket_name=bucket,
                     object_name=presigned_url_body.object_name,
                 )
                 b64url = base64.b64encode(url.encode("utf-8")).decode()
@@ -76,7 +84,7 @@ class BaseS3UploadApiImpl(BaseS3uploadApi):
                 return PresignedUrlResp(upload_id="", urls=[b64url])
             else:
                 uploadId, urls = create_presigned_urls_multipart(
-                    bucket_name=GetSettings().MINIO_LANDINGZONE_BUCKET,
+                    bucket_name=bucket,
                     object_name=presigned_url_body.object_name,
                     part_count=presigned_url_body.parts,
                 )
