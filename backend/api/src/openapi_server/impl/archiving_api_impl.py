@@ -37,7 +37,7 @@ class BaseArchivingApiImpl(BaseArchivingApi):
             _LOGGER.debug(
                 "Flow run for job %s created. Id=%d Name=%s", create_job_body.id, flowRun.id, flowRun.name
             )
-            return CreateJobResp(Uuid=str(flowRun.id), Name=flowRun.name)
+            return CreateJobResp(uuid=str(flowRun.id), name=flowRun.name)
         except Exception as e:
             _LOGGER.error(e)
             return JSONResponse(

@@ -20,8 +20,9 @@ import json
 
 
 
-from pydantic import BaseModel, ConfigDict, Field, StrictStr
+from pydantic import BaseModel, ConfigDict, StrictStr
 from typing import Any, ClassVar, Dict, List
+from uuid import UUID
 try:
     from typing import Self
 except ImportError:
@@ -31,9 +32,9 @@ class CreateJobResp(BaseModel):
     """
     CreateJobResp
     """ # noqa: E501
-    uuid: StrictStr = Field(alias="Uuid")
-    name: StrictStr = Field(alias="Name")
-    __properties: ClassVar[List[str]] = ["Uuid", "Name"]
+    uuid: UUID
+    name: StrictStr
+    __properties: ClassVar[List[str]] = ["uuid", "name"]
 
     model_config = {
         "populate_by_name": True,
@@ -84,8 +85,8 @@ class CreateJobResp(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "Uuid": obj.get("Uuid"),
-            "Name": obj.get("Name")
+            "uuid": obj.get("uuid"),
+            "name": obj.get("name")
         })
         return _obj
 

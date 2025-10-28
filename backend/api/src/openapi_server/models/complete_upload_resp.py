@@ -20,7 +20,7 @@ import json
 
 
 
-from pydantic import BaseModel, ConfigDict, Field, StrictStr
+from pydantic import BaseModel, ConfigDict, StrictStr
 from typing import Any, ClassVar, Dict, List
 try:
     from typing import Self
@@ -31,9 +31,9 @@ class CompleteUploadResp(BaseModel):
     """
     CompleteUploadResp
     """ # noqa: E501
-    location: StrictStr = Field(alias="Location")
-    key: StrictStr = Field(alias="Key")
-    __properties: ClassVar[List[str]] = ["Location", "Key"]
+    location: StrictStr
+    key: StrictStr
+    __properties: ClassVar[List[str]] = ["location", "key"]
 
     model_config = {
         "populate_by_name": True,
@@ -84,8 +84,8 @@ class CompleteUploadResp(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "Location": obj.get("Location"),
-            "Key": obj.get("Key")
+            "location": obj.get("location"),
+            "key": obj.get("key")
         })
         return _obj
 

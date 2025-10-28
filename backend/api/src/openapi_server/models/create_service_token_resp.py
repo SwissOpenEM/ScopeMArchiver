@@ -37,7 +37,7 @@ class CreateServiceTokenResp(BaseModel):
     refresh_expires_in: Optional[StrictInt] = Field(default=None, description="The duration in seconds the refresh token is valid for")
     token_type: Optional[StrictStr] = Field(default=None, description="Bearer")
     not_before_policy: Optional[StrictInt] = Field(default=None, description="Timestamp that indicates the time before which the JWT must not be accepted for processing", alias="not-before-policy")
-    session_state: Optional[StrictStr] = Field(default=None, description="Session ID, identifier that uniquely ties the session to the authenticated user")
+    session_state: Optional[StrictStr] = Field(default=None, description="Session id, identifier that uniquely ties the session to the authenticated user")
     scope: Optional[StrictStr] = Field(default=None, description="Claim in a JWT defines the set of permissions or access rights granted")
     __properties: ClassVar[List[str]] = ["access_token", "expires_in", "refresh_token", "refresh_expires_in", "token_type", "not-before-policy", "session_state", "scope"]
 

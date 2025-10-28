@@ -20,7 +20,7 @@ import json
 
 
 
-from pydantic import BaseModel, ConfigDict, Field, StrictStr
+from pydantic import BaseModel, ConfigDict, StrictStr
 from typing import Any, ClassVar, Dict, List
 try:
     from typing import Self
@@ -31,9 +31,9 @@ class PresignedUrlResp(BaseModel):
     """
     PresignedUrlResp
     """ # noqa: E501
-    upload_id: StrictStr = Field(alias="UploadID")
-    urls: List[StrictStr] = Field(alias="Urls")
-    __properties: ClassVar[List[str]] = ["UploadID", "Urls"]
+    upload_id: StrictStr
+    urls: List[StrictStr]
+    __properties: ClassVar[List[str]] = ["upload_id", "urls"]
 
     model_config = {
         "populate_by_name": True,
@@ -84,8 +84,8 @@ class PresignedUrlResp(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "UploadID": obj.get("UploadID"),
-            "Urls": obj.get("Urls")
+            "upload_id": obj.get("upload_id"),
+            "urls": obj.get("urls")
         })
         return _obj
 

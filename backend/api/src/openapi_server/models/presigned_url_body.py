@@ -32,9 +32,9 @@ class PresignedUrlBody(BaseModel):
     """
     PresignedUrlBody
     """ # noqa: E501
-    object_name: StrictStr = Field(alias="ObjectName")
-    parts: Annotated[int, Field(strict=True, ge=1)] = Field(alias="Parts")
-    __properties: ClassVar[List[str]] = ["ObjectName", "Parts"]
+    object_name: StrictStr
+    parts: Annotated[int, Field(strict=True, ge=1)]
+    __properties: ClassVar[List[str]] = ["object_name", "parts"]
 
     model_config = {
         "populate_by_name": True,
@@ -85,8 +85,8 @@ class PresignedUrlBody(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "ObjectName": obj.get("ObjectName"),
-            "Parts": obj.get("Parts")
+            "object_name": obj.get("object_name"),
+            "parts": obj.get("parts")
         })
         return _obj
 

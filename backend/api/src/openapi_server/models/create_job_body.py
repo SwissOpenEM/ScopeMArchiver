@@ -20,8 +20,9 @@ import json
 
 
 
-from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator
+from pydantic import BaseModel, ConfigDict, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List
+from uuid import UUID
 try:
     from typing import Self
 except ImportError:
@@ -31,9 +32,9 @@ class CreateJobBody(BaseModel):
     """
     CreateJobBody
     """ # noqa: E501
-    id: StrictStr = Field(alias="Id")
-    type: StrictStr = Field(alias="Type")
-    __properties: ClassVar[List[str]] = ["Id", "Type"]
+    id: UUID
+    type: StrictStr
+    __properties: ClassVar[List[str]] = ["id", "type"]
 
     @field_validator('type')
     def type_validate_enum(cls, value):
@@ -91,8 +92,8 @@ class CreateJobBody(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "Id": obj.get("Id"),
-            "Type": obj.get("Type")
+            "id": obj.get("id"),
+            "type": obj.get("type")
         })
         return _obj
 

@@ -20,7 +20,7 @@ import json
 
 
 
-from pydantic import BaseModel, ConfigDict, Field, StrictInt, StrictStr
+from pydantic import BaseModel, ConfigDict, StrictInt, StrictStr
 from typing import Any, ClassVar, Dict, List
 try:
     from typing import Self
@@ -31,10 +31,10 @@ class CompletePart(BaseModel):
     """
     CompletePart
     """ # noqa: E501
-    part_number: StrictInt = Field(alias="PartNumber")
-    e_tag: StrictStr = Field(alias="ETag")
-    checksum_sha256: StrictStr = Field(alias="ChecksumSHA256")
-    __properties: ClassVar[List[str]] = ["PartNumber", "ETag", "ChecksumSHA256"]
+    part_number: StrictInt
+    etag: StrictStr
+    checksum_sha256: StrictStr
+    __properties: ClassVar[List[str]] = ["part_number", "etag", "checksum_sha256"]
 
     model_config = {
         "populate_by_name": True,
@@ -85,9 +85,9 @@ class CompletePart(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "PartNumber": obj.get("PartNumber"),
-            "ETag": obj.get("ETag"),
-            "ChecksumSHA256": obj.get("ChecksumSHA256")
+            "part_number": obj.get("part_number"),
+            "etag": obj.get("etag"),
+            "checksum_sha256": obj.get("checksum_sha256")
         })
         return _obj
 
