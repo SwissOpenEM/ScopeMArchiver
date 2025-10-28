@@ -99,7 +99,7 @@ def complete_multipart_upload(bucket_name, body: CompleteUploadBody) -> Complete
         MultipartUpload={"Parts": [p.model_dump(by_alias=True) for p in body.parts]},
         ChecksumSHA256=body.checksum_sha256,
     )
-    return CompleteUploadResp(Location=resp["Location"], Key=resp["Key"])
+    return CompleteUploadResp(location=resp["Location"], key=resp["Key"])
 
 
 def abort_multipart_upload(

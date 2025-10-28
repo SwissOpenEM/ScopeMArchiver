@@ -18,7 +18,7 @@ from utils import mock_validate_token
 
 
 def mock_abort_multipart_upload(*args, **kwargs) -> AbortUploadResp:
-    return AbortUploadResp(Message="", UploadID="", ObjectName="")
+    return AbortUploadResp(message="", upload_id="", object_name="")
 
 
 @patch("openapi_server.impl.s3upload_impl.abort_multipart_upload", mock_abort_multipart_upload)
@@ -45,7 +45,7 @@ def test_abort_multipart_upload(client: TestClient):
 
 
 def mock_complete_multipart_upload(*args, **kwargs) -> CompleteUploadResp:
-    return CompleteUploadResp(Location="", Key="")
+    return CompleteUploadResp(location="", key="")
 
 
 @patch("openapi_server.impl.s3upload_impl.complete_multipart_upload", mock_complete_multipart_upload)
@@ -55,8 +55,8 @@ def test_complete_upload(client: TestClient):
 
     Complete Upload
     """
-    complete_upload_body = {"parts": [{"part_number": 1, "e_tag": "ETag", "checksum_sha256": "ChecksumSHA256"}, {
-        "part_number": 0, "e_tag": "ETag", "checksum_sha256": "ChecksumSHA256"}], "upload_id": "UploadID", "object_name": "ObjectName", "checksum_sha256": "ChecksumSHA256"}
+    complete_upload_body = {"parts": [{"part_number": 1, "etag": "e_tag", "checksum_sha256": "ChecksumSHA256"}, {
+        "part_number": 0, "etag": "ETag", "checksum_sha256": "ChecksumSHA256"}], "upload_id": "UploadID", "object_name": "ObjectName", "checksum_sha256": "ChecksumSHA256"}
 
     headers = {
         "Authorization": "Bearer special-key",
@@ -84,7 +84,7 @@ def test_get_presigned_urls(client: TestClient):
 
     Get Presigned Urls
     """
-    presigned_url_body = {"Parts": 1, "ObjectName": "ObjectName"}
+    presigned_url_body = {"parts": 1, "object_name": "ObjectName"}
 
     headers = {
         "Authorization": "Bearer special-key",
@@ -112,7 +112,7 @@ def test_get_presigned_urls_multipart(client: TestClient):
 
     Get Presigned Urls
     """
-    presigned_url_body = {"Parts": 2, "ObjectName": "ObjectName"}
+    presigned_url_body = {"parts": 2, "object_name": "ObjectName"}
 
     headers = {
         "Authorization": "Bearer special-key",
@@ -140,12 +140,12 @@ def test_finalize_dataset_upload(client: TestClient):
 
     Get Presigned Urls
     """
-    presigned_url_body = {
-        "DatasetPID": "dataset/id",
-        "CreateArchivingJob": False,
-        "OwnerGroup": "group",
-        "OwnerUser": "user",
-        "ContactEmail": "user@mail.com"
+    finalize_upload_body = {
+        "dataset_pid": "dataset/id",
+        "create_archiving_job": False,
+        "owner_group": "group",
+        "owner_user": "user",
+        "contact_email": "user@mail.com"
     }
 
     headers = {
@@ -156,7 +156,7 @@ def test_finalize_dataset_upload(client: TestClient):
         "POST",
         "/s3/finalizeDatasetUpload",
         headers=headers,
-        json=presigned_url_body,
+        json=finalize_upload_body,
     )
 
     # uncomment below to assert the status code of the HTTP response

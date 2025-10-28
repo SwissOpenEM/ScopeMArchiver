@@ -20,7 +20,7 @@ import json
 
 
 
-from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr
+from pydantic import BaseModel, ConfigDict, StrictBool, StrictStr
 from typing import Any, ClassVar, Dict, List
 try:
     from typing import Self
@@ -31,12 +31,12 @@ class FinalizeDatasetUploadBody(BaseModel):
     """
     FinalizeDatasetUploadBody
     """ # noqa: E501
-    dataset_pid: StrictStr = Field(alias="DatasetPID")
-    create_archiving_job: StrictBool = Field(alias="CreateArchivingJob")
-    owner_group: StrictStr = Field(alias="OwnerGroup")
-    owner_user: StrictStr = Field(alias="OwnerUser")
-    contact_email: StrictStr = Field(alias="ContactEmail")
-    __properties: ClassVar[List[str]] = ["DatasetPID", "CreateArchivingJob", "OwnerGroup", "OwnerUser", "ContactEmail"]
+    dataset_pid: StrictStr
+    create_archiving_job: StrictBool
+    owner_group: StrictStr
+    owner_user: StrictStr
+    contact_email: StrictStr
+    __properties: ClassVar[List[str]] = ["dataset_pid", "create_archiving_job", "owner_group", "owner_user", "contact_email"]
 
     model_config = {
         "populate_by_name": True,
@@ -87,11 +87,11 @@ class FinalizeDatasetUploadBody(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "DatasetPID": obj.get("DatasetPID"),
-            "CreateArchivingJob": obj.get("CreateArchivingJob"),
-            "OwnerGroup": obj.get("OwnerGroup"),
-            "OwnerUser": obj.get("OwnerUser"),
-            "ContactEmail": obj.get("ContactEmail")
+            "dataset_pid": obj.get("dataset_pid"),
+            "create_archiving_job": obj.get("create_archiving_job"),
+            "owner_group": obj.get("owner_group"),
+            "owner_user": obj.get("owner_user"),
+            "contact_email": obj.get("contact_email")
         })
         return _obj
 

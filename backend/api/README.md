@@ -13,5 +13,5 @@ Python >= 3.7
 ## Generate Models and Apis
 
 ```bash
-$.../api>docker run --rm -u $(id -u):$(id -g)  -v ${PWD}:/local openapitools/openapi-generator-cli generate   -i /local/openapi.yaml   -g python-fastapi   -o /local --global-property apis,models
+$.../api>docker run --rm -u $(id -u):$(id -g)  -v ${PWD}:/local openapitools/openapi-generator-cli:v7.16.0 generate   -i /local/openapi.yaml   -g python-fastapi   -o /local --global-property apis,models
 ```

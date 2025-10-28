@@ -51,9 +51,9 @@ class BaseS3UploadApiImpl(BaseS3uploadApi):
                 upload_id=abort_upload_body.upload_id,
             )
             return AbortUploadResp(
-                Message="Abortin multipart upload succeeded.",
-                UploadID=abort_upload_body.upload_id,
-                ObjectName=abort_upload_body.object_name,
+                message="Abortin multipart upload succeeded.",
+                upload_id=abort_upload_body.upload_id,
+                object_name=abort_upload_body.object_name,
             )
         except Exception as e:
             _LOGGER.error(str(e))
@@ -73,7 +73,7 @@ class BaseS3UploadApiImpl(BaseS3uploadApi):
                 )
                 b64url = base64.b64encode(url.encode("utf-8")).decode()
                 _LOGGER.debug("Presigned Url created: %s", url)
-                return PresignedUrlResp(UploadID="", Urls=[b64url])
+                return PresignedUrlResp(upload_id="", urls=[b64url])
             else:
                 uploadId, urls = create_presigned_urls_multipart(
                     bucket_name=GetSettings().MINIO_LANDINGZONE_BUCKET,
@@ -82,7 +82,7 @@ class BaseS3UploadApiImpl(BaseS3uploadApi):
                 )
                 b64urls: List[str] = [base64.b64encode(b[1].encode("utf-8")).decode() for b in urls]
                 _LOGGER.debug("Presigned Urls created: %s", urls)
-                return PresignedUrlResp(UploadID=uploadId, Urls=b64urls)
+                return PresignedUrlResp(upload_id=uploadId, urls=b64urls)
         except Exception as e:
             _LOGGER.error(str(e))
             return JSONResponse(
@@ -102,7 +102,7 @@ class BaseS3UploadApiImpl(BaseS3uploadApi):
                     owner_group=finalize_dataset_upload_body.owner_group,
                 )
             return FinalizeDatasetUploadResp(
-                DatasetID=finalize_dataset_upload_body.dataset_pid, Message="Dataset upload finalized"
+                dataset_id=finalize_dataset_upload_body.dataset_pid, message="Dataset upload finalized"
             )
         except Exception as e:
             _LOGGER.error(e)

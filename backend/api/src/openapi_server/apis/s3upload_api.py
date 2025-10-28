@@ -116,7 +116,7 @@ async def finalize_dataset_upload(
         500: {"model": InternalError, "description": "Internal Server Error"},
     },
     tags=["s3upload"],
-    summary="Get Presigned Urls",
+    summary="Get Presigned urls",
     response_model_by_alias=True,
 )
 async def get_presigned_urls(

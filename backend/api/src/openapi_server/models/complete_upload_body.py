@@ -20,7 +20,7 @@ import json
 
 
 
-from pydantic import BaseModel, ConfigDict, Field, StrictStr
+from pydantic import BaseModel, ConfigDict, StrictStr
 from typing import Any, ClassVar, Dict, List
 from openapi_server.models.complete_part import CompletePart
 try:
@@ -32,11 +32,11 @@ class CompleteUploadBody(BaseModel):
     """
     CompleteUploadBody
     """ # noqa: E501
-    object_name: StrictStr = Field(alias="ObjectName")
-    upload_id: StrictStr = Field(alias="UploadID")
-    parts: List[CompletePart] = Field(alias="Parts")
-    checksum_sha256: StrictStr = Field(alias="ChecksumSHA256")
-    __properties: ClassVar[List[str]] = ["ObjectName", "UploadID", "Parts", "ChecksumSHA256"]
+    object_name: StrictStr
+    upload_id: StrictStr
+    parts: List[CompletePart]
+    checksum_sha256: StrictStr
+    __properties: ClassVar[List[str]] = ["object_name", "upload_id", "parts", "checksum_sha256"]
 
     model_config = {
         "populate_by_name": True,
@@ -81,7 +81,7 @@ class CompleteUploadBody(BaseModel):
             for _item in self.parts:
                 if _item:
                     _items.append(_item.to_dict())
-            _dict['Parts'] = _items
+            _dict['parts'] = _items
         return _dict
 
     @classmethod
@@ -94,10 +94,10 @@ class CompleteUploadBody(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "ObjectName": obj.get("ObjectName"),
-            "UploadID": obj.get("UploadID"),
-            "Parts": [CompletePart.from_dict(_item) for _item in obj.get("Parts")] if obj.get("Parts") is not None else None,
-            "ChecksumSHA256": obj.get("ChecksumSHA256")
+            "object_name": obj.get("object_name"),
+            "upload_id": obj.get("upload_id"),
+            "parts": [CompletePart.from_dict(_item) for _item in obj.get("parts")] if obj.get("parts") is not None else None,
+            "checksum_sha256": obj.get("checksum_sha256")
         })
         return _obj
 

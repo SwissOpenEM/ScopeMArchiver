@@ -20,7 +20,7 @@ import json
 
 
 
-from pydantic import BaseModel, ConfigDict, Field, StrictStr
+from pydantic import BaseModel, ConfigDict, StrictStr
 from typing import Any, ClassVar, Dict, List
 try:
     from typing import Self
@@ -31,10 +31,10 @@ class AbortUploadResp(BaseModel):
     """
     AbortUploadResp
     """ # noqa: E501
-    message: StrictStr = Field(alias="Message")
-    upload_id: StrictStr = Field(alias="UploadID")
-    object_name: StrictStr = Field(alias="ObjectName")
-    __properties: ClassVar[List[str]] = ["Message", "UploadID", "ObjectName"]
+    message: StrictStr
+    upload_id: StrictStr
+    object_name: StrictStr
+    __properties: ClassVar[List[str]] = ["message", "upload_id", "object_name"]
 
     model_config = {
         "populate_by_name": True,
@@ -85,9 +85,9 @@ class AbortUploadResp(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "Message": obj.get("Message"),
-            "UploadID": obj.get("UploadID"),
-            "ObjectName": obj.get("ObjectName")
+            "message": obj.get("message"),
+            "upload_id": obj.get("upload_id"),
+            "object_name": obj.get("object_name")
         })
         return _obj
 

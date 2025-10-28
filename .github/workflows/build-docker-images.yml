@@ -280,7 +280,7 @@ jobs:
       - name: Generate API
         uses: addnab/docker-run-action@v3
         with:
-            image: openapitools/openapi-generator-cli:v7.13.0
+            image: openapitools/openapi-generator-cli:v7.16.0
             options: -v ${{ github.workspace }}/backend/api:/local
             run: |
               /usr/local/bin/docker-entrypoint.sh generate -i /local/openapi.yaml   -g python-fastapi   -o /local --global-property apis,models,supportingFiles

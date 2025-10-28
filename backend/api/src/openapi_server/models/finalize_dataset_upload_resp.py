@@ -20,7 +20,7 @@ import json
 
 
 
-from pydantic import BaseModel, ConfigDict, Field, StrictStr
+from pydantic import BaseModel, ConfigDict, StrictStr
 from typing import Any, ClassVar, Dict, List
 try:
     from typing import Self
@@ -31,9 +31,9 @@ class FinalizeDatasetUploadResp(BaseModel):
     """
     FinalizeDatasetUploadResp
     """ # noqa: E501
-    dataset_id: StrictStr = Field(alias="DatasetID")
-    message: StrictStr = Field(alias="Message")
-    __properties: ClassVar[List[str]] = ["DatasetID", "Message"]
+    dataset_id: StrictStr
+    message: StrictStr
+    __properties: ClassVar[List[str]] = ["dataset_id", "message"]
 
     model_config = {
         "populate_by_name": True,
@@ -84,8 +84,8 @@ class FinalizeDatasetUploadResp(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "DatasetID": obj.get("DatasetID"),
-            "Message": obj.get("Message")
+            "dataset_id": obj.get("dataset_id"),
+            "message": obj.get("message")
         })
         return _obj
 
