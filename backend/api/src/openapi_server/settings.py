@@ -11,7 +11,6 @@ class Settings(BaseSettings):
     UVICORN_LOG_LEVEL: str = "info"
     MINIO_ENDPOINT: str = "scopem-openemdata.ethz.ch:9000"
     MINIO_REGION: str = "eu-west-1"
-    MINIO_LANDINGZONE_BUCKET: str = "landingzone"
     MINIO_USER: SecretStr
     MINIO_PASSWORD: SecretStr
     URL_EXPIRATION_SECONDS: int = 3600
