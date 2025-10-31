@@ -216,7 +216,7 @@ def create_job_result_object_task(dataset_ids: List[str]) -> JobResultObject:
 
     job_results_object = JobResultObject(result=job_results)
 
-    script = create_download_script(job_results);
+    script = create_download_script(job_results)
     job_results_object.downloadScript = base64.b64encode(bytes(script, 'utf-8'))
 
     markdown = f"""Download script for all datablocks in this job\n```bash\n{script}\n```\n"""
@@ -226,27 +226,29 @@ def create_job_result_object_task(dataset_ids: List[str]) -> JobResultObject:
 
     return job_results_object
 
+
 def create_download_script(job_result_entries: List[JobResultEntry]) -> str:
 
     dataset_to_datablocks = {}
 
     for result in job_result_entries:
-        dataset_to_datablocks.setdefault(result.datasetId, []).append({"name" : Path(result.archiveId).name, "url" : result.url})
+        dataset_to_datablocks.setdefault(result.datasetId, []).append({"name": Path(result.archiveId).name, "url": result.url})
 
     return generate_download_script(dataset_to_datablocks)
-    
-    
+
 
 def create_presigned_url(client: S3Storage, datablock: DataBlock):
     url = client.get_presigned_url(Bucket.retrieval_bucket(), datablock.archiveId)
     return url
 
+
 def sanitize_name(name: str) -> str:
     invalid_chars = ["/", ".", "_"]
-    sanitized_name = ""
+    sanitized_name = name
     for c in invalid_chars:
-        sanitized_name = name.replace(c, "-")
+        sanitized_name = sanitized_name.replace(c, "-")
     return sanitized_name
+
 
 @log
 def create_job_result_entries(dataset_id: str, datablocks: List[DataBlock]) -> List[JobResultEntry]:
