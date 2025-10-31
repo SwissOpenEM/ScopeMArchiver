@@ -189,7 +189,7 @@ services:
     working_dir: /app/backend
     volumes:
       - type: bind
-        source: ./backend/prefect/prefect.yaml
+        source: ../backend/prefect/prefect.yaml
         target: /prefect.yaml
         read_only: true
       - /usr/bin/docker:/usr/bin/docker
