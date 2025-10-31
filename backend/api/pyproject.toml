@@ -7,7 +7,7 @@ name = "archiver-service-api"
 version = "0.2.0"
 description = "REST API endpoint provider for presigned S3 upload and archiving workflow scheduling"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = "==3.13.*"
 dependencies = [
     "boto3>=1.36.6",
     "fastapi[standard]>=0.115.7",
