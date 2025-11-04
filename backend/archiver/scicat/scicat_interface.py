@@ -20,6 +20,14 @@ from config.blocks import Blocks
 
 
 class SciCatClient:
+    class STATUSMESSAGE(StrEnum):
+        """ These are the /api/v3 values for the job status. 
+        """
+        IN_PROGRESS = "inProgress"
+        FINISHED_SUCCESSFULLY = "finishedSuccessful"
+        FINISHED_UNSUCCESSFULLY = "finishedUnsuccessful"
+        FINISHED_WITHDATASET_ERRORS = "finishedWithDatasetErrors"
+
     class JOBSTATUSMESSAGE(StrEnum):
         """Human readible job status
 
@@ -33,7 +41,7 @@ class SciCatClient:
     class JOBSTATUSCODE(StrEnum):
         """Job status code in Scicat /api/v4.
 
-        This was previously JobStatusMessage in /api/v3. Values are not restricted but follow the convention of PSI's archiver.
+        This was previously statusmessage in /api/v3. Values are not restricted but follow the convention of PSI's archiver.
 
         """
 
@@ -107,7 +115,28 @@ class SciCatClient:
         return self._DATASETS_API_PREFIX
 
     @log
-    def update_job_status(
+    def update_job_status_v3(
+        self,
+        job_id: UUID,
+        job_status_message: STATUSMESSAGE,
+        job_result_object: JobResultObject | None,
+        token: SecretStr,
+    ) -> None:
+        job = Job(jobStatusMessage=str(job_status_message), jobResultObject=job_result_object)
+
+        headers = self._headers(token)
+
+        result = self._session.patch(
+            f"{self._ENDPOINT}{self.JOBS_API_PREFIX}/jobs/{job_id}",
+            data=job.model_dump_json(exclude_none=True),
+            headers=headers,
+        )
+
+        # returns none if status_code is 200
+        result.raise_for_status()
+
+    @log
+    def update_job_status_v4(
         self,
         job_id: UUID,
         status_code: JOBSTATUSCODE,
@@ -115,7 +144,7 @@ class SciCatClient:
         job_result_object: JobResultObject | None,
         token: SecretStr,
     ) -> None:
-        job = Job(jobStatusMessage=str(status_message), jobResultObject=job_result_object)
+        job = Job(statusCode=str(status_code), statusMessage=str(status_message), jobResultObject=job_result_object)
 
         headers = self._headers(token)
 

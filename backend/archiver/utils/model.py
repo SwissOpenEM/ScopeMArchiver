@@ -36,9 +36,16 @@ class Job(BaseModel):
     executionTime: Optional[str] = None
     # Object of key-value pairs defining job input parameters, e.g. 'desinationPath' for retrieve jobs or 'tapeCopies' for archive jobs ,
     jobParams: Optional[object] = None
+
+    # v3
     # Defines current status of job lifecycle,
     jobStatusMessage: Optional[str] = None
-    # v3
+
+    # The status update changed between v3 and v4
+    # v4
+    statusCode: Optional[str] = None
+    statusMessage: Optional[str] = None
+
     # # Array of objects with keys: pid, files. The value for the pid key defines the dataset ID, the value for the files key is an array of file names. This array is either an empty array, implying that all files within the dataset are selected or an explicit list of dataset-relative file paths, which should be selected,
     datasetList: Optional[List[DatasetListEntry]] = None
     # Detailed return value after job is finished ,

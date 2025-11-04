@@ -16,6 +16,7 @@ import urllib
 import asyncio
 
 from config.variables import Variables
+from scicat.scicat_interface import SciCatClient
 from utils.datablocks import upload_objects_to_s3
 from utils.s3_storage_interface import Bucket, get_s3_client
 from utils.model import OrigDataBlock, DataFile, Dataset, DatasetLifecycle
@@ -424,7 +425,7 @@ def end_to_end_test_flow(
     getLogger().info(f"Scicat job status {scicat_archival_job_status}")
 
     ASSERT(scicat_archival_job_status.get("type") == "archive")
-    ASSERT(scicat_archival_job_status.get("jobStatusMessage") == "jobFinished")
+    ASSERT(scicat_archival_job_status.get("jobStatusMessage") == SciCatClient.STATUSMESSAGE.FINISHED_SUCCESSFULLY)
 
     # Verify Scicat datasetlifecycle
     dataset_future = get_scicat_dataset.submit(dataset_pid=dataset_pid, token=scicat_token)
@@ -463,7 +464,7 @@ def end_to_end_test_flow(
     scicat_retrieval_job_status = scicat_retrieval_job_status_future.result()
     ASSERT(scicat_retrieval_job_status is not None)
     ASSERT(scicat_retrieval_job_status.get("type") == "retrieve")
-    ASSERT(scicat_retrieval_job_status.get("jobStatusMessage") == "jobFinished")
+    ASSERT(scicat_retrieval_job_status.get("jobStatusMessage") == SciCatClient.STATUSMESSAGE.FINISHED_SUCCESSFULLY)
     ASSERT(scicat_retrieval_job_status.get("jobResultObject") is not None)
     jobResult = scicat_retrieval_job_status.get("jobResultObject").get("result")
     ASSERT(len(jobResult) > 0)
