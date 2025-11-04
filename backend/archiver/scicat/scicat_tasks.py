@@ -46,14 +46,12 @@ def get_scicat_access_token() -> SecretStr:
 @task(task_run_name=generate_task_name_job)
 def update_scicat_archival_job_status(
     job_id: UUID,
-    status_code: SciCatClient.JOBSTATUSCODE,
-    status_message: SciCatClient.JOBSTATUSMESSAGE,
+    status_message: SciCatClient.STATUSMESSAGE,
     token: SecretStr,
 ) -> None:
-    scicat_client().update_job_status(
+    scicat_client().update_job_status_v3(
         job_id=job_id,
-        status_code=status_code,
-        status_message=status_message,
+        job_status_message=status_message,
         job_result_object=None,
         token=token,
     )
@@ -62,15 +60,13 @@ def update_scicat_archival_job_status(
 @task(task_run_name=generate_task_name_job)
 def update_scicat_retrieval_job_status(
     job_id: UUID,
-    status_code: SciCatClient.JOBSTATUSCODE,
-    status_message: SciCatClient.JOBSTATUSMESSAGE,
+    status_message: SciCatClient.STATUSMESSAGE,
     jobResultObject: JobResultObject | None,
     token: SecretStr,
 ) -> None:
-    scicat_client().update_job_status(
+    scicat_client().update_job_status_v3(
         job_id=job_id,
-        status_code=status_code,
-        status_message=status_message,
+        job_status_message=status_message,
         job_result_object=jobResultObject,
         token=token,
     )
@@ -170,10 +166,9 @@ def report_job_failure_user_error(
     token: SecretStr,
     message: str | None = None,
 ):
-    scicat_client().update_job_status(
+    scicat_client().update_job_status_v3(
         job_id=job_id,
-        status_code=SciCatClient.JOBSTATUSCODE.FINISHED_WITHDATASET_ERRORS,
-        status_message=SciCatClient.JOBSTATUSMESSAGE.JOB_FINISHED,
+        job_status_message=SciCatClient.STATUSMESSAGE.FINISHED_UNSUCCESSFULLY,
         job_result_object=None,
         token=token,
     )
@@ -184,10 +179,9 @@ def report_job_failure_system_error(
     token: SecretStr,
     message: str | None = None,
 ):
-    scicat_client().update_job_status(
+    scicat_client().update_job_status_v3(
         job_id=job_id,
-        status_code=SciCatClient.JOBSTATUSCODE.FINISHED_UNSUCCESSFULLY,
-        status_message=SciCatClient.JOBSTATUSMESSAGE.JOB_FINISHED,
+        job_status_message=SciCatClient.STATUSMESSAGE.FINISHED_UNSUCCESSFULLY,
         job_result_object=None,
         token=token,
     )

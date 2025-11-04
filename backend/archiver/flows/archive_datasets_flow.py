@@ -465,8 +465,7 @@ def archive_datasets_flow(job_id: UUID, dataset_ids: List[str] | None = None):
 
     job_update = update_scicat_archival_job_status.submit(
         job_id=job_id,
-        status_code=SciCatClient.JOBSTATUSCODE.IN_PROGRESS,
-        status_message=SciCatClient.JOBSTATUSMESSAGE.JOB_IN_PROGRESS,
+        status_message=SciCatClient.STATUSMESSAGE.IN_PROGRESS,
         token=access_token,
     )
     job_update.result()
@@ -481,7 +480,6 @@ def archive_datasets_flow(job_id: UUID, dataset_ids: List[str] | None = None):
 
     update_scicat_archival_job_status.submit(
         job_id=job_id,
-        status_code=SciCatClient.JOBSTATUSCODE.FINISHED_SUCCESSFULLY,
-        status_message=SciCatClient.JOBSTATUSMESSAGE.JOB_FINISHED,
+        status_message=SciCatClient.STATUSMESSAGE.FINISHED_SUCCESSFULLY,
         token=access_token,
     ).result()

@@ -57,27 +57,22 @@ def create_datablocks(num_blocks: int = 10, num_files_per_block: int = 10) -> Li
     return blocks
 
 
-def expected_job_status(job_type: str, status: SciCatClient.JOBSTATUSMESSAGE | SciCatClient.JOBSTATUSCODE) -> Dict[str, Any]:
+def expected_job_status(job_type: str, status: SciCatClient.STATUSMESSAGE) -> Dict[str, Any]:
     match status:
-        case SciCatClient.JOBSTATUSCODE.IN_PROGRESS:
-            return Job(jobStatusMessage="jobStarted").model_dump(exclude_none=True)
-        case SciCatClient.JOBSTATUSCODE.FINISHED_SUCCESSFULLY:
-            return Job(jobStatusMessage="jobFinished").model_dump(
+
+        case SciCatClient.STATUSMESSAGE.FINISHED_UNSUCCESSFULLY:
+            return Job(jobStatusMessage="finishedUnsuccessful").model_dump(
                 exclude_none=True
             )
-        case SciCatClient.JOBSTATUSCODE.FINISHED_UNSUCCESSFULLY:
-            return Job(jobStatusMessage="jobFinished").model_dump(
+        case SciCatClient.STATUSMESSAGE.FINISHED_WITHDATASET_ERRORS:
+            return Job(jobStatusMessage="finishedWithDatasetErrors").model_dump(
                 exclude_none=True
             )
-        case SciCatClient.JOBSTATUSCODE.FINISHED_WITHDATASET_ERRORS:
-            return Job(jobStatusMessage="jobFinished").model_dump(
-                exclude_none=True
-            )
-        case SciCatClient.JOBSTATUSMESSAGE.JOB_IN_PROGRESS:
-            return Job(jobStatusMessage="jobStarted").model_dump(
+        case SciCatClient.STATUSMESSAGE.IN_PROGRESS:
+            return Job(jobStatusMessage="inProgress").model_dump(
                 exclude_none=True)
-        case SciCatClient.JOBSTATUSMESSAGE.JOB_FINISHED:
-            return Job(jobStatusMessage="jobFinished").model_dump(exclude_none=True)
+        case SciCatClient.STATUSMESSAGE.FINISHED_SUCCESSFULLY:
+            return Job(jobStatusMessage="finishedSuccessful").model_dump(exclude_none=True)
 
     return {}
 
@@ -138,9 +133,9 @@ def expected_jobresultsobject(dataset_id: str, datablocks: List[DataBlock]):
     dataset_to_datablocks = {}
 
     for result in results:
-        dataset_to_datablocks.setdefault(dataset_id, []).append({"name" : Path(result.archiveId).name, "url" : result.url})
+        dataset_to_datablocks.setdefault(dataset_id, []).append({"name": Path(result.archiveId).name, "url": result.url})
 
-    script =  generate_download_script(dataset_to_datablocks)
+    script = generate_download_script(dataset_to_datablocks)
     script_b64 = base64.b64encode(bytes(script, 'utf-8'))
 
     return JobResultObject(result=results, downloadScript=script_b64).model_dump(exclude_none=True)
