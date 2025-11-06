@@ -90,13 +90,18 @@ class CompletePart(BaseModel):
     ChecksumSHA256: str
 
 
-# object_name, upload_id, parts: List[CompletePart], checksumSHA256):
 def complete_multipart_upload(bucket_name, body: CompleteUploadBody) -> CompleteUploadResp:
+    parts = []
+
+    # capitalization matters hence to conversion
+    for p in body.parts:
+        parts.append({"PartNumber": p.part_number, "ChecksumSHA256": p.checksum_sha256, "ETag": p.etag})
+
     resp = get_s3_client().complete_multipart_upload(
         Bucket=bucket_name,
         Key=body.object_name,
         UploadId=body.upload_id,
-        MultipartUpload={"Parts": [p.model_dump(by_alias=True) for p in body.parts]},
+        MultipartUpload={"Parts": parts},
         ChecksumSHA256=body.checksum_sha256,
     )
     return CompleteUploadResp(location=resp["Location"], key=resp["Key"])
