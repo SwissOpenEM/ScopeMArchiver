@@ -400,6 +400,30 @@ def find_object_in_s3(client: S3Storage, dataset_id, datablock_name):
 
 
 @log
+def build_archiving_path(dataset_id: str, datablock: DataBlock) -> Path:
+    datablocks_scratch_folder = StoragePaths.scratch_archival_datablocks_folder(dataset_id)
+    datablocks_scratch_folder.mkdir(parents=True, exist_ok=True)
+
+    datablock_name = Path(datablock.archiveId).name
+    datablock_full_path = datablocks_scratch_folder / datablock_name
+    return Path(datablock_full_path)
+
+
+@log
+def archive_datablock(dataset_id: str, datablock: DataBlock):
+    datablock_full_path = build_archiving_path(dataset_id=dataset_id, datablock=datablock)
+
+    if not datablock_full_path.exists():
+        raise DatasetError(
+            f"Datablock {datablock_full_path.name} not found in storage at {StoragePaths.relative_datablocks_folder(dataset_id)}"
+        )
+
+    getLogger().info("Archiving datablock")
+
+    archive_file_storage_protect(dst_file=datablock_full_path.absolute())
+
+
+@log
 def move_data_to_LTS(dataset_id: str, datablock: DataBlock):
     if not Variables().LTS_STORAGE_ROOT.exists():
         raise FileNotFoundError(f"Can't open LTS root {Variables().LTS_STORAGE_ROOT}")
@@ -423,7 +447,7 @@ def move_data_to_LTS(dataset_id: str, datablock: DataBlock):
     getLogger().info("Copy datablock to LTS")
 
     # Copy to LTS
-    copy_file_to_folder(src_file=datablock_full_path.absolute(), dst_folder=lts_target_dir.absolute())
+    archive_file(src_file=datablock_full_path.absolute(), dst_folder=lts_target_dir.absolute())
 
 
 @log
@@ -453,6 +477,99 @@ def verify_checksum(dataset_id: str, datablock: DataBlock, expected_checksum: st
         raise SystemError(
             f"Datablock verification failed. Expected: {expected_checksum},  got: {datablock_checksum}"
         )
+
+
+def print_error_log():
+    getLogger().error("dsmerror.log:\n")
+    try:
+        with open('dsmerror.log', 'r') as f:
+            for line in f:
+                getLogger().error(line)
+    except:
+        getLogger().error("Failed to read dsmerror.log")
+
+
+@log
+def archive_file_storage_protect(src_file: Path):
+    """Copies a file to a destination folder (does not need to exist)
+
+    Args:
+        src_file (Path): Source file
+        dst_folder (Path): destination folder - needs to exist
+
+    Raises:
+        SystemError: raises if operation fails
+    """
+    if not src_file.exists() or not src_file.is_file():
+        raise SystemError(f"Source file {src_file} is not a file or does not exist")
+
+    getLogger().info(f"Start Archiving operation for {src_file}")
+
+    with subprocess.Popen(
+        [
+            "dsmc",
+            "archive",
+            str(src_file),
+        ],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        universal_newlines=True,
+    ) as popen:
+        for line in popen.stdout:
+            getLogger().info(line)
+
+        popen.stdout.close()
+        return_code = popen.wait()
+        if return_code > 0:
+            getLogger().error(f"Finished with return code : {return_code}")
+            print_error_log()
+            raise SystemError("Archiving Operation failed")
+        else:
+            getLogger().info(f"Finished with return code : {return_code}")
+
+
+@log
+def archive_file(src_file: Path, dst_folder: Path):
+    """Copies a file to a destination folder (does not need to exist)
+
+    Args:
+        src_file (Path): Source file
+        dst_folder (Path): destination folder - needs to exist
+
+    Raises:
+        SystemError: raises if operation fails
+    """
+    if not src_file.exists() or not src_file.is_file():
+        raise SystemError(f"Source file {src_file} is not a file or does not exist")
+    if dst_folder.is_file():
+        raise SystemError(f"Destination folder {dst_folder} is not a folder")
+
+    getLogger().info(f"Start Copy operation. src:{src_file}, dst{dst_folder}")
+
+    expected_dst_file = dst_folder / src_file.name
+
+    with subprocess.Popen(
+        [
+            "dsmc",
+            "archive",
+            str(src_file),
+        ],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        universal_newlines=True,
+    ) as popen:
+        for line in popen.stdout:
+            getLogger().info(line)
+
+        popen.stdout.close()
+        return_code = popen.wait()
+        if return_code > 0:
+            getLogger().error(f"Finished with return code : {return_code}")
+        else:
+            getLogger().info(f"Finished with return code : {return_code}")
+
+    if not expected_dst_file.exists():
+        raise SystemError(f"Copying did not produce file {expected_dst_file}")
 
 
 @log
@@ -662,6 +779,56 @@ def upload_datablock(client: S3Storage, file: Path, datablock: DataBlock):
         destination_file=Path(datablock.archiveId),
         bucket=Bucket.retrieval_bucket(),
     )
+
+
+@log
+def retrieve_file_storage_protect(dst_file: Path):
+    """Copies a file to a destination folder (does not need to exist)
+
+    Args:
+        src_file (Path): Source file
+        dst_folder (Path): destination folder - needs to exist
+
+    Raises:
+        SystemError: raises if operation fails
+    """
+    if not dst_file.exists() or not dst_file.is_file():
+        raise SystemError(f"Source file {dst_file} is not a file or does not exist")
+
+    getLogger().info(f"Start Archiving operation for {dst_file}")
+
+    with subprocess.Popen(
+        [
+            "dsmc",
+            "retrieve",
+            str(dst_file),
+        ],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        universal_newlines=True,
+    ) as popen:
+        for line in popen.stdout:
+            getLogger().info(line)
+
+        popen.stdout.close()
+        return_code = popen.wait()
+        if return_code > 0:
+            getLogger().error(f"Finished with return code : {return_code}")
+            print_error_log()
+            raise SystemError("Retrieval Operation failed")
+        else:
+            getLogger().info(f"Finished with return code : {return_code}")
+
+
+@log
+def retrieve_datablock(dataset_id: str, datablock: DataBlock) -> None:
+    datablock_full_path = build_archiving_path(dataset_id=dataset_id, datablock=datablock)
+
+    # copy to local folder
+    scratch_destination_folder = StoragePaths.scratch_archival_datablocks_folder(dataset_id)
+    scratch_destination_folder.mkdir(exist_ok=True, parents=True)
+
+    retrieve_file_storage_protect(src_file=datablock_full_path)
 
 
 @log

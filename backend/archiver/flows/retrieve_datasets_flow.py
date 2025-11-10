@@ -55,6 +55,15 @@ def copy_datablock_from_LTS_to_scratch(dataset_id: str, datablock: DataBlock):
 
 
 @task(
+    task_run_name=generate_task_name_datablock,
+    tags=[ConcurrencyLimits().LTS_READ_TAG],
+    retry_delay_seconds=[60, 120, 240, 480, 960],
+)
+def retrieve_datablock_to_scratch(dataset_id: str, datablock: DataBlock):
+    datablocks_operations.retrieve_datablock(dataset_id, datablock)
+
+
+@task(
     task_run_name=generate_task_name_dataset,
 )
 def verify_data_on_scratch(dataset_id: str, datablock: DataBlock):
@@ -139,9 +148,7 @@ def retrieve_single_dataset_flow(dataset_id: str, job_id: UUID):
     # The error does not propagate correctly through the dependent tasks
     # https://github.com/PrefectHQ/prefect/issues/12028
     for datablock in missing_datablocks.result():
-        copy_to_scratch = copy_datablock_from_LTS_to_scratch.submit(
-            dataset_id=dataset_id, datablock=datablock
-        )
+        copy_to_scratch = retrieve_datablock_to_scratch.submit(dataset_id=dataset_id, datablock=datablock)
 
         verify_datablock = verify_data_on_scratch.submit(
             dataset_id=dataset_id, datablock=datablock, wait_for=[copy_to_scratch]
