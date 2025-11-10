@@ -45,7 +45,7 @@
         },
         "title": "Volumes",
         "default": [
-          "scopemarchiver_nfs-lts-share:/tmp/LTS"
+          ""
         ],
         "example": [
           "/my/local/path:/path/in/container"

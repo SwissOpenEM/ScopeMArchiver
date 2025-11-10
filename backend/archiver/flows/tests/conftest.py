@@ -30,16 +30,11 @@ def mocked_s3(aws_and_s3_credentials):
 @pytest.fixture(autouse=True)
 def config_fixture():
     envs = {
-        "LTS_FREE_SPACE_PERCENTAGE": ".01",
         "SCICAT_API_PREFIX": "/api/v1",
         "SCICAT_JOBS_API_PREFIX": "/api/v4",
-        "LTS_STORAGE_ROOT": "/tmp/LTS",
         "ARCHIVER_SCRATCH_FOLDER": "/tmp/data/scratch",
-        "ARCHIVER_LTS_FILE_TIMEOUT_S": "3",
-        "ARCHIVER_LTS_WAIT_BEFORE_VERIFY_S": "3",
     }
 
-    Path("/tmp/LTS").mkdir(exist_ok=True)
     Path("/tmp/data/scratch").mkdir(exist_ok=True, parents=True)
 
     for k, v in envs.items():
