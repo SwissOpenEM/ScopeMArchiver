@@ -1,0 +1,14 @@
+services:
+  setup-storage-client:
+    build:
+      dockerfile: storage-client.Dockerfile
+      additional_contexts: 
+        storage-client: ../deployment/.storage-client
+    volumes:
+      # Config files in order to connect to server
+      # - ./dsm.opt:/opt/tivoli/tsm/client/ba/bin/dsm.opt
+      # - ./dsm.sys:/opt/tivoli/tsm/client/ba/bin/dsm.sys
+      # Output Folder
+      - ../deployment/.storage-client:/mnt/
+    tty: true
+    entrypoint: "/bin/bash"
