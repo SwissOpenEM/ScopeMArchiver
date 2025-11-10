@@ -50,15 +50,6 @@ def on_get_datablocks_error(dataset_id: str, task: Task, task_run: TaskRun, stat
     tags=[ConcurrencyLimits().LTS_READ_TAG],
     retry_delay_seconds=[60, 120, 240, 480, 960],
 )
-def copy_datablock_from_LTS_to_scratch(dataset_id: str, datablock: DataBlock):
-    datablocks_operations.copy_from_LTS_to_scratch_retrieval(dataset_id, datablock)
-
-
-@task(
-    task_run_name=generate_task_name_datablock,
-    tags=[ConcurrencyLimits().LTS_READ_TAG],
-    retry_delay_seconds=[60, 120, 240, 480, 960],
-)
 def retrieve_datablock_to_scratch(dataset_id: str, datablock: DataBlock):
     datablocks_operations.retrieve_datablock(dataset_id, datablock)
 

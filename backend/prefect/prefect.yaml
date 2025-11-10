@@ -78,7 +78,6 @@ deployments:
         password: "{{ prefect.blocks.secret.github-password }}"
       image_pull_policy: Never 
       volumes:
-        - "{{ $PREFECT_WORKER_LTS_VOLUME_NAME }}:{{ LTS_ROOT_FOLDER }}"
         - "{{ $PREFECT_ARCHIVER_HOST_SCRATCH }}:{{ ARCHIVER_SCRATCH_FOLDER }}"
       networks:
         - "{{ $PREFECT_NETWORK }}"
@@ -106,7 +105,6 @@ deployments:
         password: "{{ prefect.blocks.secret.github-password }}"
       image_pull_policy: Never 
       volumes:
-        - "{{ $PREFECT_WORKER_LTS_VOLUME_NAME }}:{{ LTS_ROOT_FOLDER }}"
         - "{{ $PREFECT_ARCHIVER_HOST_SCRATCH }}:{{ ARCHIVER_SCRATCH_FOLDER }}"
       networks:
         - "{{ $PREFECT_NETWORK }}"

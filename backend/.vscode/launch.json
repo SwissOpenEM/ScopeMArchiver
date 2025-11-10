@@ -14,8 +14,6 @@
         "PREFECT_LOGGING_LEVEL": "DEBUG",
         "MINIO_ENDPOINT": "scopem-openemdata.ethz.ch:9090",
         "MINIO_EXTERNAL_ENDPOINT": "scopem-openemdata.ethz.ch:9090",
-        "LTS_STORAGE_ROOT": "/tmp/data/LTS/",
-        "LTS_FREE_SPACE_PERCENTAGE": "0.2",
         "ARCHIVER_SCRATCH_FOLDER": "/tmp/data/scratch/",
       },
       "module": "archiver.flows",

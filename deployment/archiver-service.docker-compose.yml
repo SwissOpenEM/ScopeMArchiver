@@ -169,7 +169,6 @@ services:
       additional_contexts:
         storage-client: .storage-client
       args:
-        LTS_ROOT_FOLDER: ${LTS_ROOT_FOLDER}
         PREFECT_VERSION: ${PREFECT_VERSION}
         UID: 123
         GID: 123
@@ -182,9 +181,7 @@ services:
       - PREFECT_API_URL=http://prefect-server:4200/api
       ### Deployment values for interpolation in prefect.yaml
       - PREFECT_VERSION=${PREFECT_VERSION}
-      - PREFECT_WORKER_LTS_VOLUME_NAME=scopemarchiver_${PREFECT_WORKER_LTS_VOLUME_NAME}
       - PREFECT_ARCHIVER_HOST_SCRATCH=${PREFECT_ARCHIVER_HOST_SCRATCH}
-      - LTS_ROOT_FOLDER=${LTS_ROOT_FOLDER}
       - ARCHIVER_SCRATCH_FOLDER=${ARCHIVER_SCRATCH_FOLDER}
       - PREFECT_NETWORK=scopemarchiver_network
       - PREFECT_RUNTIME_IMAGE=${PREFECT_RUNTIME_IMAGE_NAME}:${OPENEM_IMAGE_TAG:-latest}
@@ -203,15 +200,6 @@ services:
     labels:
       - "traefik.enable=false"
 volumes:
-  lts-mock-volume:
-    name: scopemarchiver_lts-mock-volume
-    # driver: local
-    external: true
-  nfs-lts-share:
-    driver_opts:
-      type: "nfs"
-      o: "nfsvers=3,addr=lts22,nolock"
-      device: ":/scopem_lts_nfs_test_lts22"
   postgres-volume-new:
     name: scopemarchiver_postgres-volume-new
     # driver: local

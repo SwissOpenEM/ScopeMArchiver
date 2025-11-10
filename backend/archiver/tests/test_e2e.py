@@ -36,8 +36,6 @@ MINIO_USER = ""
 MINIO_PASSWORD = ""
 
 
-LTS_ROOT_PATH = "/tmp/LTS"
-
 LOGGER = logging.getLogger(__name__)
 
 
