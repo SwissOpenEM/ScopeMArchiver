@@ -231,6 +231,14 @@ def move_data_to_LTS(dataset_id: str, datablock: DataBlock):
     datablocks_operations.move_data_to_LTS(dataset_id, datablock)
 
 
+@task(task_run_name=generate_task_name_dataset, tags=[ConcurrencyLimits().LTS_WRITE_TAG])
+def archive_datablock(dataset_id: str, datablock: DataBlock):
+    """Prefect task to move a datablock (.tar file) to the LTS. Concurrency of this task is limited to 2 instances
+    at the same time.
+    """
+    datablocks_operations.archive_datablock(dataset_id, datablock)
+
+
 @task(
     task_run_name=generate_task_name_dataset,
     tags=[ConcurrencyLimits().LTS_READ_TAG],
@@ -302,6 +310,63 @@ def move_datablocks_to_lts_flow(dataset_id: str, datablocks: List[DataBlock]):
         all_tasks.append(copy)
         all_tasks.append(checksum_verification)
         all_tasks.append(w)
+
+    wait_for_futures(tasks)
+
+    # this is necessary to propagate the errors of the tasks
+    for t in all_tasks:
+        t.result()
+
+
+# Flows
+@flow(
+    name="archive_datablocks_with_storage_protect",
+    log_prints=True,
+    flow_run_name=generate_subflow_run_name_job_id_dataset_id,
+)
+def archive_datablocks_with_storage_protect(dataset_id: str, datablocks: List[DataBlock]):
+    """Prefect (sub-)flow to move a datablock to the LTS. Implements the copying of data and verification via checksum.
+
+    Args:
+        dataset_id (str): _description_
+        datablock (DataBlock): _description_
+    """
+    tasks = []
+    all_tasks = []
+
+    for datablock in datablocks:
+        # checksum = calculate_checksum.submit(
+        #     dataset_id=dataset_id, datablock=datablock)
+        # free_space = check_free_space_in_LTS.submit(wait_for=[checksum])
+
+        move = archive_datablock.submit(dataset_id=dataset_id, datablock=datablock)  # type: ignore
+
+        # getLogger().info(
+        #     f"Wait {Variables().ARCHIVER_LTS_WAIT_BEFORE_VERIFY_S}s before verifying datablock")
+        # sleep = sleep_for.submit(
+        #     Variables().ARCHIVER_LTS_WAIT_BEFORE_VERIFY_S, wait_for=[move])
+
+        # copy = copy_datablock_from_LTS.submit(
+        #     dataset_id=dataset_id, datablock=datablock, wait_for=[sleep])
+
+        # checksum_verification = verify_checksum.submit(
+        #     dataset_id=dataset_id, datablock=datablock, checksum=checksum, wait_for=[
+        #         copy]
+        # )
+
+        # w = verify_datablock_in_verification.submit(
+        #     dataset_id=dataset_id, datablock=datablock, wait_for=[
+        #         checksum_verification]
+        # )  # type: ignore
+        # tasks.append(w)
+
+        # all_tasks.append(free_space)
+        # all_tasks.append(checksum)
+        all_tasks.append(move)
+        # all_tasks.append(sleep)
+        # all_tasks.append(copy)
+        # all_tasks.append(checksum_verification)
+        # all_tasks.append(w)
 
     wait_for_futures(tasks)
 
@@ -399,7 +464,7 @@ def cleanup_dataset(flow: Flow, flow_run: FlowRun, state: State):
 def archive_single_dataset_flow(dataset_id: str):
     datablocks = create_datablocks_flow(dataset_id)
 
-    move_datablocks_to_lts_flow(dataset_id=dataset_id, datablocks=datablocks)
+    archive_datablocks_with_storage_protect(dataset_id=dataset_id, datablocks=datablocks)
 
     access_token = get_scicat_access_token.submit()
     update_scicat_archival_dataset_lifecycle.submit(
