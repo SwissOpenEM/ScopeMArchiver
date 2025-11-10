@@ -79,6 +79,13 @@ deployments:
       image_pull_policy: Never 
       volumes:
         - "{{ $PREFECT_ARCHIVER_HOST_SCRATCH }}:{{ ARCHIVER_SCRATCH_FOLDER }}"
+        - "{{ $PREFECT_HOST_STORAGE_CLIENT }}/dsm.opt:/opt/tivoli/tsm/client/ba/bin/dsm.opt"
+        - "{{ $PREFECT_HOST_STORAGE_CLIENT }}/dsm.sys:/opt/tivoli/tsm/client/ba/bin/dsm.sys"
+        - "{{ $PREFECT_HOST_STORAGE_CLIENT }}/dsmcert:/opt/tivoli/tsm/client/ba/bin/dsmcert"
+        - "{{ $PREFECT_HOST_STORAGE_CLIENT }}/dsmcert.idx:/opt/tivoli/tsm/client/ba/bin/dsmcert.idx"
+        - "{{ $PREFECT_HOST_STORAGE_CLIENT }}/dsmcert.kdb:/opt/tivoli/tsm/client/ba/bin/dsmcert.kdb"
+        - "{{ $PREFECT_HOST_STORAGE_CLIENT }}/dsmcert.sth:/opt/tivoli/tsm/client/ba/bin/dsmcert.sth"
+        - "{{ $PREFECT_HOST_STORAGE_CLIENT }}/adsm/:/etc/adsm/"
       networks:
         - "{{ $PREFECT_NETWORK }}"
     # There is a bug and this does not work as described
@@ -106,6 +113,13 @@ deployments:
       image_pull_policy: Never 
       volumes:
         - "{{ $PREFECT_ARCHIVER_HOST_SCRATCH }}:{{ ARCHIVER_SCRATCH_FOLDER }}"
+        - "{{ $PREFECT_HOST_STORAGE_CLIENT }}/dsm.opt:/opt/tivoli/tsm/client/ba/bin/dsm.opt"
+        - "{{ $PREFECT_HOST_STORAGE_CLIENT }}/dsm.sys:/opt/tivoli/tsm/client/ba/bin/dsm.sys"
+        - "{{ $PREFECT_HOST_STORAGE_CLIENT }}/dsmcert:/opt/tivoli/tsm/client/ba/bin/dsmcert"
+        - "{{ $PREFECT_HOST_STORAGE_CLIENT }}/dsmcert.idx:/opt/tivoli/tsm/client/ba/bin/dsmcert.idx"
+        - "{{ $PREFECT_HOST_STORAGE_CLIENT }}/dsmcert.kdb:/opt/tivoli/tsm/client/ba/bin/dsmcert.kdb"
+        - "{{ $PREFECT_HOST_STORAGE_CLIENT }}/dsmcert.sth:/opt/tivoli/tsm/client/ba/bin/dsmcert.sth"
+        - "{{ $PREFECT_HOST_STORAGE_CLIENT }}/adsm/:/etc/adsm/"
       networks:
         - "{{ $PREFECT_NETWORK }}"
     # There is a bug and this does not work as described
