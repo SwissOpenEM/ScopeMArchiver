@@ -78,6 +78,7 @@ services:
       - PREFECT_UI_API_URL=https://${HOST}/archiver/prefect/api
       - PREFECT_API_URL=http://prefect-server:4200/api
       - PREFECT_SERVER_API_HOST=0.0.0.0
+      - PREFECT_SERVER_UI_SHOW_PROMOTIONAL_CONTENT=False
     expose:
       - 4200
     depends_on:
