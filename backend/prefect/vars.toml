@@ -1,6 +1,6 @@
 
 [archiver]
-ARCHIVER_SCRATCH_FOLDER = "/tmp/scratch"
+ARCHIVER_SCRATCH_FOLDER = "/storage"
 ARCHIVER_TARGET_SIZE_GB = 500
 
 [minio]

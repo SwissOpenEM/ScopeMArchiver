@@ -52,9 +52,13 @@ RUN mkdir /etc/adsm
 ARG UID=123
 ARG GID=123
 
+RUN mkdir /storage
 
 ARG USER=app
 RUN useradd -rm -d /home/${USER} -s /bin/bash  -u ${UID} ${USER}
+
+RUN chown ${UID}:${USER} /storage
+
 USER ${USER}
 
 WORKDIR /home/${USER}
