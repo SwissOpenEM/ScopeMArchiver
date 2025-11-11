@@ -5,7 +5,7 @@ RUN rm /local/src/openapi_server/apis/*
 RUN rm /local/src/openapi_server/models/*
 RUN cd /local && /usr/local/bin/docker-entrypoint.sh generate -i openapi.yaml   -g python-fastapi   -o /local --global-property apis,models,supportingFiles
 
-FROM python:3.13-alpine3.22 AS builder
+FROM python:3.14-alpine3.22 AS builder
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 # Copy the generated project
@@ -29,7 +29,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-editable
 
-FROM python:3.13-alpine3.22
+FROM python:3.14-alpine3.22
 
 RUN addgroup -S app && adduser -S app -G app
 USER app
