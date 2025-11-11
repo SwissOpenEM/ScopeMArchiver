@@ -211,15 +211,15 @@ jobs:
             # pull request event
             type=ref,event=pr
 
-      - name: Build and push Docker image
-        id: build-and-push
-        uses: docker/build-push-action@v6
-        with:
-          context: ./backend/archiver
-          file: ./backend/prefect/runtime.Dockerfile
-          push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+      # - name: Build and push Docker image
+      #   id: build-and-push
+      #   uses: docker/build-push-action@v6
+      #   with:
+      #     context: ./backend/archiver
+      #     file: ./backend/prefect/runtime.Dockerfile
+      #     push: ${{ github.event_name != 'pull_request' }}
+      #     tags: ${{ steps.meta.outputs.tags }}
+      #     labels: ${{ steps.meta.outputs.labels }}
 
   build_config_image:
     runs-on: ubuntu-latest
