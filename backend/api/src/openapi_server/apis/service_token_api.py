@@ -26,7 +26,7 @@ from openapi_server.models.extra_models import TokenModel  # noqa: F401
 from openapi_server.models.create_service_token_resp import CreateServiceTokenResp
 from openapi_server.models.http_validation_error import HTTPValidationError
 from openapi_server.models.internal_error import InternalError
-from openapi_server.security_api import get_token_SciCatAuth
+
 
 router = APIRouter()
 
@@ -47,9 +47,6 @@ for _, name, _ in pkgutil.iter_modules(ns_pkg.__path__, ns_pkg.__name__ + "."):
     response_model_by_alias=True,
 )
 async def create_new_service_token(
-    token_SciCatAuth: TokenModel = Security(
-        get_token_SciCatAuth
-    ),
 ) -> CreateServiceTokenResp:
     if not BaseServiceTokenApi.subclasses:
         raise HTTPException(status_code=500, detail="Not implemented")

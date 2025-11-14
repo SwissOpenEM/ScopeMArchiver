@@ -9,7 +9,7 @@
       "type": "debugpy",
       "request": "launch",
       "env": {
-        "PREFECT_API_URL": "http://localhost:4200/api",
+        "PREFECT_API_URL": "https://scopem-openem2.ethz.ch/archiver/prefect/api",
         "PREFECT_LOGGING_LEVEL": "DEBUG",
         "MINIO_ENDPOINT": "scopem-openemdata.ethz.ch:9090",
         "SECRETS_DIR": "${workspaceFolder}/../../.secrets",
@@ -17,10 +17,11 @@
         "UVICORN_RELOAD": "true",
         "UVICORN_LOG_LEVEL": "debug",
         "UVICORN_PORT": "8888",
-        "IDP_CLIENT_SECRET":"ASFD",
-        "IDP_PASSWORD":"ASFD",
-        "JOB_ENDPOINT_PASSWORD":"pw",
-        "JOB_ENDPOINT_USERNAME":"username"
+        "IDP_CLIENT_SECRET": "ASFD",
+        "IDP_PASSWORD": "ASFD",
+        "JOB_ENDPOINT_PASSWORD": "pw",
+        "JOB_ENDPOINT_USERNAME": "username",
+        "SCICAT_INGESTOR_GROUP": "ingestor"
       },
       "cwd": "${workspaceFolder}/src",
       "module": "openapi_server",

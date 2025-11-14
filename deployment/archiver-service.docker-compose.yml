@@ -20,8 +20,7 @@ services:
       - IDP_CLIENT_ID=${IDP_CLIENT_ID}
       - SCICAT_INGESTOR_GROUP=${SCICAT_INGESTOR_GROUP}
     secrets:
-      - minio_user
-      - minio_password
+      - minio_metric_token
       - idp_client_secret
       - idp_password
       - job_endpoint_username 
@@ -236,6 +235,8 @@ secrets:
     file: ./.secrets/miniouser.txt
   minio_password:
     file: ./.secrets/miniopass.txt
+  minio_metric_token:
+    file: ./.secrets/minio_metrics.txt
   idp_client_secret:
     file: ${IDP_CLIENT_SECRET_FILE}
   idp_password:

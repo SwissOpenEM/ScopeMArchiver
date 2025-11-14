@@ -18,7 +18,7 @@ from openapi_server.apis.health_api import router as HealthApiRouter
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from .settings import GetSettings
-from logging import getLogger
+from logging import getLogger, Formatter
 
 __version__ = version("archiver-service-api")
 
@@ -78,6 +78,8 @@ if __name__ == "__main__":
 
     log_config = uvicorn.config.LOGGING_CONFIG
     log_config["loggers"]["uvicorn"]["level"] = settings.UVICORN_LOG_LEVEL.upper()
+    log_config["formatters"]["default"]["fmt"] = "%(asctime)s  |  " + log_config["formatters"]["default"]["fmt"]
+    log_config["formatters"]["access"]["fmt"] = "%(asctime)s  |  " + log_config["formatters"]["access"]["fmt"]
     uvi_config = uvicorn.Config(
         app,
         host="0.0.0.0",

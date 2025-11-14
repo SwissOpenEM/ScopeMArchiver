@@ -5,8 +5,8 @@ info:
   version: 0.1.0
 servers:
   - url: /
-security:
-  - BearerAuth: []
+# security:
+#   - BearerAuth: []
 paths:
   /health/livez:
     get:
@@ -80,8 +80,8 @@ paths:
                     example: "Service is not ready"
   /token:
     post:
-      security:
-        - SciCatAuth: []
+      # security:
+      #   - SciCatAuth: []
       operationId: create_new_service_token
       responses:
         "201":
@@ -138,6 +138,38 @@ paths:
       summary: Create Archiver Job
       tags:
         - archiving
+  /s3/requestDatasetUpload:
+    post:
+      operationId: request_dataset_upload
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UploadRequestBody"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UploadRequestResp"
+          description: Upload requested
+        "422":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HTTPValidationError"
+          description: Validation Error
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InternalError"
+          description: Internal Server Error
+      summary: Request a new upload
+      tags:
+        - s3upload
+
   /s3/presignedUrls:
     post:
       operationId: get_presigned_urls
@@ -562,6 +594,32 @@ components:
         - upload_id
         - urls
       title: PresignedUrlResp
+    UploadRequestBody:
+      example:
+        DatasetPID:
+          - dataset/pid
+        TotalGigabytes: 1000
+      properties:
+        DatasetPID:
+          title: DatasetPID
+          type: string
+        TotalGigabytes:
+          title: TotalGigabytes
+          type: integer
+      required:
+        - DatasetPID
+        - TotalGigabytes
+      title: UploadRequestBody
+    UploadRequestResp:
+      example:
+        Ok: true
+      properties:
+        Ok:
+          title: Ok
+          type: boolean
+      required:
+        - Ok 
+      title: UploadRequestResp
     ValidationError:
       example:
         msg: msg

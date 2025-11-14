@@ -33,7 +33,9 @@ from openapi_server.models.http_validation_error import HTTPValidationError
 from openapi_server.models.internal_error import InternalError
 from openapi_server.models.presigned_url_body import PresignedUrlBody
 from openapi_server.models.presigned_url_resp import PresignedUrlResp
-from openapi_server.security_api import get_token_BearerAuth
+from openapi_server.models.upload_request_body import UploadRequestBody
+from openapi_server.models.upload_request_resp import UploadRequestResp
+
 
 router = APIRouter()
 
@@ -43,69 +45,22 @@ for _, name, _ in pkgutil.iter_modules(ns_pkg.__path__, ns_pkg.__name__ + "."):
 
 
 @router.post(
-    "/s3/abortMultipartUpload",
+    "/s3/requestDatasetUpload",
     responses={
-        201: {"model": AbortUploadResp, "description": "Abort multipart upload requested"},
+        201: {"model": UploadRequestResp, "description": "Upload requested"},
         422: {"model": HTTPValidationError, "description": "Validation Error"},
         500: {"model": InternalError, "description": "Internal Server Error"},
     },
     tags=["s3upload"],
-    summary="Abort Multipart Upload",
+    summary="Request a new upload",
     response_model_by_alias=True,
 )
-async def abort_multipart_upload(
-    abort_upload_body: AbortUploadBody = Body(None, description=""),
-    token_BearerAuth: TokenModel = Security(
-        get_token_BearerAuth
-    ),
-) -> AbortUploadResp:
+async def request_dataset_upload(
+    upload_request_body: UploadRequestBody = Body(None, description=""),
+) -> UploadRequestResp:
     if not BaseS3uploadApi.subclasses:
         raise HTTPException(status_code=500, detail="Not implemented")
-    return await BaseS3uploadApi.subclasses[0]().abort_multipart_upload(abort_upload_body)
-
-
-@router.post(
-    "/s3/completeUpload",
-    responses={
-        201: {"model": CompleteUploadResp, "description": "Upload completed"},
-        422: {"model": HTTPValidationError, "description": "Validation Error"},
-        500: {"model": InternalError, "description": "Internal Server Error"},
-    },
-    tags=["s3upload"],
-    summary="Complete Upload",
-    response_model_by_alias=True,
-)
-async def complete_upload(
-    complete_upload_body: CompleteUploadBody = Body(None, description=""),
-    token_BearerAuth: TokenModel = Security(
-        get_token_BearerAuth
-    ),
-) -> CompleteUploadResp:
-    if not BaseS3uploadApi.subclasses:
-        raise HTTPException(status_code=500, detail="Not implemented")
-    return await BaseS3uploadApi.subclasses[0]().complete_upload(complete_upload_body)
-
-
-@router.post(
-    "/s3/finalizeDatasetUpload",
-    responses={
-        201: {"model": FinalizeDatasetUploadResp, "description": "Finalize dataset upload requested"},
-        422: {"model": HTTPValidationError, "description": "Validation Error"},
-        500: {"model": InternalError, "description": "Internal Server Error"},
-    },
-    tags=["s3upload"],
-    summary="Finalize Dataset Upload",
-    response_model_by_alias=True,
-)
-async def finalize_dataset_upload(
-    finalize_dataset_upload_body: FinalizeDatasetUploadBody = Body(None, description=""),
-    token_BearerAuth: TokenModel = Security(
-        get_token_BearerAuth
-    ),
-) -> FinalizeDatasetUploadResp:
-    if not BaseS3uploadApi.subclasses:
-        raise HTTPException(status_code=500, detail="Not implemented")
-    return await BaseS3uploadApi.subclasses[0]().finalize_dataset_upload(finalize_dataset_upload_body)
+    return await BaseS3uploadApi.subclasses[0]().request_dataset_upload(upload_request_body)
 
 
 @router.post(
@@ -121,10 +76,64 @@ async def finalize_dataset_upload(
 )
 async def get_presigned_urls(
     presigned_url_body: PresignedUrlBody = Body(None, description=""),
-    token_BearerAuth: TokenModel = Security(
-        get_token_BearerAuth
-    ),
 ) -> PresignedUrlResp:
     if not BaseS3uploadApi.subclasses:
         raise HTTPException(status_code=500, detail="Not implemented")
     return await BaseS3uploadApi.subclasses[0]().get_presigned_urls(presigned_url_body)
+
+
+@router.post(
+    "/s3/completeUpload",
+    responses={
+        201: {"model": CompleteUploadResp, "description": "Upload completed"},
+        422: {"model": HTTPValidationError, "description": "Validation Error"},
+        500: {"model": InternalError, "description": "Internal Server Error"},
+    },
+    tags=["s3upload"],
+    summary="Complete Upload",
+    response_model_by_alias=True,
+)
+async def complete_upload(
+    complete_upload_body: CompleteUploadBody = Body(None, description=""),
+) -> CompleteUploadResp:
+    if not BaseS3uploadApi.subclasses:
+        raise HTTPException(status_code=500, detail="Not implemented")
+    return await BaseS3uploadApi.subclasses[0]().complete_upload(complete_upload_body)
+
+
+@router.post(
+    "/s3/abortMultipartUpload",
+    responses={
+        201: {"model": AbortUploadResp, "description": "Abort multipart upload requested"},
+        422: {"model": HTTPValidationError, "description": "Validation Error"},
+        500: {"model": InternalError, "description": "Internal Server Error"},
+    },
+    tags=["s3upload"],
+    summary="Abort Multipart Upload",
+    response_model_by_alias=True,
+)
+async def abort_multipart_upload(
+    abort_upload_body: AbortUploadBody = Body(None, description=""),
+) -> AbortUploadResp:
+    if not BaseS3uploadApi.subclasses:
+        raise HTTPException(status_code=500, detail="Not implemented")
+    return await BaseS3uploadApi.subclasses[0]().abort_multipart_upload(abort_upload_body)
+
+
+@router.post(
+    "/s3/finalizeDatasetUpload",
+    responses={
+        201: {"model": FinalizeDatasetUploadResp, "description": "Finalize dataset upload requested"},
+        422: {"model": HTTPValidationError, "description": "Validation Error"},
+        500: {"model": InternalError, "description": "Internal Server Error"},
+    },
+    tags=["s3upload"],
+    summary="Finalize Dataset Upload",
+    response_model_by_alias=True,
+)
+async def finalize_dataset_upload(
+    finalize_dataset_upload_body: FinalizeDatasetUploadBody = Body(None, description=""),
+) -> FinalizeDatasetUploadResp:
+    if not BaseS3uploadApi.subclasses:
+        raise HTTPException(status_code=500, detail="Not implemented")
+    return await BaseS3uploadApi.subclasses[0]().finalize_dataset_upload(finalize_dataset_upload_body)
