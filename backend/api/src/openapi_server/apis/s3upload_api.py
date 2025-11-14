@@ -33,6 +33,8 @@ from openapi_server.models.http_validation_error import HTTPValidationError
 from openapi_server.models.internal_error import InternalError
 from openapi_server.models.presigned_url_body import PresignedUrlBody
 from openapi_server.models.presigned_url_resp import PresignedUrlResp
+from openapi_server.models.upload_request_body import UploadRequestBody
+from openapi_server.models.upload_request_resp import UploadRequestResp
 from openapi_server.security_api import get_token_BearerAuth
 
 router = APIRouter()
@@ -128,3 +130,25 @@ async def get_presigned_urls(
     if not BaseS3uploadApi.subclasses:
         raise HTTPException(status_code=500, detail="Not implemented")
     return await BaseS3uploadApi.subclasses[0]().get_presigned_urls(presigned_url_body)
+
+
+@router.post(
+    "/s3/requestDatasetUpload",
+    responses={
+        201: {"model": UploadRequestResp, "description": "Upload requested"},
+        422: {"model": HTTPValidationError, "description": "Validation Error"},
+        500: {"model": InternalError, "description": "Internal Server Error"},
+    },
+    tags=["s3upload"],
+    summary="Request a new upload",
+    response_model_by_alias=True,
+)
+async def request_dataset_upload(
+    upload_request_body: UploadRequestBody = Body(None, description=""),
+    token_BearerAuth: TokenModel = Security(
+        get_token_BearerAuth
+    ),
+) -> UploadRequestResp:
+    if not BaseS3uploadApi.subclasses:
+        raise HTTPException(status_code=500, detail="Not implemented")
+    return await BaseS3uploadApi.subclasses[0]().request_dataset_upload(upload_request_body)

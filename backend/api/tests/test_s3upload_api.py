@@ -17,7 +17,7 @@ from unittest.mock import patch
 from utils import mock_validate_token
 
 
-def mock_abort_multipart_upload(*args, **kwargs) -> AbortUploadResp:
+async def mock_abort_multipart_upload(*args, **kwargs) -> AbortUploadResp:
     return AbortUploadResp(message="", upload_id="", object_name="")
 
 
@@ -73,7 +73,7 @@ def test_complete_upload(client: TestClient):
     assert response.status_code == 201
 
 
-def mock_create_presigned_url(*args, **kwargs) -> str:
+async def mock_create_presigned_url(*args, **kwargs) -> str:
     return "https:/www.min.io/file"
 
 
@@ -101,7 +101,7 @@ def test_get_presigned_urls(client: TestClient):
     assert response.status_code == 201
 
 
-def mock_create_presigned_urls_multipart(*args, **kwargs) -> tuple[str, List[tuple[int, str]]]:
+async def mock_create_presigned_urls_multipart(*args, **kwargs) -> tuple[str, List[tuple[int, str]]]:
     return ("uploadID", [(0, "https:/www.min.io/file1"), (1, "https:/www.min.io/file2")])
 
 
