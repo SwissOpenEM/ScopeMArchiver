@@ -90,7 +90,3 @@ class StoragePaths:
     @staticmethod
     def scratch_archival_raw_files_folder(dataset_id: str) -> Path:
         return StoragePaths.scratch_archival_root() / StoragePaths.relative_raw_files_folder(dataset_id)
-
-    @staticmethod
-    def lts_datablocks_folder(dataset_id: str) -> Path:
-        return Variables().LTS_STORAGE_ROOT / StoragePaths.relative_datablocks_folder(dataset_id)
