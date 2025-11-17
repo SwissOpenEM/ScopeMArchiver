@@ -1,6 +1,6 @@
 from collections import defaultdict
 import re
-from typing import List
+from typing import Dict, List, Tuple
 import boto3
 from botocore.exceptions import ClientError
 from botocore.client import Config
@@ -169,11 +169,7 @@ def prometheus_metrics_to_dict(metrics_string):
     return metrics_dict
 
 
-async def request_upload(dataset_pid: str, dataset_size_gb: int) -> UploadRequestResp:
-    """Get the landing zone bucket's quota and current usage. The s3 api does not
-    provide a way to query that so the metrics are the only way to get that.
-    """
-
+async def fetch_metrics() -> Tuple[List[Dict], List[Dict]]:
     metric_url = f"https://{GetSettings().MINIO_ENDPOINT}/minio/v2/metrics/bucket"
 
     token = GetSettings().MINIO_METRICS_TOKEN
@@ -187,15 +183,25 @@ async def request_upload(dataset_pid: str, dataset_size_gb: int) -> UploadReques
 
     metrics = prometheus_metrics_to_dict(resp.content.decode("utf-8"))
 
+    return metrics["minio_bucket_quota_total_bytes"], metrics["minio_bucket_usage_total_bytes"]
+
+
+async def request_upload(dataset_pid: str, dataset_size_gb: int) -> UploadRequestResp:
+    """Get the landing zone bucket's quota and current usage. The s3 api does not
+    provide a way to query that so the metrics are the only way to get that.
+    """
+
+    quota_metric, usage_metric = await fetch_metrics()
+
     bucket_name = await get_landingzone_bucket()
     bucket_quota = 0
 
-    for m in metrics["minio_bucket_quota_total_bytes"]:
+    for m in quota_metric:
         if m["labels"]["bucket"] == bucket_name:
             bucket_quota = m["value"]
 
     bucket_usage = 0
-    for m in metrics["minio_bucket_usage_total_bytes"]:
+    for m in usage_metric:
         if m["labels"]["bucket"] == bucket_name:
             bucket_usage = m["value"]
 
