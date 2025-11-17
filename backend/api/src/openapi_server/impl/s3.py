@@ -207,8 +207,12 @@ async def request_upload(dataset_pid: str, dataset_size_gb: int) -> UploadReques
 
     bytes_to_gigabytes = 1024**3
 
+    free_space_factor = GetSettings().FREE_SPACE_FACTOR
     # of no quota is set, the quota is reported as 0. Allowing the upload in that case
-    ok = bucket_quota == 0 or (bucket_quota * 0.9 - bucket_usage) / bytes_to_gigabytes > dataset_size_gb
+    ok = (
+        bucket_quota == 0
+        or (bucket_quota * free_space_factor - bucket_usage) / bytes_to_gigabytes > dataset_size_gb
+    )
 
     _LOGGER.info(f"Bucket '{bucket_name}' Quota: {bucket_quota / bytes_to_gigabytes} GB")
     _LOGGER.info(f"Bucket '{bucket_name}' Usage: {bucket_usage / bytes_to_gigabytes} GB")

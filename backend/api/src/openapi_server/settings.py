@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     MINIO_REGION: str = "eu-west-1"
     MINIO_METRICS_TOKEN: SecretStr
     URL_EXPIRATION_SECONDS: int = 3600
+    FREE_SPACE_FACTOR: float = 0.9
 
     # JWT Token settings
     IDP_URL: str = "https://scopem-openem2.ethz.ch/keycloak"
