@@ -11,12 +11,12 @@ class Settings(BaseSettings):
     UVICORN_LOG_LEVEL: str = "info"
     MINIO_ENDPOINT: str = "scopem-openemdata.ethz.ch:9000"
     MINIO_REGION: str = "eu-west-1"
-    MINIO_USER: SecretStr
-    MINIO_PASSWORD: SecretStr
+    MINIO_METRICS_TOKEN: SecretStr
     URL_EXPIRATION_SECONDS: int = 3600
+    FREE_SPACE_FACTOR: float = 0.9
 
     # JWT Token settings
-    IDP_URL: str = "https://scopem-openem.ethz.ch/keycloak"
+    IDP_URL: str = "https://scopem-openem2.ethz.ch/keycloak"
     IDP_USERNAME: str = "archiver-service"
     IDP_PASSWORD: SecretStr
     IDP_REALM: str = "facility"
