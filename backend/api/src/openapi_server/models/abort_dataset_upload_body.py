@@ -20,23 +20,19 @@ import json
 
 
 
-from pydantic import BaseModel, ConfigDict, StrictBool, StrictStr
+from pydantic import BaseModel, ConfigDict, StrictStr
 from typing import Any, ClassVar, Dict, List
 try:
     from typing import Self
 except ImportError:
     from typing_extensions import Self
 
-class FinalizeDatasetUploadBody(BaseModel):
+class AbortDatasetUploadBody(BaseModel):
     """
-    FinalizeDatasetUploadBody
+    AbortDatasetUploadBody
     """ # noqa: E501
     dataset_id: StrictStr
-    create_archiving_job: StrictBool
-    owner_group: StrictStr
-    owner_user: StrictStr
-    contact_email: StrictStr
-    __properties: ClassVar[List[str]] = ["dataset_id", "create_archiving_job", "owner_group", "owner_user", "contact_email"]
+    __properties: ClassVar[List[str]] = ["dataset_id"]
 
     model_config = {
         "populate_by_name": True,
@@ -56,7 +52,7 @@ class FinalizeDatasetUploadBody(BaseModel):
 
     @classmethod
     def from_json(cls, json_str: str) -> Self:
-        """Create an instance of FinalizeDatasetUploadBody from a JSON string"""
+        """Create an instance of AbortDatasetUploadBody from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self) -> Dict[str, Any]:
@@ -79,7 +75,7 @@ class FinalizeDatasetUploadBody(BaseModel):
 
     @classmethod
     def from_dict(cls, obj: Dict) -> Self:
-        """Create an instance of FinalizeDatasetUploadBody from a dict"""
+        """Create an instance of AbortDatasetUploadBody from a dict"""
         if obj is None:
             return None
 
@@ -87,11 +83,7 @@ class FinalizeDatasetUploadBody(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "dataset_id": obj.get("dataset_id"),
-            "create_archiving_job": obj.get("create_archiving_job"),
-            "owner_group": obj.get("owner_group"),
-            "owner_user": obj.get("owner_user"),
-            "contact_email": obj.get("contact_email")
+            "dataset_id": obj.get("dataset_id")
         })
         return _obj
 

@@ -20,7 +20,7 @@ import json
 
 
 
-from pydantic import BaseModel, ConfigDict, Field, StrictInt, StrictStr
+from pydantic import BaseModel, ConfigDict, StrictInt, StrictStr
 from typing import Any, ClassVar, Dict, List
 try:
     from typing import Self
@@ -31,9 +31,9 @@ class UploadRequestBody(BaseModel):
     """
     UploadRequestBody
     """ # noqa: E501
-    dataset_pid: StrictStr = Field(alias="DatasetPID")
-    total_gigabytes: StrictInt = Field(alias="TotalGigabytes")
-    __properties: ClassVar[List[str]] = ["DatasetPID", "TotalGigabytes"]
+    dataset_id: StrictStr
+    dataset_size_gib: StrictInt
+    __properties: ClassVar[List[str]] = ["dataset_id", "dataset_size_gib"]
 
     model_config = {
         "populate_by_name": True,
@@ -84,8 +84,8 @@ class UploadRequestBody(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "DatasetPID": obj.get("DatasetPID"),
-            "TotalGigabytes": obj.get("TotalGigabytes")
+            "dataset_id": obj.get("dataset_id"),
+            "dataset_size_gib": obj.get("dataset_size_gib")
         })
         return _obj
 

@@ -19,6 +19,7 @@ services:
       - IDP_AUDIENCE=${IDP_AUDIENCE}
       - IDP_CLIENT_ID=${IDP_CLIENT_ID}
       - SCICAT_INGESTOR_GROUP=${SCICAT_INGESTOR_GROUP}
+      - MINIO_TOTAL_LANDING_SPACE_TB=${MINIO_TOTAL_LANDING_SPACE_TB}
     secrets:
       - minio_metrics_token
       - idp_client_secret

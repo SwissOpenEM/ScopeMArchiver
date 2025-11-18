@@ -32,8 +32,12 @@ class Bucket:
         return Bucket(Variables().MINIO_STAGING_BUCKET)
 
     @staticmethod
-    def landingzone_bucket() -> Bucket:  # type: ignore
-        return Bucket(Variables().MINIO_LANDINGZONE_BUCKET)
+    def landingzone_bucket(dataset_pid: str) -> Bucket:  # type: ignore
+        sanatized_name = dataset_pid
+        for c in ['_', '/']:
+            sanatized_name = sanatized_name.replace(c, "-")
+        sanatized_name = sanatized_name.lower()
+        return Bucket(sanatized_name)
 
 
 @log_debug
@@ -64,10 +68,6 @@ class S3Storage:
         self._PASSWORD = password
         self._REGION = region
 
-        self.STAGING_BUCKET: Bucket = Bucket.staging_bucket()
-        self.RETRIEVAL_BUCKET: Bucket = Bucket.retrieval_bucket()
-        self.LANDINGZONE_BUCKET: Bucket = Bucket.landingzone_bucket()
-
         self._minio = boto3.client(
             "s3",
             endpoint_url=f"https://{self._URL}" if self._URL is not None and self._URL != "" else None,
@@ -76,7 +76,7 @@ class S3Storage:
             region_name=self._REGION,
             config=Config(signature_version="s3v4", max_pool_connections=32),
         )
-        
+
         self._external_minio = boto3.client(
             "s3",
             endpoint_url=f"https://{Variables().MINIO_EXTERNAL_ENDPOINT}",
@@ -106,7 +106,6 @@ class S3Storage:
     @log_debug
     def get_presigned_url(self, bucket: Bucket, filename: str) -> str:
         days_to_seconds = 60 * 60 * 24
-
 
         presigned_url = self._external_minio.generate_presigned_url(
             "get_object",
@@ -222,6 +221,22 @@ class S3Storage:
         for obj in objs:
             self._minio.delete_object(Bucket=bucket.name, Key=obj.key)
 
+    @log
+    def create_bucket(self, bucket: Bucket) -> None:
+        self._minio.create_bucket(
+            ACL='authenticated-read',
+            Bucket=bucket.name,
+            CreateBucketConfiguration={
+                'LocationConstraint': 'eu-west-1',
+            },
+            ObjectLockEnabledForBucket=False,
+            ObjectOwnership='ObjectWriter'
+        )
+
+
+    @log
+    def delete_bucket(self, bucket: Bucket) -> None:
+        self._minio.delete_bucket(Bucket=bucket.name)
 
 @functools.cache
 def get_s3_client() -> S3Storage:

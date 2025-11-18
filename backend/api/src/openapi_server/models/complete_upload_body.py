@@ -32,11 +32,12 @@ class CompleteUploadBody(BaseModel):
     """
     CompleteUploadBody
     """ # noqa: E501
+    dataset_id: StrictStr
     object_name: StrictStr
     upload_id: StrictStr
     parts: List[CompletePart]
     checksum_sha256: StrictStr
-    __properties: ClassVar[List[str]] = ["object_name", "upload_id", "parts", "checksum_sha256"]
+    __properties: ClassVar[List[str]] = ["dataset_id", "object_name", "upload_id", "parts", "checksum_sha256"]
 
     model_config = {
         "populate_by_name": True,
@@ -94,6 +95,7 @@ class CompleteUploadBody(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
+            "dataset_id": obj.get("dataset_id"),
             "object_name": obj.get("object_name"),
             "upload_id": obj.get("upload_id"),
             "parts": [CompletePart.from_dict(_item) for _item in obj.get("parts")] if obj.get("parts") is not None else None,
