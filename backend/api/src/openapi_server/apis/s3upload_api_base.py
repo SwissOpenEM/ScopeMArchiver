@@ -2,6 +2,8 @@
 
 from typing import ClassVar, Dict, List, Tuple  # noqa: F401
 
+from openapi_server.models.abort_dataset_upload_body import AbortDatasetUploadBody
+from openapi_server.models.abort_dataset_upload_resp import AbortDatasetUploadResp
 from openapi_server.models.abort_upload_body import AbortUploadBody
 from openapi_server.models.abort_upload_resp import AbortUploadResp
 from openapi_server.models.complete_upload_body import CompleteUploadBody
@@ -22,6 +24,13 @@ class BaseS3uploadApi:
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
         BaseS3uploadApi.subclasses = BaseS3uploadApi.subclasses + (cls,)
+    async def abort_dataset_upload(
+        self,
+        abort_dataset_upload_body: AbortDatasetUploadBody,
+    ) -> AbortDatasetUploadResp:
+        ...
+
+
     async def abort_multipart_upload(
         self,
         abort_upload_body: AbortUploadBody,

@@ -23,6 +23,8 @@ from fastapi import (  # noqa: F401
 )
 
 from openapi_server.models.extra_models import TokenModel  # noqa: F401
+from openapi_server.models.abort_dataset_upload_body import AbortDatasetUploadBody
+from openapi_server.models.abort_dataset_upload_resp import AbortDatasetUploadResp
 from openapi_server.models.abort_upload_body import AbortUploadBody
 from openapi_server.models.abort_upload_resp import AbortUploadResp
 from openapi_server.models.complete_upload_body import CompleteUploadBody
@@ -42,6 +44,28 @@ router = APIRouter()
 ns_pkg = openapi_server.impl
 for _, name, _ in pkgutil.iter_modules(ns_pkg.__path__, ns_pkg.__name__ + "."):
     importlib.import_module(name)
+
+
+@router.post(
+    "/s3/abortDatasetUpload",
+    responses={
+        201: {"model": AbortDatasetUploadResp, "description": "Finalize dataset upload requested"},
+        422: {"model": HTTPValidationError, "description": "Validation Error"},
+        500: {"model": InternalError, "description": "Internal Server Error"},
+    },
+    tags=["s3upload"],
+    summary="Abort Dataset Upload",
+    response_model_by_alias=True,
+)
+async def abort_dataset_upload(
+    abort_dataset_upload_body: AbortDatasetUploadBody = Body(None, description=""),
+    token_BearerAuth: TokenModel = Security(
+        get_token_BearerAuth
+    ),
+) -> AbortDatasetUploadResp:
+    if not BaseS3uploadApi.subclasses:
+        raise HTTPException(status_code=500, detail="Not implemented")
+    return await BaseS3uploadApi.subclasses[0]().abort_dataset_upload(abort_dataset_upload_body)
 
 
 @router.post(

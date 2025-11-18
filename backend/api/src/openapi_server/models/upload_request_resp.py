@@ -20,7 +20,7 @@ import json
 
 
 
-from pydantic import BaseModel, ConfigDict, Field, StrictBool
+from pydantic import BaseModel, ConfigDict, StrictBool
 from typing import Any, ClassVar, Dict, List
 try:
     from typing import Self
@@ -31,8 +31,8 @@ class UploadRequestResp(BaseModel):
     """
     UploadRequestResp
     """ # noqa: E501
-    ok: StrictBool = Field(alias="Ok")
-    __properties: ClassVar[List[str]] = ["Ok"]
+    ok: StrictBool
+    __properties: ClassVar[List[str]] = ["ok"]
 
     model_config = {
         "populate_by_name": True,
@@ -83,7 +83,7 @@ class UploadRequestResp(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "Ok": obj.get("Ok")
+            "ok": obj.get("ok")
         })
         return _obj
 

@@ -9,6 +9,8 @@ src/openapi_server/apis/service_token_api.py
 src/openapi_server/apis/service_token_api_base.py
 src/openapi_server/impl/__init__.py
 src/openapi_server/models/__init__.py
+src/openapi_server/models/abort_dataset_upload_body.py
+src/openapi_server/models/abort_dataset_upload_resp.py
 src/openapi_server/models/abort_upload_body.py
 src/openapi_server/models/abort_upload_resp.py
 src/openapi_server/models/complete_part.py

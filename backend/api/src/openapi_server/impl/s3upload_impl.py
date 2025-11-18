@@ -13,16 +13,19 @@ from openapi_server.models.presigned_url_body import PresignedUrlBody
 from openapi_server.models.presigned_url_resp import PresignedUrlResp
 from openapi_server.models.upload_request_body import UploadRequestBody
 from openapi_server.models.upload_request_resp import UploadRequestResp
+from openapi_server.models.abort_dataset_upload_body import AbortDatasetUploadBody
+from openapi_server.models.abort_dataset_upload_resp import AbortDatasetUploadResp
 
 from openapi_server.apis.s3upload_api_base import BaseS3uploadApi
 
 from .s3 import (
+    abort_upload,
     complete_multipart_upload,
     abort_multipart_upload,
+    create_bucket_name,
     create_presigned_url,
     create_presigned_urls_multipart,
     request_upload,
-    get_landingzone_bucket,
 )
 
 from logging import getLogger
@@ -37,8 +40,8 @@ class BaseS3UploadApiImpl(BaseS3uploadApi):
         complete_upload_body: CompleteUploadBody,
     ) -> CompleteUploadResp:
         try:
-            bucket = await get_landingzone_bucket()
-            return complete_multipart_upload(bucket, complete_upload_body)
+            bucket = create_bucket_name(complete_upload_body.dataset_id)
+            return await complete_multipart_upload(bucket, complete_upload_body)
         except Exception as e:
             _LOGGER.error(str(e))
             return JSONResponse(
@@ -50,7 +53,7 @@ class BaseS3UploadApiImpl(BaseS3uploadApi):
         abort_upload_body: AbortUploadBody,
     ) -> AbortUploadResp:
         try:
-            bucket = await get_landingzone_bucket()
+            bucket = create_bucket_name(abort_upload_body.dataset_id)
             await abort_multipart_upload(
                 bucket_name=bucket,
                 object_name=abort_upload_body.object_name,
@@ -72,7 +75,7 @@ class BaseS3UploadApiImpl(BaseS3uploadApi):
         presigned_url_body: PresignedUrlBody,
     ) -> PresignedUrlResp:
         try:
-            bucket = await get_landingzone_bucket()
+            bucket = create_bucket_name(presigned_url_body.dataset_id)
             if presigned_url_body.parts == 1:
                 url = await create_presigned_url(
                     bucket_name=bucket,
@@ -100,16 +103,16 @@ class BaseS3UploadApiImpl(BaseS3uploadApi):
         self, finalize_dataset_upload_body: FinalizeDatasetUploadBody
     ) -> FinalizeDatasetUploadResp:
         try:
-            await mark_dataset_as_archivable(finalize_dataset_upload_body.dataset_pid)
+            await mark_dataset_as_archivable(finalize_dataset_upload_body.dataset_id)
             if finalize_dataset_upload_body.create_archiving_job:
                 await start_archiving(
-                    dataset_pid=finalize_dataset_upload_body.dataset_pid,
+                    dataset_pid=finalize_dataset_upload_body.dataset_id,
                     owner_user=finalize_dataset_upload_body.owner_user,
                     contact_email=finalize_dataset_upload_body.contact_email,
                     owner_group=finalize_dataset_upload_body.owner_group,
                 )
             return FinalizeDatasetUploadResp(
-                dataset_id=finalize_dataset_upload_body.dataset_pid, message="Dataset upload finalized"
+                dataset_id=finalize_dataset_upload_body.dataset_id, message="Dataset upload finalized"
             )
         except Exception as e:
             _LOGGER.error(e)
@@ -117,10 +120,15 @@ class BaseS3UploadApiImpl(BaseS3uploadApi):
                 status_code=500,
                 content={
                     "message": "Failed to finalize dataset",
-                    "dataset_id": finalize_dataset_upload_body.dataset_pid,
+                    "dataset_pid": finalize_dataset_upload_body.dataset_id,
                     "details": str(e),
                 },
             )
 
     async def request_dataset_upload(self, upload_request_body: UploadRequestBody) -> UploadRequestResp:
-        return await request_upload(upload_request_body.dataset_pid, upload_request_body.total_gigabytes)
+        return await request_upload(upload_request_body.dataset_id, upload_request_body.total_gigabytes)
+
+    async def abort_dataset_upload(
+        self, abort_dataset_upload_body: AbortDatasetUploadBody
+    ) -> AbortDatasetUploadResp:
+        return await abort_upload(abort_dataset_upload_body.dataset_id)

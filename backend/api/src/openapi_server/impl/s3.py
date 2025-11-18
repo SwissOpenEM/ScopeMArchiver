@@ -1,13 +1,13 @@
-from collections import defaultdict
-import re
-from typing import Dict, List, Tuple
+from typing import Dict, List
 import boto3
 from botocore.exceptions import ClientError
 from botocore.client import Config
 from pydantic import BaseModel, SecretStr
+from openapi_server.models.abort_dataset_upload_resp import AbortDatasetUploadResp
 from openapi_server.settings import GetSettings
-import httpx
-
+import minio
+import os
+import json
 
 from openapi_server.models.complete_upload_body import CompleteUploadBody
 from openapi_server.models.complete_upload_resp import CompleteUploadResp
@@ -18,8 +18,17 @@ from prefect.variables import Variable
 from logging import getLogger
 
 _LOGGER = getLogger("uvicorn.s3")
-
+_GiB = 1024**3
+_TB = 1000**4
 boto3.set_stream_logger("api.s3.boto3", _LOGGER.level)
+
+
+def create_bucket_name(dataset_id: str) -> str:
+    sanitized_name = dataset_id
+    for c in ["_", "/"]:
+        sanitized_name = sanitized_name.replace(c, "-")
+    sanitized_name = sanitized_name.lower()
+    return sanitized_name
 
 
 async def get_landingzone_bucket() -> str:
@@ -45,6 +54,19 @@ async def get_s3_client():
     )
 
     return s3_client
+
+
+async def get_minio_admin_client():
+    settings = GetSettings()
+    user_block = await Secret.load("minio-user")
+    password_block = await Secret.load("minio-password")
+    os.environ["MINIO_ACCESS_KEY"] = user_block.get()
+    os.environ["MINIO_SECRET_KEY"] = password_block.get()
+    provider = minio.credentials.EnvMinioProvider()
+    client = minio.MinioAdmin(
+        endpoint=f"{settings.MINIO_ENDPOINT}", credentials=provider, region=settings.MINIO_REGION
+    )
+    return client
 
 
 async def create_presigned_url(bucket_name, object_name) -> str:
@@ -141,81 +163,124 @@ async def abort_multipart_upload(
     _LOGGER.info(f"Multipart upload aborted successfully. UploadID={upload_id}, ObjectName={object_name}")
 
 
-def prometheus_metrics_to_dict(metrics_string):
-    """Chat-GPT inspired function to parse a metrics string"""
-    metrics_dict = defaultdict(list)
-
-    for line in metrics_string.strip().split("\n"):
-        if line.startswith("#"):
-            continue  # Skip comments
-
-        # Regular expression to match metric name with labels and value
-        match = re.match(r"([^{} ]+)(?:{([^}]*)})?\s+(.*)", line)
-        if match:
-            metric_name = match.group(1)
-            labels_string = match.group(2)
-            value = float(match.group(3))
-
-            # Parse labels
-            labels = {}
-            if labels_string:
-                for label in labels_string.split(","):
-                    key, val = label.split("=")
-                    labels[key.strip()] = val.strip().strip('"')
-
-            # Append the metric data to the corresponding metric name
-            metrics_dict[metric_name].append({"value": value, "labels": labels})
-
-    return metrics_dict
+def set_bucket_quota(client: minio.MinioAdmin, bucket: str, quota_gib: int):
+    minimum_quota = 1024**3
+    client.bucket_quota_set(bucket=bucket, size=max(quota_gib * 1024**3, minimum_quota))
+    _LOGGER.info(f"Quota set for Bucket {bucket} to {quota_gib} GiB")
 
 
-async def fetch_metrics() -> Tuple[List[Dict], List[Dict]]:
-    metric_url = f"https://{GetSettings().MINIO_ENDPOINT}/minio/v2/metrics/bucket"
-
-    token = GetSettings().MINIO_METRICS_TOKEN
-
-    headers = {"Content-Type": "application/json", "Authorization": f"Bearer {token.get_secret_value()}"}
-    try:
-        resp = httpx.get(url=metric_url, headers=headers)
-    except Exception as e:
-        _LOGGER.error(e)
-        return UploadRequestResp(Ok=False)
-
-    metrics = prometheus_metrics_to_dict(resp.content.decode("utf-8"))
-
-    return metrics["minio_bucket_quota_total_bytes"], metrics["minio_bucket_usage_total_bytes"]
+def get_bucket_quota(client: minio.MinioAdmin, bucket: str) -> int:
+    bucket_quota = client.bucket_quota_get(bucket)
+    return json.loads(bucket_quota)["quota"] / _GiB
 
 
-async def request_upload(dataset_pid: str, dataset_size_gb: int) -> UploadRequestResp:
-    """Get the landing zone bucket's quota and current usage. The s3 api does not
-    provide a way to query that so the metrics are the only way to get that.
-    """
+def delete_bucket(bucket_name: str):
+    s3 = boto3.resourece("s3")
+    bucket = s3.Bucket(bucket_name)
+    bucket.objects.all().delete()
+    bucket.delete()
 
-    quota_metric, usage_metric = await fetch_metrics()
+    _LOGGER.info(f"Successfully deleted bucket {bucket_name}.")
 
-    bucket_name = await get_landingzone_bucket()
-    bucket_quota = 0
 
-    for m in quota_metric:
-        if m["labels"]["bucket"] == bucket_name:
-            bucket_quota = m["value"]
-
-    bucket_usage = 0
-    for m in usage_metric:
-        if m["labels"]["bucket"] == bucket_name:
-            bucket_usage = m["value"]
-
-    bytes_to_gigabytes = 1024**3
-
-    free_space_factor = GetSettings().FREE_SPACE_FACTOR
-    # of no quota is set, the quota is reported as 0. Allowing the upload in that case
-    ok = (
-        bucket_quota == 0
-        or (bucket_quota * free_space_factor - bucket_usage) / bytes_to_gigabytes > dataset_size_gb
+def create_bucket(client: boto3, bucket: str):
+    client.create_bucket(
+        ACL="authenticated-read",
+        Bucket=bucket,
+        CreateBucketConfiguration={
+            "LocationConstraint": GetSettings().MINIO_REGION,
+        },
+        ObjectLockEnabledForBucket=False,
+        ObjectOwnership="ObjectWriter",
     )
 
-    _LOGGER.info(f"Bucket '{bucket_name}' Quota: {bucket_quota / bytes_to_gigabytes} GB")
-    _LOGGER.info(f"Bucket '{bucket_name}' Usage: {bucket_usage / bytes_to_gigabytes} GB")
-    _LOGGER.info(f"Dataset '{dataset_pid}' Size: {dataset_size_gb} GB")
+    _LOGGER.info(f"Bucket {bucket} created")
 
-    return UploadRequestResp(Ok=ok)
+
+def get_bucket_names(client) -> List[str]:
+    response = client.list_buckets(
+        MaxBuckets=1000, ContinuationToken="", Prefix="", BucketRegion=GetSettings().MINIO_REGION
+    )
+
+    buckets = [r["Name"] for r in response["Buckets"]]
+    return buckets
+
+
+def get_total_quota(admin, buckets: List[str]) -> int:
+    total_quota_gib = 0
+    for bucket in buckets:
+        try:
+            bucket_quota = admin.bucket_quota_get(bucket)
+            total_quota_gib += json.loads(bucket_quota)["quota"] / _GiB
+        except Exception as e:
+            _LOGGER.error(f"Failed to get quota for bucket '{bucket}': {e}")
+            continue
+    return total_quota_gib
+
+
+def get_usage_info(client: minio.MinioAdmin) -> Dict:
+    return json.loads(client.get_data_usage_info())
+
+
+async def request_upload(dataset_id: str, dataset_size_gib: int) -> UploadRequestResp:
+    """Get all the bucket's quotas and total current usage to calculate if enough space is available.
+    Creates a bucket for the dataset if so.
+    """
+
+    client = await get_s3_client()
+    admin = await get_minio_admin_client()
+
+    info = get_usage_info(admin)
+
+    _LOGGER.info(info)
+    total_usage_gib = info["objectsTotalSize"] / 1024**3
+    _LOGGER.info(f"TotalSize Used {total_usage_gib}")
+
+    buckets = get_bucket_names(client)
+    total_quota_gib = get_total_quota(admin, buckets)
+    free_space_factor = GetSettings().FREE_SPACE_FACTOR
+
+    _TOTAL_AVAILABLE_GIB = GetSettings().MINIO_TOTAL_LANDING_SPACE_TB * _TB / _GiB
+    max_available_storage_gib = _TOTAL_AVAILABLE_GIB * free_space_factor
+
+    bucket_name = create_bucket_name(dataset_id)
+
+    bucket_exists = bucket_name in buckets
+
+    # in case there was any crashed upload that didn't clean up previously uploaded data
+    # remove it here
+    if bucket_exists:
+        delete_bucket(bucket_name)
+
+    # Add some buffer to the datset size
+    requested_size_gib = int(dataset_size_gib * 1.01)
+
+    enough_space_available = (max_available_storage_gib - total_quota_gib) > requested_size_gib
+
+    _LOGGER.info(f"Total Space: {int(_TOTAL_AVAILABLE_GIB)} GiB")
+    _LOGGER.info(f"Total Buffer: {int(max_available_storage_gib)} GiB")
+    _LOGGER.info(f"Total Quota: {int(total_quota_gib)} GiB")
+    _LOGGER.info(f"Dataset Size: {int(dataset_size_gib)} GiB")
+    _LOGGER.info(f"Bucket Quota: {int(requested_size_gib)} GiB")
+
+    if not enough_space_available:
+        _LOGGER.info(f"Not enough free space for dataset {dataset_id}")
+        return UploadRequestResp(ok=False)
+
+    try:
+        _LOGGER.info(
+            f"Creating bucket for dataset {dataset_id} with name {bucket_name} and quota {requested_size_gib}"
+        )
+        create_bucket(client, bucket_name)
+        set_bucket_quota(admin, bucket_name, requested_size_gib)
+        return UploadRequestResp(ok=True)
+    except Exception as e:
+        _LOGGER.error(f"Failed to create bucket or set quota: {e}")
+        return UploadRequestResp(ok=False)
+
+
+async def abort_upload(dataset_id: str) -> AbortDatasetUploadResp:
+    # check if upload in progress
+    bucket = create_bucket_name(dataset_id=dataset_id)
+    delete_bucket(bucket)
+    return AbortDatasetUploadResp(dataset_id=dataset_id, message="")
