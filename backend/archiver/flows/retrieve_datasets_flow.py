@@ -193,7 +193,7 @@ def find_oldest_dataset_flow(
     on_failure=[on_job_flow_failure],
 )
 async def wait_for_retrieval_flow(flow_run_id: uuid.UUID):
-    flow_run: FlowRun = await wait_for_flow_run(flow_run_id, log_states=True)
+    flow_run: FlowRun = await wait_for_flow_run(flow_run_id, log_states=True, timeout=None, poll_interval=60)
     flow_run.state.result()
 
 
