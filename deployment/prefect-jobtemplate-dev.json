@@ -45,7 +45,7 @@
         },
         "title": "Volumes",
         "default": [
-          "lts-mock-volume:/tmp/LTS"
+          ""
         ],
         "example": [
           "/my/local/path:/path/in/container"

@@ -76,7 +76,7 @@ class S3Storage:
             region_name=self._REGION,
             config=Config(signature_version="s3v4", max_pool_connections=32),
         )
-        
+
         self._external_minio = boto3.client(
             "s3",
             endpoint_url=f"https://{Variables().MINIO_EXTERNAL_ENDPOINT}",
@@ -106,7 +106,6 @@ class S3Storage:
     @log_debug
     def get_presigned_url(self, bucket: Bucket, filename: str) -> str:
         days_to_seconds = 60 * 60 * 24
-
 
         presigned_url = self._external_minio.generate_presigned_url(
             "get_object",
