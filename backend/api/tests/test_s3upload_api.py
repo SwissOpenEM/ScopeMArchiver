@@ -4,6 +4,7 @@ from typing import List
 from fastapi.testclient import TestClient
 
 
+from openapi_server.models.abort_dataset_upload_resp import AbortDatasetUploadResp
 from openapi_server.models.abort_upload_body import AbortUploadBody  # noqa: F401
 from openapi_server.models.abort_upload_resp import AbortUploadResp  # noqa: F401
 from openapi_server.models.complete_upload_body import CompleteUploadBody  # noqa: F401
@@ -28,7 +29,7 @@ def test_abort_multipart_upload(client: TestClient):
 
     Abort Multipart Upload
     """
-    abort_upload_body = {"upload_id": "UploadID", "object_name": "ObjectName"}
+    abort_upload_body = {"dataset_id": "1234/124.245", "upload_id": "UploadID", "object_name": "ObjectName"}
 
     headers = {
         "Authorization": "Bearer special-key",
@@ -44,7 +45,7 @@ def test_abort_multipart_upload(client: TestClient):
     assert response.status_code == 201
 
 
-def mock_complete_multipart_upload(*args, **kwargs) -> CompleteUploadResp:
+async def mock_complete_multipart_upload(*args, **kwargs) -> CompleteUploadResp:
     return CompleteUploadResp(location="", key="")
 
 
@@ -55,7 +56,7 @@ def test_complete_upload(client: TestClient):
 
     Complete Upload
     """
-    complete_upload_body = {"parts": [{"part_number": 1, "etag": "e_tag", "checksum_sha256": "ChecksumSHA256"}, {
+    complete_upload_body = {"dataset_id": "1234/124.245", "parts": [{"part_number": 1, "etag": "e_tag", "checksum_sha256": "ChecksumSHA256"}, {
         "part_number": 0, "etag": "ETag", "checksum_sha256": "ChecksumSHA256"}], "upload_id": "UploadID", "object_name": "ObjectName", "checksum_sha256": "ChecksumSHA256"}
 
     headers = {
@@ -84,7 +85,7 @@ def test_get_presigned_urls(client: TestClient):
 
     Get Presigned Urls
     """
-    presigned_url_body = {"parts": 1, "object_name": "ObjectName"}
+    presigned_url_body = {"dataset_id": "1234/124.245", "parts": 1, "object_name": "ObjectName"}
 
     headers = {
         "Authorization": "Bearer special-key",
@@ -112,7 +113,7 @@ def test_get_presigned_urls_multipart(client: TestClient):
 
     Get Presigned Urls
     """
-    presigned_url_body = {"parts": 2, "object_name": "ObjectName"}
+    presigned_url_body = {"dataset_id": "1234/124.245", "parts": 2, "object_name": "ObjectName"}
 
     headers = {
         "Authorization": "Bearer special-key",
@@ -141,7 +142,7 @@ def test_finalize_dataset_upload(client: TestClient):
     Get Presigned Urls
     """
     finalize_upload_body = {
-        "dataset_pid": "dataset/id",
+        "dataset_id": "dataset/id",
         "create_archiving_job": False,
         "owner_group": "group",
         "owner_user": "user",
@@ -157,6 +158,36 @@ def test_finalize_dataset_upload(client: TestClient):
         "/s3/finalizeDatasetUpload",
         headers=headers,
         json=finalize_upload_body,
+    )
+
+    # uncomment below to assert the status code of the HTTP response
+    assert response.status_code == 201
+
+
+async def mock_abort_upload(*args, **kwargs):
+    return AbortDatasetUploadResp(dataset_id="", message="")
+
+
+@patch("openapi_server.impl.s3upload_impl.abort_upload", mock_abort_upload)
+@patch("openapi_server.security_api.validate_token", mock_validate_token)
+def test_abort_dataset_upload(client: TestClient):
+    """Test case for aborting an upload
+
+    Get Presigned Urls
+    """
+    abort_upload_body = {
+        "dataset_id": "dataset/id",
+    }
+
+    headers = {
+        "Authorization": "Bearer special-key",
+    }
+    # uncomment below to make a request
+    response = client.request(
+        "POST",
+        "/s3/abortDatasetUpload",
+        headers=headers,
+        json=abort_upload_body,
     )
 
     # uncomment below to assert the status code of the HTTP response

@@ -1,38 +1,64 @@
 
+from fastapi.responses import JSONResponse
 import pytest
 from openapi_server.impl.s3 import request_upload
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
-LANDING_ZONE = "dev.landingzone"
-
-
-async def mock_get_landingzone_bucket():
-    return LANDING_ZONE
+from openapi_server.models.upload_request_successful_resp import UploadRequestSuccessfulResp
 
 
-async def mock_fetch_metrics():
-    landingzone = await mock_get_landingzone_bucket()
-    metric_quota = {"labels": {"bucket": landingzone}}
-    metric_quota["value"] = 1000 * 1024**3
-
-    metric_usage = dict()
-    metric_usage = {"labels": {"bucket": landingzone}}
-    metric_usage["value"] = 700 * 1024**3
-
-    return [metric_quota], [metric_usage]
+async def mock_get_s3_client(*args, **kwargs):
+    return None
 
 
-@patch("openapi_server.impl.s3.get_landingzone_bucket", mock_get_landingzone_bucket)
-@patch("openapi_server.impl.s3.fetch_metrics", mock_fetch_metrics)
+async def mock_get_minio_admin_client(*args, **kwargs):
+    return None
+
+
+def mock_get_usage_info(*args, **kwargs):
+    return {'objectsTotalSize': 100}
+
+
+def mock_get_bucket_names(*args, **kwargs):
+    return ['bucket-1', 'bucket-2']
+
+
+def mock_get_bucket_quota(*args, **kwargs):
+    return None
+
+
+def mock_get_total_quota(*args, **kwargs):
+    return 700
+
+
+def create_bucket(*args, **kwargs):
+    pass
+
+
+def set_bucket_quota(*args, **kwargs):
+    pass
+
+
+@patch("openapi_server.impl.s3.get_s3_client", mock_get_s3_client)
+@patch("openapi_server.impl.s3.get_minio_admin_client", mock_get_minio_admin_client)
+@patch("openapi_server.impl.s3.get_usage_info", mock_get_usage_info)
+@patch("openapi_server.impl.s3.get_bucket_names", mock_get_bucket_names)
+@patch("openapi_server.impl.s3.get_bucket_quota", mock_get_bucket_quota)
+@patch("openapi_server.impl.s3.get_total_quota", mock_get_total_quota)
+@patch("openapi_server.impl.s3.create_bucket")
+@patch("openapi_server.impl.s3.set_bucket_quota")
 @pytest.mark.asyncio
-async def test_request_upload():
+async def test_request_upload(create_bucket: MagicMock, set_bucket_quota: MagicMock):
     # More than 10% left
     dataset_pid = "test/11.22.33"
     dataset_size_gb = 100
 
     resp = await request_upload(dataset_pid, dataset_size_gb)
 
-    assert resp.ok is True
+    assert type(resp) is UploadRequestSuccessfulResp
+
+    create_bucket.assert_called_once()
+    set_bucket_quota.assert_called_once()
 
     # Less than 10% left
     dataset_pid = "test/11.22.33"
@@ -40,4 +66,8 @@ async def test_request_upload():
 
     resp = await request_upload(dataset_pid, dataset_size_gb)
 
-    assert resp.ok is False
+    assert type(resp) is JSONResponse
+    assert resp.status_code == 507
+
+    create_bucket.assert_called_once()
+    set_bucket_quota.assert_called_once()

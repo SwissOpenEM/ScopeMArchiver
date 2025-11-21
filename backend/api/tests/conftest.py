@@ -12,7 +12,7 @@ def env_fixture():
         "PREFECT_API_URL": "https://prefect.io/api",
         "PREFECT_LOGGING_LEVEL": "debug",
         "MINIO_ENDPOINT": "min.io",
-        "MINIO_METRICS_TOKEN": "token",
+        "MINIO_TOTAL_LANDING_SPACE_TB": "1",
         "MINIO_USER": "user",
         "MINIO_PASSWORD": "pw",
         "IDP_CLIENT_SECRET": "secret",

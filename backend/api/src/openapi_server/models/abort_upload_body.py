@@ -31,9 +31,10 @@ class AbortUploadBody(BaseModel):
     """
     AbortUploadBody
     """ # noqa: E501
+    dataset_id: StrictStr
     upload_id: StrictStr
     object_name: StrictStr
-    __properties: ClassVar[List[str]] = ["upload_id", "object_name"]
+    __properties: ClassVar[List[str]] = ["dataset_id", "upload_id", "object_name"]
 
     model_config = {
         "populate_by_name": True,
@@ -84,6 +85,7 @@ class AbortUploadBody(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
+            "dataset_id": obj.get("dataset_id"),
             "upload_id": obj.get("upload_id"),
             "object_name": obj.get("object_name")
         })

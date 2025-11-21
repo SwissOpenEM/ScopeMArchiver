@@ -20,19 +20,19 @@ import json
 
 
 
-from pydantic import BaseModel, ConfigDict, Field, StrictBool
+from pydantic import BaseModel, ConfigDict, StrictStr
 from typing import Any, ClassVar, Dict, List
 try:
     from typing import Self
 except ImportError:
     from typing_extensions import Self
 
-class UploadRequestResp(BaseModel):
+class UploadRequestSuccessfulResp(BaseModel):
     """
-    UploadRequestResp
+    UploadRequestSuccessfulResp
     """ # noqa: E501
-    ok: StrictBool = Field(alias="Ok")
-    __properties: ClassVar[List[str]] = ["Ok"]
+    message: StrictStr
+    __properties: ClassVar[List[str]] = ["message"]
 
     model_config = {
         "populate_by_name": True,
@@ -52,7 +52,7 @@ class UploadRequestResp(BaseModel):
 
     @classmethod
     def from_json(cls, json_str: str) -> Self:
-        """Create an instance of UploadRequestResp from a JSON string"""
+        """Create an instance of UploadRequestSuccessfulResp from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self) -> Dict[str, Any]:
@@ -75,7 +75,7 @@ class UploadRequestResp(BaseModel):
 
     @classmethod
     def from_dict(cls, obj: Dict) -> Self:
-        """Create an instance of UploadRequestResp from a dict"""
+        """Create an instance of UploadRequestSuccessfulResp from a dict"""
         if obj is None:
             return None
 
@@ -83,7 +83,7 @@ class UploadRequestResp(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "Ok": obj.get("Ok")
+            "message": obj.get("message")
         })
         return _obj
 

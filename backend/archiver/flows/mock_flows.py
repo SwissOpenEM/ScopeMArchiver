@@ -37,7 +37,7 @@ def headers(token: SecretStr):
     }
 
 
-@task(task_run_name=generate_task_name_dataset, persist_result=True, log_prints=True)
+@task(task_run_name=generate_task_name_dataset, persist_result=True, log_prints=True )
 def create_dummy_dataset(
     dataset_id: str,
     file_size_MB: int,
@@ -56,10 +56,13 @@ def create_dummy_dataset(
             f"dd if=/dev/urandom of={raw_files_folder}/file_{i}.bin bs={file_size_MB}M count=1 iflag=fullblock"
         )
 
+    bucket = Bucket.landingzone_bucket(dataset_id)
+    get_s3_client().create_bucket(bucket)
+
     files = upload_objects_to_s3(
         get_s3_client(),
         prefix=Path(StoragePaths.relative_raw_files_folder(dataset_id)),
-        bucket=Bucket.landingzone_bucket(),
+        bucket=bucket,
         source_folder=raw_files_folder,
     )
 
@@ -293,7 +296,7 @@ def verify_dataset_in_scicat(dataset_pid, scicat_token):
     assert dataset is not None
 
     getLogger().info(dataset)
-    # Verify Scicat datasetlifecycle
+    # Verify Scicat datasetlifecycle 
     dataset_lifecycle = dataset.get("datasetlifecycle")
     getLogger().info(dataset_lifecycle)
     # assert dataset_lifecycle is not None
@@ -349,14 +352,7 @@ def verify_data_from_minio(dataset_pid, datablock_name, datablock_url):
 
 class AssertionFailure(Exception):
     message: str
-    pass
 
-
-def on_test_flow_failure(flow: Flow, flow_run: FlowRun, state: State):
-    try:
-        state.result()
-    except AssertionFailure as assertion:
-        getLogger().error(f"TEST ASSERTION FAILED: {assertion.message}")
 
 
 def ASSERT(expression: bool):

@@ -2,6 +2,8 @@
 
 from typing import ClassVar, Dict, List, Tuple  # noqa: F401
 
+from openapi_server.models.abort_dataset_upload_body import AbortDatasetUploadBody
+from openapi_server.models.abort_dataset_upload_resp import AbortDatasetUploadResp
 from openapi_server.models.abort_upload_body import AbortUploadBody
 from openapi_server.models.abort_upload_resp import AbortUploadResp
 from openapi_server.models.complete_upload_body import CompleteUploadBody
@@ -13,7 +15,8 @@ from openapi_server.models.internal_error import InternalError
 from openapi_server.models.presigned_url_body import PresignedUrlBody
 from openapi_server.models.presigned_url_resp import PresignedUrlResp
 from openapi_server.models.upload_request_body import UploadRequestBody
-from openapi_server.models.upload_request_resp import UploadRequestResp
+from openapi_server.models.upload_request_successful_resp import UploadRequestSuccessfulResp
+from openapi_server.models.upload_request_unsuccessful_resp import UploadRequestUnsuccessfulResp
 from openapi_server.security_api import get_token_BearerAuth
 
 class BaseS3uploadApi:
@@ -22,6 +25,13 @@ class BaseS3uploadApi:
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
         BaseS3uploadApi.subclasses = BaseS3uploadApi.subclasses + (cls,)
+    async def abort_dataset_upload(
+        self,
+        abort_dataset_upload_body: AbortDatasetUploadBody,
+    ) -> AbortDatasetUploadResp:
+        ...
+
+
     async def abort_multipart_upload(
         self,
         abort_upload_body: AbortUploadBody,
@@ -53,5 +63,5 @@ class BaseS3uploadApi:
     async def request_dataset_upload(
         self,
         upload_request_body: UploadRequestBody,
-    ) -> UploadRequestResp:
+    ) -> UploadRequestSuccessfulResp:
         ...
