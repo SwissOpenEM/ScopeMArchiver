@@ -37,7 +37,7 @@ def headers(token: SecretStr):
     }
 
 
-@task(task_run_name=generate_task_name_dataset, persist_result=True, log_prints=True )
+@task(task_run_name=generate_task_name_dataset, persist_result=True, log_prints=True)
 def create_dummy_dataset(
     dataset_id: str,
     file_size_MB: int,
