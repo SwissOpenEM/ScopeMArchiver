@@ -15,7 +15,7 @@ dependencies = [
     "httpx>=0.28.1",
     "importlib-metadata>=8.5.0",
     "minio>=7.2.18",
-    "prefect==3.6.1",
+    "prefect==3.6.4",
     "pyjwt>=2.10.1",
     "pytest>=8.3.5",
     "requests>=2.32.3",
