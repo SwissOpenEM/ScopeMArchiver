@@ -7,7 +7,7 @@ include:
   # Prefect worker, workpool
   - prefect-worker.docker-compose.yml
   # S3 storage
-  # - minio.docker-compose.yml
+  - ${ASDF:minio.docker-compose.yml}
   # Monitoring stack
   - monitoring.docker-compose.yml
 
