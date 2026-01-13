@@ -1,4 +1,4 @@
-from unittest.mock import patch, MagicMock, call
+from unittest.mock import patch, MagicMock
 import pytest
 from uuid import UUID, uuid4
 
@@ -19,9 +19,6 @@ from flows.tests.helpers import (
     expected_jobresultsobject,
 )
 from scicat.scicat_interface import SciCatClient
-from flows.flow_utils import StoragePaths
-from utils.model import DataBlock
-from config.variables import Variables
 # fmt: on
 
 

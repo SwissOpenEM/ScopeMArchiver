@@ -1,7 +1,7 @@
 from __future__ import annotations
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import functools
-from typing import Callable, Iterable, List
+from typing import Callable, List
 import boto3
 from boto3.s3.transfer import TransferConfig
 from botocore.client import Config
@@ -34,7 +34,7 @@ class Bucket:
     @staticmethod
     def landingzone_bucket(dataset_pid: str) -> Bucket:  # type: ignore
         sanatized_name = dataset_pid
-        for c in ['_', '/']:
+        for c in ["_", "/"]:
             sanatized_name = sanatized_name.replace(c, "-")
         sanatized_name = sanatized_name.lower()
         return Bucket(sanatized_name)
@@ -140,7 +140,7 @@ class S3Storage:
         try:
             object = self._minio.head_object(Bucket=bucket.name, Key=filename)
             return S3Storage.StatInfo(Size=object["ContentLength"])
-        except:
+        except Exception:
             return None
 
     @log_debug
@@ -224,19 +224,19 @@ class S3Storage:
     @log
     def create_bucket(self, bucket: Bucket) -> None:
         self._minio.create_bucket(
-            ACL='authenticated-read',
+            ACL="authenticated-read",
             Bucket=bucket.name,
             CreateBucketConfiguration={
-                'LocationConstraint': 'eu-west-1',
+                "LocationConstraint": "eu-west-1",
             },
             ObjectLockEnabledForBucket=False,
-            ObjectOwnership='ObjectWriter'
+            ObjectOwnership="ObjectWriter",
         )
-
 
     @log
     def delete_bucket(self, bucket: Bucket) -> None:
         self._minio.delete_bucket(Bucket=bucket.name)
+
 
 @functools.cache
 def get_s3_client() -> S3Storage:

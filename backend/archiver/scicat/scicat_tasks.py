@@ -215,7 +215,7 @@ def create_job_result_object_task(dataset_ids: List[str]) -> JobResultObject:
 
     markdown = f"""Download script for all datablocks in this job\n```bash\n{script}\n```\n"""
 
-    create_markdown_artifact(key=f"script", markdown=markdown)
+    create_markdown_artifact(key="script", markdown=markdown)
 
     return job_results_object
 

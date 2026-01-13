@@ -1,16 +1,13 @@
 import math
 from pathlib import Path
-import time
 from typing import List
 from functools import partial
-import asyncio
 from uuid import UUID
 
 
 from prefect import flow, task, State, Task, Flow
 from prefect.client.schemas.objects import TaskRun, FlowRun
 from prefect.futures import wait as wait_for_futures
-from prefect.states import Failed
 from prefect.artifacts import (
     create_progress_artifact,
     update_progress_artifact,
@@ -90,7 +87,9 @@ def download_origdatablocks(dataset_id: str, origDataBlocks: List[OrigDataBlock]
             update_progress.last_progress = progress
             update_progress_artifact(artifact_id=progress_artifact_id, progress=progress)
 
-    getLogger().info(f"Downloading {total_file_count} objects from bucket {Bucket.landingzone_bucket(dataset_id)}")
+    getLogger().info(
+        f"Downloading {total_file_count} objects from bucket {Bucket.landingzone_bucket(dataset_id)}"
+    )
     # files with full path are downloaded to scratch root
     file_paths = datablocks_operations.download_objects_from_s3(
         s3_client,
@@ -370,7 +369,7 @@ def on_job_flow_cancellation(flow: Flow, flow_run: FlowRun, state: State):
         s3_client = get_s3_client()
         for dataset_id in dataset_ids:
             datablocks_operations.cleanup_s3_staging(s3_client, dataset_id)
-    except:
+    except Exception:
         pass
 
     for dataset_id in dataset_ids:

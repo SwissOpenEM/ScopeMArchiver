@@ -252,7 +252,7 @@ class SciCatClient:
         for r in result.json():
             try:
                 origdatablocks.append(OrigDataBlock.model_validate(r))
-            except:
+            except Exception:
                 origdatablocks.append(OrigDataBlock.model_validate_json(r))
         return origdatablocks
 
@@ -285,6 +285,6 @@ class SciCatClient:
         for r in result.json():
             try:
                 datablocks.append(DataBlock.model_validate(r))
-            except:
+            except Exception:
                 datablocks.append(DataBlock.model_validate_json(r))
         return datablocks

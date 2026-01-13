@@ -5,7 +5,6 @@ import tarfile
 import os
 import shutil
 import asyncio
-import time
 import datetime
 import hashlib
 
@@ -438,11 +437,11 @@ def verify_checksum(dataset_id: str, datablock: DataBlock, expected_checksum: st
 def print_error_log():
     getLogger().error("dsmerror.log:\n")
     try:
-        with open('dsmerror.log', 'r') as f:
+        with open("dsmerror.log", "r") as f:
             for line in f:
                 getLogger().error(line)
-    except:
-        getLogger().error("Failed to read dsmerror.log")
+    except Exception as e:
+        getLogger().error(f"Failed to read dsmerror.log: {e}")
 
 
 @log

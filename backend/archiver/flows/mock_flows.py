@@ -1,9 +1,8 @@
-import random
 import tempfile
 import time
 from typing import Any, Dict, Optional
 import uuid
-from prefect import Flow, State, flow, task
+from prefect import State, flow, task
 import os
 import datetime
 import shutil
@@ -37,7 +36,7 @@ def headers(token: SecretStr):
     }
 
 
-@task(task_run_name=generate_task_name_dataset, persist_result=True, log_prints=True )
+@task(task_run_name=generate_task_name_dataset, persist_result=True, log_prints=True)
 def create_dummy_dataset(
     dataset_id: str,
     file_size_MB: int,
@@ -296,7 +295,7 @@ def verify_dataset_in_scicat(dataset_pid, scicat_token):
     assert dataset is not None
 
     getLogger().info(dataset)
-    # Verify Scicat datasetlifecycle 
+    # Verify Scicat datasetlifecycle
     dataset_lifecycle = dataset.get("datasetlifecycle")
     getLogger().info(dataset_lifecycle)
     # assert dataset_lifecycle is not None
@@ -354,14 +353,13 @@ class AssertionFailure(Exception):
     message: str
 
 
-
 def ASSERT(expression: bool):
     if not expression:
         from inspect import getframeinfo, stack
 
         def debuginfo():
             caller = getframeinfo(stack()[2][0])
-            return f"%s" % (caller.code_context[0])
+            return "%s" % (caller.code_context[0])
 
         a = AssertionFailure()
         a.message = debuginfo()

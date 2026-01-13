@@ -2,7 +2,6 @@ from typing import List
 from functools import partial
 from uuid import UUID
 import uuid
-from pydantic import SecretStr
 
 from prefect import flow, get_client, task, State, Task, Flow
 from prefect.client.schemas.objects import TaskRun, FlowRun
@@ -22,7 +21,6 @@ from .task_utils import (
 )
 from .flow_utils import report_retrieval_error
 from scicat.scicat_interface import SciCatClient
-from utils.model import DataBlock, JobResultObject
 from scicat.scicat_tasks import (
     update_scicat_retrieval_job_status,
     update_scicat_retrieval_dataset_lifecycle,
@@ -36,8 +34,8 @@ from scicat.scicat_tasks import (
     get_datablocks,
 )
 from config.concurrency_limits import ConcurrencyLimits
-from config.variables import Variables
 import utils.datablocks as datablocks_operations
+from utils.model import DataBlock
 
 
 def on_get_datablocks_error(dataset_id: str, task: Task, task_run: TaskRun, state: State):
@@ -185,10 +183,7 @@ def find_oldest_dataset_flow(
     return None
 
 
-@flow(
-    name="wait_for_retrieval_flow",
-    log_prints=True
-)
+@flow(name="wait_for_retrieval_flow", log_prints=True)
 async def wait_for_retrieval_flow(flow_run_id: uuid.UUID):
     flow_run: FlowRun = await wait_for_flow_run(flow_run_id, log_states=True, timeout=None, poll_interval=60)
     flow_run.state.result()
