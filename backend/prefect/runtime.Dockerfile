@@ -28,7 +28,7 @@ COPY --from=builder --chown=app:app /app/backend/archiver /app/backend/archiver
 
 RUN uv add pytest
 
-RUN uv run pytest tests --junitxml=junit/test-results.xml --cov=. --cov-report=xml --cov-report=html
+RUN uv run pytest . --junitxml=junit/test-results.xml --cov=. --cov-report=xml --cov-report=html
 
 
 FROM prefecthq/prefect:${PREFECT_VERSION} AS runtime
