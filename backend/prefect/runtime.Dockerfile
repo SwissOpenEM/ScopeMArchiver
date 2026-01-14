@@ -57,7 +57,15 @@ RUN mkdir /storage
 ARG USER=app
 RUN useradd -rm -d /home/${USER} -s /bin/bash  -u ${UID} ${USER}
 
-RUN chown ${UID}:${USER} /storage
+RUN chown ${UID}:${GID} /storage
+
+COPY --from=storage-client --chown=${UID}:${GID} dsm.opt /opt/tivoli/tsm/client/ba/bin/dsm.opt
+COPY --from=storage-client --chown=${UID}:${GID} dsm.sys /opt/tivoli/tsm/client/ba/bin/dsm.sys
+COPY --from=storage-client --chown=${UID}:${GID} dsmcert /opt/tivoli/tsm/client/ba/bin/dsmcert
+COPY --from=storage-client --chown=${UID}:${GID} dsmcert.idx /opt/tivoli/tsm/client/ba/bin/dsmcert.idx
+COPY --from=storage-client --chown=${UID}:${GID} dsmcert.kdb /opt/tivoli/tsm/client/ba/bin/dsmcert.kdb
+COPY --from=storage-client --chown=${UID}:${GID} dsmcert.sth /opt/tivoli/tsm/client/ba/bin/dsmcert.sth
+COPY --from=storage-client --chown=${UID}:${GID} adsm/ /etc/adsm/
 
 USER ${USER}
 

@@ -77,10 +77,15 @@ In order to use the [Storage Protect client](https://www.ibm.com/docs/en/storage
 3. In the container, register client
 
    ```bash
-   root@ubuntu> dmsc
+   root@ubuntu> dsmc
    ```
 
    Enter user name and password when prompted
+
+4. Exit the storage client
+   ```bash
+   Protect> quit
+   ```
 
 4. Copy all files and folders in table above into mounted host folder
    root@ubuntu>cp /opt/tivoli/tsm/client/ba/bin/dsm.opt /mnt/

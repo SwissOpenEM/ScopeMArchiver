@@ -437,7 +437,11 @@ def verify_checksum(dataset_id: str, datablock: DataBlock, expected_checksum: st
 def print_error_log():
     getLogger().error("dsmerror.log:\n")
     try:
-        with open("dsmerror.log", "r") as f:
+        error_log =Path("dsmerror.log") 
+        if not error_log.exists:
+            getLogger().error(f"dsmerror.log not found: {error_log}")
+            return
+        with open(error_log, "r") as f:
             for line in f:
                 getLogger().error(line)
     except Exception as e:
