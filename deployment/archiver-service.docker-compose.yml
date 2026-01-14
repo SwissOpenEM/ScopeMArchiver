@@ -45,7 +45,7 @@ services:
     container_name: prefect-server
     restart: always
     volumes:
-      - prefect-volume-new:/root/.prefect
+      - prefect-volume:/root/.prefect
     privileged: false
     entrypoint:
       - /bin/sh
@@ -113,7 +113,7 @@ services:
     expose:
       - 5432
     volumes:
-      - postgres-volume-new:/var/lib/postgresql/data
+      - postgres-volume:/var/lib/postgresql/data
     networks:
       - scopemarchiver_network
 
@@ -198,17 +198,19 @@ services:
     depends_on:
       prefect-server:
         condition: service_healthy
+      prefect-config:
+        condition: service_completed_successfully
     labels:
       - "traefik.enable=false"
 volumes:
-  postgres-volume-new:
-    name: scopemarchiver_postgres-volume-new
-    # driver: local
-    external: true
-  prefect-volume-new:
-    name: scopemarchiver_prefect-volume-new
-    # driver: local
-    external: true
+  postgres-volume:
+    name: scopemarchiver_postgres-volume
+    driver: local
+    # external: true
+  prefect-volume:
+    name: scopemarchiver_prefect-volume
+    driver: local
+    # external: true
 
 secrets:
   postgres_user:

@@ -44,9 +44,7 @@
           "type": "string"
         },
         "title": "Volumes",
-        "default": [
-          ""
-        ],
+        "default": [],
         "example": [
           "/my/local/path:/path/in/container"
         ],
