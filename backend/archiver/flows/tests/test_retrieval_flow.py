@@ -127,17 +127,6 @@ async def test_scicat_api_retrieval(
         mock_cleanup_scratch.assert_called_once_with(dataset_id)
         mock_verify_datablock_content.assert_called()
 
-        # dst_folder = StoragePaths.scratch_archival_datablocks_folder(dataset_id)
-        # calls = [
-        #     call(
-        #         src_file=Variables().LTS_STORAGE_ROOT / d.archiveId,
-        #         dst_folder=dst_folder,
-        #     )
-        #     for d in datablocks
-        # ]
-
-        # mock_copy_file_to_folder.assert_has_calls(calls, any_order=True)
-
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
