@@ -211,13 +211,14 @@ jobs:
             # pull request event
             type=ref,event=pr
 
-      - name: Build and push Docker image
+      - name: Build and test runtime image
         id: build-and-push
         uses: docker/build-push-action@v6
         with:
           context: ./backend/archiver
           file: ./backend/prefect/runtime.Dockerfile
-          push: ${{ github.event_name != 'pull_request' }}
+          target: test_runner
+          push: false
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 

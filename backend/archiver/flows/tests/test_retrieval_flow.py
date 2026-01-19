@@ -1,15 +1,9 @@
-from unittest.mock import patch, MagicMock, call
+from unittest.mock import patch, MagicMock
 import pytest
 from uuid import UUID, uuid4
 
 from prefect.testing.utilities import prefect_test_harness
 from prefect.exceptions import UnfinishedRun
-
-# In order to disable retries for the test, the task needs to be patched
-# There does not seem to be a working way to configure this
-from flows.retrieve_datasets_flow import copy_datablock_from_LTS_to_scratch
-
-copy_datablock_from_LTS_to_scratch.retries = 0
 
 # fmt: off
 from flows.retrieve_datasets_flow import retrieve_datasets_flow
@@ -25,14 +19,7 @@ from flows.tests.helpers import (
     expected_jobresultsobject,
 )
 from scicat.scicat_interface import SciCatClient
-from flows.flow_utils import StoragePaths
-from utils.model import DataBlock
-from config.variables import Variables
 # fmt: on
-
-
-def mock_get_datablock_path_in_LTS(datablock: DataBlock):
-    return Variables().LTS_STORAGE_ROOT / datablock.archiveId
 
 
 def mock_create_presigned_url(*args, **kwargs) -> str:
@@ -47,12 +34,12 @@ def mock_scicat_get_token() -> str:
     return "secret-test-string"
 
 
-async def mock_wait_for_file_accessible(file, timeout_s=360) -> bool:
-    return True
-
-
 def mock_find_missing_datablocks_in_s3(*args, **kwargs):
     return kwargs["datablocks"]
+
+
+def mock_retrieve_datablock(*args, **kwargs):
+    pass
 
 
 @pytest.mark.asyncio
@@ -63,17 +50,11 @@ def mock_find_missing_datablocks_in_s3(*args, **kwargs):
     ],
 )
 @patch("scicat.scicat_tasks.scicat_client", mock_scicat_client)
-@patch(
-    "utils.datablocks.get_datablock_path_in_LTS",
-    mock_get_datablock_path_in_LTS,
-)
-@patch("utils.datablocks.wait_for_file_accessible", mock_wait_for_file_accessible)
 @patch("utils.datablocks.find_missing_datablocks_in_s3", mock_find_missing_datablocks_in_s3)
-@patch("utils.datablocks.copy_file_to_folder")
 @patch("scicat.scicat_tasks.create_presigned_url", mock_create_presigned_url)
+@patch("utils.datablocks.retrieve_datablock", mock_retrieve_datablock)
 @patch("utils.datablocks.verify_datablock_content")
 @patch("utils.datablocks.upload_datablock")
-@patch("utils.datablocks.cleanup_lts_folder")
 @patch("utils.datablocks.cleanup_scratch")
 @patch("utils.datablocks.cleanup_s3_staging")
 @patch("utils.datablocks.cleanup_s3_landingzone")
@@ -83,15 +64,12 @@ async def test_scicat_api_retrieval(
     mock_cleanup_s3_landingzone: MagicMock,
     mock_cleanup_s3_staging: MagicMock,
     mock_cleanup_scratch: MagicMock,
-    mock_cleanup_lts: MagicMock,
     mock_upload_datablock: MagicMock,
     mock_verify_datablock_content: MagicMock,
-    mock_copy_file_to_folder: MagicMock,
     job_id: UUID,
     dataset_id: str,
     mocked_s3,
 ):
-    # data in LTS
     # datablock in SciCat mock
     num_orig_datablocks = 10
     num_datablocks = 10
@@ -147,19 +125,7 @@ async def test_scicat_api_retrieval(
         mock_cleanup_s3_landingzone.assert_not_called()
         mock_cleanup_s3_staging.assert_not_called()
         mock_cleanup_scratch.assert_called_once_with(dataset_id)
-        mock_cleanup_lts.assert_not_called()
         mock_verify_datablock_content.assert_called()
-
-        dst_folder = StoragePaths.scratch_archival_datablocks_folder(dataset_id)
-        calls = [
-            call(
-                src_file=Variables().LTS_STORAGE_ROOT / d.archiveId,
-                dst_folder=dst_folder,
-            )
-            for d in datablocks
-        ]
-
-        mock_copy_file_to_folder.assert_has_calls(calls, any_order=True)
 
 
 @pytest.mark.asyncio
@@ -171,13 +137,11 @@ async def test_scicat_api_retrieval(
 )
 @patch("scicat.scicat_tasks.scicat_client", mock_scicat_client)
 @patch("utils.datablocks.find_missing_datablocks_in_s3", mock_find_missing_datablocks_in_s3)
-@patch("utils.datablocks.get_datablock_path_in_LTS", mock_raise_system_error)
-@patch("utils.datablocks.wait_for_file_accessible", mock_wait_for_file_accessible)
-@patch("utils.datablocks.copy_file_to_folder")
 @patch("scicat.scicat_tasks.create_presigned_url", mock_create_presigned_url)
+@patch("scicat.scicat_tasks.create_presigned_url", mock_create_presigned_url)
+@patch("utils.datablocks.retrieve_datablock", mock_raise_system_error)
 @patch("utils.datablocks.verify_datablock_content")
 @patch("utils.datablocks.upload_datablock")
-@patch("utils.datablocks.cleanup_lts_folder")
 @patch("utils.datablocks.cleanup_scratch")
 @patch("utils.datablocks.cleanup_s3_staging")
 @patch("utils.datablocks.cleanup_s3_landingzone")
@@ -187,10 +151,8 @@ async def test_datablock_not_found(
     mock_cleanup_s3_landingzone: MagicMock,
     mock_cleanup_s3_staging: MagicMock,
     mock_cleanup_scratch: MagicMock,
-    mock_cleanup_lts: MagicMock,
     mock_upload_datablock: MagicMock,
     mock_verify_datablock_content: MagicMock,
-    mock_copy_file_to_folder: MagicMock,
     job_id,
     dataset_id,
     mocked_s3,
@@ -249,6 +211,4 @@ async def test_datablock_not_found(
         mock_cleanup_s3_landingzone.assert_not_called()
         mock_cleanup_s3_staging.assert_not_called()
         mock_cleanup_scratch.assert_called_once_with(dataset_id)
-        mock_cleanup_lts.assert_not_called()
-        mock_copy_file_to_folder.assert_not_called()
         mock_verify_datablock_content.assert_not_called()

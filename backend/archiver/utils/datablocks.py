@@ -5,7 +5,6 @@ import tarfile
 import os
 import shutil
 import asyncio
-import time
 import datetime
 import hashlib
 
@@ -400,47 +399,27 @@ def find_object_in_s3(client: S3Storage, dataset_id, datablock_name):
 
 
 @log
-def move_data_to_LTS(dataset_id: str, datablock: DataBlock):
-    if not Variables().LTS_STORAGE_ROOT.exists():
-        raise FileNotFoundError(f"Can't open LTS root {Variables().LTS_STORAGE_ROOT}")
-
-    datablock_name = datablock.archiveId
-
+def build_archiving_path(dataset_id: str, datablock: DataBlock) -> Path:
     datablocks_scratch_folder = StoragePaths.scratch_archival_datablocks_folder(dataset_id)
     datablocks_scratch_folder.mkdir(parents=True, exist_ok=True)
 
     datablock_name = Path(datablock.archiveId).name
     datablock_full_path = datablocks_scratch_folder / datablock_name
-
-    if not datablock_full_path.exists():
-        raise DatasetError(
-            f"Datablock {datablock_name} not found in storage at {StoragePaths.relative_datablocks_folder(dataset_id)}"
-        )
-
-    lts_target_dir = StoragePaths.lts_datablocks_folder(dataset_id)
-    lts_target_dir.mkdir(parents=True, exist_ok=True)
-
-    getLogger().info("Copy datablock to LTS")
-
-    # Copy to LTS
-    copy_file_to_folder(src_file=datablock_full_path.absolute(), dst_folder=lts_target_dir.absolute())
+    return Path(datablock_full_path)
 
 
 @log
-def copy_file_from_LTS(dataset_id: str, datablock: DataBlock):
-    lts_target_dir = StoragePaths.lts_datablocks_folder(dataset_id)
-    datablock_name = Path(datablock.archiveId).name
+def archive_datablock(dataset_id: str, datablock: DataBlock):
+    datablock_full_path = build_archiving_path(dataset_id=dataset_id, datablock=datablock)
 
-    lts_datablock_path = lts_target_dir / datablock_name
+    if not datablock_full_path.exists():
+        raise DatasetError(
+            f"Datablock {datablock_full_path.name} not found in storage at {StoragePaths.relative_datablocks_folder(dataset_id)}"
+        )
 
-    asyncio.run(
-        wait_for_file_accessible(lts_datablock_path.absolute(), Variables().ARCHIVER_LTS_FILE_TIMEOUT_S)
-    )
+    getLogger().info("Archiving datablock")
 
-    # Copy back from LTS to scratch
-    verification_path = StoragePaths.scratch_archival_datablocks_folder(dataset_id) / "verification"
-    verification_path.mkdir(exist_ok=True)
-    copy_file_to_folder(src_file=lts_datablock_path, dst_folder=verification_path)
+    archive_file(file=datablock_full_path.absolute())
 
 
 @log
@@ -455,37 +434,38 @@ def verify_checksum(dataset_id: str, datablock: DataBlock, expected_checksum: st
         )
 
 
+def print_error_log():
+    getLogger().error("dsmerror.log:\n")
+    try:
+        error_log =Path("dsmerror.log") 
+        if not error_log.exists:
+            getLogger().error(f"dsmerror.log not found: {error_log}")
+            return
+        with open(error_log, "r") as f:
+            for line in f:
+                getLogger().error(line)
+    except Exception as e:
+        getLogger().error(f"Failed to read dsmerror.log: {e}")
+
+
 @log
-def copy_file_to_folder(src_file: Path, dst_folder: Path):
-    """Copies a file to a destination folder (does not need to exist)
+def archive_file(file: Path):
+    """Archives the file in the backen storage system
 
     Args:
-        src_file (Path): Source file
-        dst_folder (Path): destination folder - needs to exist
+        file (Path): Source file and unique identifier in the storage system
 
     Raises:
         SystemError: raises if operation fails
     """
-    if not src_file.exists() or not src_file.is_file():
-        raise SystemError(f"Source file {src_file} is not a file or does not exist")
-    if dst_folder.is_file():
-        raise SystemError(f"Destination folder {dst_folder} is not a folder")
-
-    getLogger().info(f"Start Copy operation. src:{src_file}, dst{dst_folder}")
-
-    expected_dst_file = dst_folder / src_file.name
+    if not file.exists() or not file.is_file():
+        raise SystemError(f"Source file {file} is not a file or does not exist")
 
     with subprocess.Popen(
         [
-            "rsync",
-            "-rcvh",  # r: recursive, c: checksum, v: verbose, h: human readable format
-            "--stats",  # file transfer stats
-            "--no-perms",  # don't preserve the file permissions of the source files
-            "--no-owner",  # don't preserve the owner
-            "--no-group",  # don't preserve the group ownership
-            "--mkpath",
-            str(src_file),
-            str(dst_folder),
+            "dsmc",
+            "archive",
+            f"'{file}'",
         ],
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
@@ -498,11 +478,10 @@ def copy_file_to_folder(src_file: Path, dst_folder: Path):
         return_code = popen.wait()
         if return_code > 0:
             getLogger().error(f"Finished with return code : {return_code}")
+            print_error_log()
+            raise SystemError("Archiving Operation failed")
         else:
             getLogger().info(f"Finished with return code : {return_code}")
-
-    if not expected_dst_file.exists():
-        raise SystemError(f"Copying did not produce file {expected_dst_file}")
 
 
 @log
@@ -531,12 +510,6 @@ def verify_datablock_content(datablock: DataBlock, datablock_path: str):
             raise SystemError(
                 f"Datablock verification failed: expected checksum {expected_checksum} but got actual {checksum} for {file}"
             )
-
-
-@log
-def cleanup_lts_folder(dataset_id: str) -> None:
-    lts_folder = StoragePaths.lts_datablocks_folder(dataset_id)
-    shutil.rmtree(lts_folder, ignore_errors=True)
 
 
 @log
@@ -592,40 +565,6 @@ def cleanup_scratch(dataset_id: str):
 
 
 @log
-def sufficient_free_space_on_lts():
-    """Checks for free space on configured LTS storage with respect to configured free space percentage.
-
-    Returns:
-        boolean: condition of eneough free space satisfied
-    """
-
-    path = Variables().LTS_STORAGE_ROOT
-    stat = shutil.disk_usage(path)
-    free_percentage = 100.0 * stat.free / stat.total
-    getLogger().info(
-        f"LTS free space:{free_percentage:.2}%, expected: {Variables().LTS_FREE_SPACE_PERCENTAGE:.2}%"
-    )
-    return free_percentage >= Variables().LTS_FREE_SPACE_PERCENTAGE
-
-
-@log
-async def wait_for_free_space():
-    """Asynchronous wait until there is enough free space. Waits in linear intervals to check for free space
-
-        TODO: add exponential backoff for waiting time
-
-    Returns:
-        boolean: Returns True once there is enough free space
-    """
-    while not sufficient_free_space_on_lts():
-        seconds_to_wait = 30
-        getLogger().info(f"Not enough free space. Waiting for {seconds_to_wait}s")
-        await asyncio.sleep(seconds_to_wait)
-
-    return True
-
-
-@log
 async def wait_for_file_accessible(file: Path, timeout_s=360):
     """
     Returns:
@@ -645,16 +584,6 @@ async def wait_for_file_accessible(file: Path, timeout_s=360):
 
 
 @log
-def get_datablock_path_in_LTS(datablock: DataBlock) -> Path:
-    datablock_in_lts = Variables().LTS_STORAGE_ROOT / datablock.archiveId
-
-    if not datablock_in_lts.exists():
-        raise SystemError(f"Datablock {datablock.id} does not exist at {datablock.archiveId} in LTS")
-
-    return datablock_in_lts
-
-
-@log
 def upload_datablock(client: S3Storage, file: Path, datablock: DataBlock):
     # upload to s3 retrieval bucket
     client.fput_object(
@@ -665,18 +594,50 @@ def upload_datablock(client: S3Storage, file: Path, datablock: DataBlock):
 
 
 @log
-def copy_from_LTS_to_scratch_retrieval(dataset_id: str, datablock: DataBlock) -> None:
-    datablock_in_lts = get_datablock_path_in_LTS(datablock)
+def retrieve_file(file: Path):
+    """Copies a file to a destination folder (does not need to exist)
+
+    Args:
+        src_file (Path): Source file
+        dst_folder (Path): destination folder - needs to exist
+
+    Raises:
+        SystemError: raises if operation fails
+    """
+    getLogger().info(f"Start Retrieval operation for {file}")
+
+    with subprocess.Popen(
+        [
+            "dsmc",
+            "retrieve",
+            f"'{file}'",
+        ],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        universal_newlines=True,
+    ) as popen:
+        for line in popen.stdout:
+            getLogger().info(line)
+
+        popen.stdout.close()
+        return_code = popen.wait()
+        if return_code > 0:
+            getLogger().error(f"Finished with return code : {return_code}")
+            print_error_log()
+            raise SystemError("Retrieval Operation failed")
+        else:
+            getLogger().info(f"Finished with return code : {return_code}")
+
+
+@log
+def retrieve_datablock(dataset_id: str, datablock: DataBlock) -> None:
+    datablock_full_path = build_archiving_path(dataset_id=dataset_id, datablock=datablock)
 
     # copy to local folder
     scratch_destination_folder = StoragePaths.scratch_archival_datablocks_folder(dataset_id)
     scratch_destination_folder.mkdir(exist_ok=True, parents=True)
 
-    asyncio.run(
-        wait_for_file_accessible(datablock_in_lts.absolute(), Variables().ARCHIVER_LTS_FILE_TIMEOUT_S)
-    )
-
-    copy_file_to_folder(src_file=datablock_in_lts, dst_folder=scratch_destination_folder)
+    retrieve_file(file=datablock_full_path)
 
 
 @log

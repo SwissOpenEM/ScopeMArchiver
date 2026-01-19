@@ -21,8 +21,8 @@ from config.blocks import Blocks
 
 class SciCatClient:
     class STATUSMESSAGE(StrEnum):
-        """ These are the /api/v3 values for the job status. 
-        """
+        """These are the /api/v3 values for the job status."""
+
         IN_PROGRESS = "inProgress"
         FINISHED_SUCCESSFULLY = "finishedSuccessful"
         FINISHED_UNSUCCESSFULLY = "finishedUnsuccessful"
@@ -144,7 +144,9 @@ class SciCatClient:
         job_result_object: JobResultObject | None,
         token: SecretStr,
     ) -> None:
-        job = Job(statusCode=str(status_code), statusMessage=str(status_message), jobResultObject=job_result_object)
+        job = Job(
+            statusCode=str(status_code), statusMessage=str(status_message), jobResultObject=job_result_object
+        )
 
         headers = self._headers(token)
 
@@ -250,7 +252,7 @@ class SciCatClient:
         for r in result.json():
             try:
                 origdatablocks.append(OrigDataBlock.model_validate(r))
-            except:
+            except Exception:
                 origdatablocks.append(OrigDataBlock.model_validate_json(r))
         return origdatablocks
 
@@ -283,6 +285,6 @@ class SciCatClient:
         for r in result.json():
             try:
                 datablocks.append(DataBlock.model_validate(r))
-            except:
+            except Exception:
                 datablocks.append(DataBlock.model_validate_json(r))
         return datablocks

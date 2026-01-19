@@ -214,11 +214,9 @@ def datablock_fixture(tar_infos_fixture) -> List[DataBlock]:
 
 @pytest.fixture()
 def storage_paths_fixture():
-    lts_root = tempfile.TemporaryDirectory()
     scratch_root = tempfile.TemporaryDirectory()
 
     envs = {
-        "LTS_STORAGE_ROOT": lts_root.name,
         "ARCHIVER_SCRATCH_FOLDER": scratch_root.name,
     }
 
@@ -233,25 +231,9 @@ def storage_paths_fixture():
     # teardown
     import shutil
 
-    lts_root = Path(lts_root.name)
-    if lts_root.exists():
-        shutil.rmtree(lts_root)
-
     scratch_root = Path(scratch_root.name)
     if scratch_root.exists():
         shutil.rmtree(scratch_root)
-
-
-def create_datablock_in_lts(dataset_id: str):
-    StoragePaths.lts_datablocks_folder(dataset_id).mkdir(parents=True, exist_ok=True)
-    file_size_in_bytes = 1024 * 10
-    file_in_lts = tempfile.NamedTemporaryFile(
-        dir=StoragePaths.lts_datablocks_folder(dataset_id), delete=False
-    )
-    with open(file_in_lts.name, "wb") as f:
-        f.write(os.urandom(file_size_in_bytes))
-
-    return file_in_lts
 
 
 def create_raw_files_in_scratch(dataset: str):
@@ -320,19 +302,6 @@ def test_create_datablock_entries(
             assert expected_checksum == datafile.chk
 
 
-def test_copy_file():
-    file = tempfile.NamedTemporaryFile()
-    name = file.name
-    fileSizeInBytes = 1024 * 20
-    with open(name, "wb") as f:
-        f.write(os.urandom(fileSizeInBytes))
-
-    with tempfile.TemporaryDirectory() as dst_folder:
-        datablock_operations.copy_file_to_folder(Path(name).absolute(), Path(dst_folder))
-
-        assert (Path(dst_folder) / Path(name).name).exists()
-
-
 def test_verify_datablock_content(datablock_fixture):
     datablock_folder = StoragePaths.scratch_archival_datablocks_folder(test_dataset_id)
 
@@ -370,17 +339,6 @@ def test_verify_datablock_content(datablock_fixture):
         )
 
 
-def test_cleanup_lts(storage_paths_fixture):
-    dataset = "1"
-    file_in_lts = create_datablock_in_lts(dataset)
-
-    assert Path(file_in_lts.name).exists()
-
-    datablock_operations.cleanup_lts_folder(dataset_id=dataset)
-
-    assert not Path(file_in_lts.name).exists()
-
-
 def test_cleanup_scratch(storage_paths_fixture):
     dataset = "1"
     files_in_scratch = create_files_in_scratch(dataset)
@@ -398,21 +356,6 @@ def mock_find_object_in_s3(*args, **kwargs):
 
 def mock_download_objects_from_s3(*args, **kwargs):
     return [True]
-
-
-@patch("utils.datablocks.find_object_in_s3", mock_find_object_in_s3)
-@patch("utils.datablocks.download_object_from_s3", mock_download_objects_from_s3)
-def test_move_data_to_LTS(storage_paths_fixture, datablock_fixture):
-    for datablock in datablock_fixture:
-        datablock_operations.move_data_to_LTS(test_dataset_id, datablock)
-
-        file_in_lts = StoragePaths.lts_datablocks_folder(test_dataset_id) / Path(datablock.archiveId).name
-
-        assert file_in_lts.exists()
-
-        assert datablock_operations.calculate_md5_checksum(
-            file_in_lts
-        ) == datablock_operations.calculate_md5_checksum(file_in_lts)
 
 
 def mock_list_s3_objects(*args, **kwargs):

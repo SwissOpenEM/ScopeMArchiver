@@ -33,13 +33,8 @@ class PrefectVariablesModel(BaseSettings):
     MINIO_EXTERNAL_ENDPOINT: str = ""
     MINIO_URL_EXPIRATION_DAYS: int = 7
 
-    LTS_STORAGE_ROOT: Path = Path("")
-    LTS_FREE_SPACE_PERCENTAGE: float = 20
-
     ARCHIVER_SCRATCH_FOLDER: Path = Path("")
     ARCHIVER_TARGET_SIZE_GB: int = 20
-    ARCHIVER_LTS_FILE_TIMEOUT_S: int = 60
-    ARCHIVER_LTS_WAIT_BEFORE_VERIFY_S: int = 180
     ARCHIVER_NUM_WORKERS: int = 4
 
     SCICAT_ENDPOINT: str = ""
@@ -127,24 +122,8 @@ class Variables:
         return int(self.__get("archiver_target_size_gb") or 200)
 
     @property
-    def ARCHIVER_LTS_FILE_TIMEOUT_S(self) -> int:
-        return int(self.__get("archiver_lts_file_timeout_s") or 10)
-
-    @property
-    def ARCHIVER_LTS_WAIT_BEFORE_VERIFY_S(self) -> int:
-        return int(self.__get("archiver_lts_wait_before_verify_s") or 30)
-
-    @property
     def ARCHIVER_NUM_WORKERS(self) -> int:
         return int(self.__get("archiver_num_workers") or 30)
-
-    @property
-    def LTS_STORAGE_ROOT(self) -> Path:
-        return Path(self.__get("lts_storage_root"))
-
-    @property
-    def LTS_FREE_SPACE_PERCENTAGE(self) -> float:
-        return float(self.__get("lts_free_space_percentage") or 1.0)
 
 
 def register_variables_from_config(config: PrefectVariablesModel) -> None:

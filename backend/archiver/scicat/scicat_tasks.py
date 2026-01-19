@@ -211,22 +211,22 @@ def create_job_result_object_task(dataset_ids: List[str]) -> JobResultObject:
     job_results_object = JobResultObject(result=job_results)
 
     script = create_download_script(job_results)
-    job_results_object.downloadScript = base64.b64encode(bytes(script, 'utf-8'))
+    job_results_object.downloadScript = base64.b64encode(bytes(script, "utf-8"))
 
     markdown = f"""Download script for all datablocks in this job\n```bash\n{script}\n```\n"""
 
-    create_markdown_artifact(
-        key=f"script", markdown=markdown)
+    create_markdown_artifact(key="script", markdown=markdown)
 
     return job_results_object
 
 
 def create_download_script(job_result_entries: List[JobResultEntry]) -> str:
-
     dataset_to_datablocks = {}
 
     for result in job_result_entries:
-        dataset_to_datablocks.setdefault(result.datasetId, []).append({"name": Path(result.archiveId).name, "url": result.url})
+        dataset_to_datablocks.setdefault(result.datasetId, []).append(
+            {"name": Path(result.archiveId).name, "url": result.url}
+        )
 
     return generate_download_script(dataset_to_datablocks)
 

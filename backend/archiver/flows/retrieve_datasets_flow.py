@@ -2,7 +2,6 @@ from typing import List
 from functools import partial
 from uuid import UUID
 import uuid
-from pydantic import SecretStr
 
 from prefect import flow, get_client, task, State, Task, Flow
 from prefect.client.schemas.objects import TaskRun, FlowRun
@@ -22,7 +21,6 @@ from .task_utils import (
 )
 from .flow_utils import report_retrieval_error
 from scicat.scicat_interface import SciCatClient
-from utils.model import DataBlock, JobResultObject
 from scicat.scicat_tasks import (
     update_scicat_retrieval_job_status,
     update_scicat_retrieval_dataset_lifecycle,
@@ -36,8 +34,8 @@ from scicat.scicat_tasks import (
     get_datablocks,
 )
 from config.concurrency_limits import ConcurrencyLimits
-from config.variables import Variables
 import utils.datablocks as datablocks_operations
+from utils.model import DataBlock
 
 
 def on_get_datablocks_error(dataset_id: str, task: Task, task_run: TaskRun, state: State):
@@ -50,8 +48,8 @@ def on_get_datablocks_error(dataset_id: str, task: Task, task_run: TaskRun, stat
     tags=[ConcurrencyLimits().LTS_READ_TAG],
     retry_delay_seconds=[60, 120, 240, 480, 960],
 )
-def copy_datablock_from_LTS_to_scratch(dataset_id: str, datablock: DataBlock):
-    datablocks_operations.copy_from_LTS_to_scratch_retrieval(dataset_id, datablock)
+def retrieve_datablock_to_scratch(dataset_id: str, datablock: DataBlock):
+    datablocks_operations.retrieve_datablock(dataset_id, datablock)
 
 
 @task(
@@ -139,9 +137,7 @@ def retrieve_single_dataset_flow(dataset_id: str, job_id: UUID):
     # The error does not propagate correctly through the dependent tasks
     # https://github.com/PrefectHQ/prefect/issues/12028
     for datablock in missing_datablocks.result():
-        copy_to_scratch = copy_datablock_from_LTS_to_scratch.submit(
-            dataset_id=dataset_id, datablock=datablock
-        )
+        copy_to_scratch = retrieve_datablock_to_scratch.submit(dataset_id=dataset_id, datablock=datablock)
 
         verify_datablock = verify_data_on_scratch.submit(
             dataset_id=dataset_id, datablock=datablock, wait_for=[copy_to_scratch]
@@ -187,10 +183,7 @@ def find_oldest_dataset_flow(
     return None
 
 
-@flow(
-    name="wait_for_retrieval_flow",
-    log_prints=True
-)
+@flow(name="wait_for_retrieval_flow", log_prints=True)
 async def wait_for_retrieval_flow(flow_run_id: uuid.UUID):
     flow_run: FlowRun = await wait_for_flow_run(flow_run_id, log_states=True, timeout=None, poll_interval=60)
     flow_run.state.result()

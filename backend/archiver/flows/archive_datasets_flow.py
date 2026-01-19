@@ -1,16 +1,13 @@
 import math
 from pathlib import Path
-import time
 from typing import List
 from functools import partial
-import asyncio
 from uuid import UUID
 
 
 from prefect import flow, task, State, Task, Flow
 from prefect.client.schemas.objects import TaskRun, FlowRun
 from prefect.futures import wait as wait_for_futures
-from prefect.states import Failed
 from prefect.artifacts import (
     create_progress_artifact,
     update_progress_artifact,
@@ -24,7 +21,6 @@ from .task_utils import (
     generate_task_name_dataset,
     generate_flow_name_job_id,
     generate_subflow_run_name_job_id_dataset_id,
-    generate_sleep_for_task_name,
 )
 from scicat.scicat_interface import SciCatClient
 from scicat.scicat_tasks import (
@@ -38,7 +34,6 @@ from scicat.scicat_tasks import (
 )
 from scicat.scicat_tasks import report_job_failure_system_error, report_dataset_user_error
 
-from utils.datablocks import wait_for_free_space
 from utils.model import OrigDataBlock, DataBlock
 import utils.datablocks as datablocks_operations
 from config.concurrency_limits import ConcurrencyLimits
@@ -92,7 +87,9 @@ def download_origdatablocks(dataset_id: str, origDataBlocks: List[OrigDataBlock]
             update_progress.last_progress = progress
             update_progress_artifact(artifact_id=progress_artifact_id, progress=progress)
 
-    getLogger().info(f"Downloading {total_file_count} objects from bucket {Bucket.landingzone_bucket(dataset_id)}")
+    getLogger().info(
+        f"Downloading {total_file_count} objects from bucket {Bucket.landingzone_bucket(dataset_id)}"
+    )
     # files with full path are downloaded to scratch root
     file_paths = datablocks_operations.download_objects_from_s3(
         s3_client,
@@ -201,47 +198,17 @@ def verify_objects(dataset_id: str, uploaded_objects: List[Path]) -> List[DataBl
         raise SystemError(f"{len(missing_objects)} datablocks missing")
 
 
-@task(task_run_name=generate_sleep_for_task_name)
-def sleep_for(time_in_seconds: int):
-    """Sleeps for a given amount of time. Required to wait for the LTS to update its internal state.
-    Needs to be blocking as it should prevent the following task to run.
-    """
-    time.sleep(time_in_seconds)
-
-
-@task(tags=[ConcurrencyLimits().LTS_FREE_TAG])
-def check_free_space_in_LTS():
-    """Prefect task to wait for free space in the LTS. Checks periodically if the condition for enough
-    free space is fulfilled. Only one of these task runs at time; the others are only scheduled once this task
-    has finished, i.e. there is enough space.
-    """
-    asyncio.run(wait_for_free_space())
-
-
 @task(task_run_name=generate_task_name_dataset)
 def calculate_checksum(dataset_id: str, datablock: DataBlock):
     return datablocks_operations.calculate_checksum(dataset_id, datablock)
 
 
 @task(task_run_name=generate_task_name_dataset, tags=[ConcurrencyLimits().LTS_WRITE_TAG])
-def move_data_to_LTS(dataset_id: str, datablock: DataBlock):
+def archive_datablock(dataset_id: str, datablock: DataBlock):
     """Prefect task to move a datablock (.tar file) to the LTS. Concurrency of this task is limited to 2 instances
     at the same time.
     """
-    datablocks_operations.move_data_to_LTS(dataset_id, datablock)
-
-
-@task(
-    task_run_name=generate_task_name_dataset,
-    tags=[ConcurrencyLimits().LTS_READ_TAG],
-    retries=5,
-    retry_delay_seconds=[60, 120, 240, 480, 960],
-)
-def copy_datablock_from_LTS(dataset_id: str, datablock: DataBlock):
-    """Prefect task to move a datablock (.tar file) to the LTS. Concurrency of this task is limited to 2 instances
-    at the same time.
-    """
-    datablocks_operations.copy_file_from_LTS(dataset_id, datablock)
+    datablocks_operations.archive_datablock(dataset_id, datablock)
 
 
 @task(task_run_name=generate_task_name_dataset)
@@ -261,11 +228,11 @@ def verify_datablock_in_verification(dataset_id: str, datablock: DataBlock) -> N
 
 # Flows
 @flow(
-    name="move_datablocks_to_lts",
+    name="archive_datablocks_with_storage_protect",
     log_prints=True,
     flow_run_name=generate_subflow_run_name_job_id_dataset_id,
 )
-def move_datablocks_to_lts_flow(dataset_id: str, datablocks: List[DataBlock]):
+def archive_datablocks_with_storage_protect(dataset_id: str, datablocks: List[DataBlock]):
     """Prefect (sub-)flow to move a datablock to the LTS. Implements the copying of data and verification via checksum.
 
     Args:
@@ -276,32 +243,8 @@ def move_datablocks_to_lts_flow(dataset_id: str, datablocks: List[DataBlock]):
     all_tasks = []
 
     for datablock in datablocks:
-        checksum = calculate_checksum.submit(dataset_id=dataset_id, datablock=datablock)
-        free_space = check_free_space_in_LTS.submit(wait_for=[checksum])
-
-        move = move_data_to_LTS.submit(dataset_id=dataset_id, datablock=datablock, wait_for=[free_space])  # type: ignore
-
-        getLogger().info(f"Wait {Variables().ARCHIVER_LTS_WAIT_BEFORE_VERIFY_S}s before verifying datablock")
-        sleep = sleep_for.submit(Variables().ARCHIVER_LTS_WAIT_BEFORE_VERIFY_S, wait_for=[move])
-
-        copy = copy_datablock_from_LTS.submit(dataset_id=dataset_id, datablock=datablock, wait_for=[sleep])
-
-        checksum_verification = verify_checksum.submit(
-            dataset_id=dataset_id, datablock=datablock, checksum=checksum, wait_for=[copy]
-        )
-
-        w = verify_datablock_in_verification.submit(
-            dataset_id=dataset_id, datablock=datablock, wait_for=[checksum_verification]
-        )  # type: ignore
-        tasks.append(w)
-
-        all_tasks.append(free_space)
-        all_tasks.append(checksum)
+        move = archive_datablock.submit(dataset_id=dataset_id, datablock=datablock)  # type: ignore
         all_tasks.append(move)
-        all_tasks.append(sleep)
-        all_tasks.append(copy)
-        all_tasks.append(checksum_verification)
-        all_tasks.append(w)
 
     wait_for_futures(tasks)
 
@@ -369,7 +312,6 @@ def on_dataset_flow_failure(flow: Flow, flow_run: FlowRun, state: State):
         reset_dataset(dataset_id=flow_run.parameters["dataset_id"], token=scicat_token)
     except Exception as e:
         getLogger().error(f"failed to reset datablocks {e}")
-    datablocks_operations.cleanup_lts_folder(flow_run.parameters["dataset_id"])
     datablocks_operations.cleanup_scratch(flow_run.parameters["dataset_id"])
     try:
         s3_client = get_s3_client()
@@ -399,7 +341,7 @@ def cleanup_dataset(flow: Flow, flow_run: FlowRun, state: State):
 def archive_single_dataset_flow(dataset_id: str):
     datablocks = create_datablocks_flow(dataset_id)
 
-    move_datablocks_to_lts_flow(dataset_id=dataset_id, datablocks=datablocks)
+    archive_datablocks_with_storage_protect(dataset_id=dataset_id, datablocks=datablocks)
 
     access_token = get_scicat_access_token.submit()
     update_scicat_archival_dataset_lifecycle.submit(
@@ -427,11 +369,10 @@ def on_job_flow_cancellation(flow: Flow, flow_run: FlowRun, state: State):
         s3_client = get_s3_client()
         for dataset_id in dataset_ids:
             datablocks_operations.cleanup_s3_staging(s3_client, dataset_id)
-    except:
+    except Exception:
         pass
 
     for dataset_id in dataset_ids:
-        datablocks_operations.cleanup_lts_folder(dataset_id)
         datablocks_operations.cleanup_scratch(dataset_id)
 
     token = get_scicat_access_token()

@@ -45,7 +45,7 @@ services:
     container_name: prefect-server
     restart: always
     volumes:
-      - prefect-volume-new:/root/.prefect
+      - prefect-volume:/root/.prefect
     privileged: false
     entrypoint:
       - /bin/sh
@@ -113,7 +113,7 @@ services:
     expose:
       - 5432
     volumes:
-      - postgres-volume-new:/var/lib/postgresql/data
+      - postgres-volume:/var/lib/postgresql/data
     networks:
       - scopemarchiver_network
 
@@ -166,8 +166,9 @@ services:
     build:
       context: ../backend/archiver
       dockerfile: ../prefect/runtime.Dockerfile
+      additional_contexts:
+        storage-client: .storage-client
       args:
-        LTS_ROOT_FOLDER: ${LTS_ROOT_FOLDER}
         PREFECT_VERSION: ${PREFECT_VERSION}
         UID: 123
         GID: 123
@@ -180,12 +181,11 @@ services:
       - PREFECT_API_URL=http://prefect-server:4200/api
       ### Deployment values for interpolation in prefect.yaml
       - PREFECT_VERSION=${PREFECT_VERSION}
-      - PREFECT_WORKER_LTS_VOLUME_NAME=scopemarchiver_${PREFECT_WORKER_LTS_VOLUME_NAME}
       - PREFECT_ARCHIVER_HOST_SCRATCH=${PREFECT_ARCHIVER_HOST_SCRATCH}
-      - LTS_ROOT_FOLDER=${LTS_ROOT_FOLDER}
       - ARCHIVER_SCRATCH_FOLDER=${ARCHIVER_SCRATCH_FOLDER}
       - PREFECT_NETWORK=scopemarchiver_network
       - PREFECT_RUNTIME_IMAGE=${PREFECT_RUNTIME_IMAGE_NAME}:${OPENEM_IMAGE_TAG:-latest}
+      - PREFECT_HOST_STORAGE_CLIENT=${PREFECT_HOST_STORAGE_CLIENT_FOLDER}
     command: prefect --no-prompt deploy --all --prefect-file /prefect.yaml
     working_dir: /app/backend
     volumes:
@@ -198,26 +198,19 @@ services:
     depends_on:
       prefect-server:
         condition: service_healthy
+      prefect-config:
+        condition: service_completed_successfully
     labels:
       - "traefik.enable=false"
 volumes:
-  lts-mock-volume:
-    name: scopemarchiver_lts-mock-volume
-    # driver: local
-    external: true
-  nfs-lts-share:
-    driver_opts:
-      type: "nfs"
-      o: "nfsvers=3,addr=lts22,nolock"
-      device: ":/scopem_lts_nfs_test_lts22"
-  postgres-volume-new:
-    name: scopemarchiver_postgres-volume-new
-    # driver: local
-    external: true
-  prefect-volume-new:
-    name: scopemarchiver_prefect-volume-new
-    # driver: local
-    external: true
+  postgres-volume:
+    name: scopemarchiver_postgres-volume
+    driver: local
+    # external: true
+  prefect-volume:
+    name: scopemarchiver_prefect-volume
+    driver: local
+    # external: true
 
 secrets:
   postgres_user:
