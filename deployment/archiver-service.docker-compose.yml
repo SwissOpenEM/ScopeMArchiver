@@ -31,13 +31,13 @@ services:
     privileged: false
     read_only: true
     labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.backend.rule=Host(`${HOST}`) && PathPrefix(`/archiver/api/v1`)"
-      - "traefik.http.middlewares.backend-stripprefix.stripprefix.prefixes=/archiver/api/v1"
-      - "traefik.http.routers.backend.entrypoints=websecure"
-      - "traefik.http.routers.backend.tls"
-      - "traefik.http.routers.backend.middlewares=backend-stripprefix"
-      - "traefik.http.services.backend.loadbalancer.server.port=8000"
+      traefik.enable: true
+      traefik.http.routers.backend.rule: Host(`${HOST}`) && PathPrefix(`/archiver/api/v1`)
+      traefik.http.middlewares.backend-stripprefix.stripprefix.prefixes: /archiver/api/v1
+      traefik.http.routers.backend.entrypoints: websecure
+      traefik.http.routers.backend.tls.certresolver: certresolver
+      traefik.http.routers.backend.middlewares: backend-stripprefix
+      traefik.http.services.backend.loadbalancer.server.port: 8000
     networks:
       - scopemarchiver_network
   prefect-server:
@@ -84,20 +84,19 @@ services:
     depends_on:
       - postgres
     labels:
-      - "traefik.enable=true"
-      - "traefik.http.services.prefect-server.loadbalancer.server.port=4200"
+      traefik.enable: true
       # UI
-      - "traefik.http.routers.prefect-server.rule=Host(`${HOST}`) && PathPrefix(`/archiver/prefect/ui`)"
-      - "traefik.http.routers.prefect-server.entrypoints=websecure"
-      - "traefik.http.routers.prefect-server.tls"
-      - "traefik.http.services.prefect-server.loadbalancer.server.port=4200"
-      - "traefik.http.routers.prefect-server.middlewares=${AUTH_MIDDLEWARE}"
+      traefik.http.routers.prefect-server.rule: Host(`${HOST}`) && PathPrefix(`/archiver/prefect/ui`)
+      traefik.http.routers.prefect-server.entrypoints: websecure
+      traefik.http.routers.prefect-server.tls.certresolver: certresolver
+      traefik.http.services.prefect-server.loadbalancer.server.port: 4200
+      traefik.http.routers.prefect-server.middlewares: ${AUTH_MIDDLEWARE}
       # API
-      - "traefik.http.routers.prefect-api-server.rule=Host(`${HOST}`) && PathPrefix(`/archiver/prefect/api`)"
-      - "traefik.http.routers.prefect-api-server.entrypoints=websecure"
-      - "traefik.http.routers.prefect-api-server.tls"
-      - "traefik.http.middlewares.prefect-api-strip.stripprefix.prefixes=/archiver/prefect"
-      - "traefik.http.routers.prefect-api-server.middlewares=prefect-api-strip${AUTH_MIDDLEWARE:+,$AUTH_MIDDLEWARE}"
+      traefik.http.routers.prefect-api-server.rule: Host(`${HOST}`) && PathPrefix(`/archiver/prefect/api`)
+      traefik.http.routers.prefect-api-server.entrypoints: websecure
+      traefik.http.routers.prefect-api-server.tls.certresolver: certresolver
+      traefik.http.middlewares.prefect-api-strip.stripprefix.prefixes: /archiver/prefect
+      traefik.http.routers.prefect-api-server.middlewares: prefect-api-strip${AUTH_MIDDLEWARE:+,$AUTH_MIDDLEWARE}
     networks:
       - scopemarchiver_network
   postgres:
@@ -201,7 +200,7 @@ services:
       prefect-config:
         condition: service_completed_successfully
     labels:
-      - "traefik.enable=false"
+      traefik.enable: false
 volumes:
   postgres-volume:
     name: scopemarchiver_postgres-volume
