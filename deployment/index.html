@@ -1,0 +1,1053 @@
+
+<!DOCTYPE html>
+
+<html class="no-js" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width,initial-scale=1" name="viewport"/>
+<link href="http://0.0.0.0:8000/deployment/" rel="canonical"/>
+<link href="../architecture/" rel="prev"/>
+<link href="../upload_flow/" rel="next"/>
+<link href="../assets/images/favicon.png" rel="icon"/>
+<meta content="mkdocs-1.6.1, mkdocs-material-9.7.1" name="generator"/>
+<title>Deployment - ScopeMArchiver</title>
+<link href="../assets/stylesheets/main.484c7ddc.min.css" rel="stylesheet"/>
+<link href="../assets/stylesheets/palette.ab4e12ef.min.css" rel="stylesheet"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&amp;display=fallback" rel="stylesheet"/>
+<style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+<link href="../assets/_mkdocstrings.css" rel="stylesheet"/>
+<link href="../assets/stylesheets/panzoom.css" rel="stylesheet"/>
+<script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+<meta name="panzoom-theme" content="material">
+<meta name="panzoom-data" content='{"selectors": [".mermaid", ".d2"], "initial_zoom_level": 1.0}'> </head>
+<body data-md-color-accent="indigo" data-md-color-primary="teal" data-md-color-scheme="default" dir="ltr">
+<input autocomplete="off" class="md-toggle" data-md-toggle="drawer" id="__drawer" type="checkbox"/>
+<input autocomplete="off" class="md-toggle" data-md-toggle="search" id="__search" type="checkbox"/>
+<label class="md-overlay" for="__drawer"></label>
+<div data-md-component="skip">
+<a class="md-skip" href="#deployment">
+          Skip to content
+        </a>
+</div>
+<div data-md-component="announce">
+</div>
+<header class="md-header md-header--shadow" data-md-component="header">
+<nav aria-label="Header" class="md-header__inner md-grid">
+<a aria-label="ScopeMArchiver" class="md-header__button md-logo" data-md-component="logo" href=".." title="ScopeMArchiver">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"></path></svg>
+</a>
+<label class="md-header__button md-icon" for="__drawer">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"></path></svg>
+</label>
+<div class="md-header__title" data-md-component="header-title">
+<div class="md-header__ellipsis">
+<div class="md-header__topic">
+<span class="md-ellipsis">
+            ScopeMArchiver
+          </span>
+</div>
+<div class="md-header__topic" data-md-component="header-topic">
+<span class="md-ellipsis">
+            
+              Deployment
+            
+          </span>
+</div>
+</div>
+</div>
+<label class="md-header__button md-icon" for="__search">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+</label>
+<div class="md-search" data-md-component="search" role="dialog">
+<label class="md-search__overlay" for="__search"></label>
+<div class="md-search__inner" role="search">
+<form class="md-search__form" name="search">
+<input aria-label="Search" autocapitalize="off" autocomplete="off" autocorrect="off" class="md-search__input" data-md-component="search-query" name="query" placeholder="Search" required="" spellcheck="false" type="text"/>
+<label class="md-search__icon md-icon" for="__search">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"></path></svg>
+</label>
+<nav aria-label="Search" class="md-search__options">
+<button aria-label="Clear" class="md-search__icon md-icon" tabindex="-1" title="Clear" type="reset">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path></svg>
+</button>
+</nav>
+</form>
+<div class="md-search__output">
+<div class="md-search__scrollwrap" data-md-scrollfix="" tabindex="0">
+<div class="md-search-result" data-md-component="search-result">
+<div class="md-search-result__meta">
+            Initializing search
+          </div>
+<ol class="md-search-result__list" role="presentation"></ol>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="md-header__source">
+<a class="md-source" data-md-component="source" href="https://github.com/SwissOpenEM/ScopeMArchiver" title="Go to repository">
+<div class="md-source__icon md-icon">
+<svg viewbox="0 0 448 512" xmlns="http://www.w3.org/2000/svg"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"></path></svg>
+</div>
+<div class="md-source__repository">
+    SwissOpenEM/ScopeMArchiver
+  </div>
+</a>
+</div>
+</nav>
+</header>
+<div class="md-container" data-md-component="container">
+<main class="md-main" data-md-component="main">
+<div class="md-main__inner md-grid">
+<div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation">
+<div class="md-sidebar__scrollwrap">
+<div class="md-sidebar__inner">
+<nav aria-label="Navigation" class="md-nav md-nav--primary md-nav--integrated" data-md-level="0">
+<label class="md-nav__title" for="__drawer">
+<a aria-label="ScopeMArchiver" class="md-nav__button md-logo" data-md-component="logo" href=".." title="ScopeMArchiver">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"></path></svg>
+</a>
+    ScopeMArchiver
+  </label>
+<div class="md-nav__source">
+<a class="md-source" data-md-component="source" href="https://github.com/SwissOpenEM/ScopeMArchiver" title="Go to repository">
+<div class="md-source__icon md-icon">
+<svg viewbox="0 0 448 512" xmlns="http://www.w3.org/2000/svg"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"></path></svg>
+</div>
+<div class="md-source__repository">
+    SwissOpenEM/ScopeMArchiver
+  </div>
+</a>
+</div>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="..">
+<span class="md-ellipsis">
+    
+  
+    Introduction
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../architecture/">
+<span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item md-nav__item--active">
+<input class="md-nav__toggle md-toggle" id="__toc" type="checkbox"/>
+<label class="md-nav__link md-nav__link--active" for="__toc">
+<span class="md-ellipsis">
+    
+  
+    Deployment
+  
+
+    
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<a class="md-nav__link md-nav__link--active" href="./">
+<span class="md-ellipsis">
+    
+  
+    Deployment
+  
+
+    
+  </span>
+</a>
+<nav aria-label="Table of contents" class="md-nav md-nav--secondary">
+<label class="md-nav__title" for="__toc">
+<span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+<ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#service-deployment">
+<span class="md-ellipsis">
+      
+        Service Deployment
+      
+    </span>
+</a>
+<nav aria-label="Service Deployment" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#production">
+<span class="md-ellipsis">
+      
+        Production
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#development">
+<span class="md-ellipsis">
+      
+        Development
+      
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#prefect-deployment">
+<span class="md-ellipsis">
+      
+        Prefect Deployment
+      
+    </span>
+</a>
+<nav aria-label="Prefect Deployment" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#prefect-server">
+<span class="md-ellipsis">
+      
+        Prefect Server
+      
+    </span>
+</a>
+<nav aria-label="Prefect Server" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#configuration">
+<span class="md-ellipsis">
+      
+        Configuration
+      
+    </span>
+</a>
+<nav aria-label="Configuration" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#variables">
+<span class="md-ellipsis">
+      
+        Variables
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#concurrrency-limits">
+<span class="md-ellipsis">
+      
+        Concurrrency Limits
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#internal-secrets">
+<span class="md-ellipsis">
+      
+        Internal Secrets
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#external-secrets">
+<span class="md-ellipsis">
+      
+        External Secrets
+      
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#prefect-worker">
+<span class="md-ellipsis">
+      
+        Prefect Worker
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#flows">
+<span class="md-ellipsis">
+      
+        Flows
+      
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_4" type="checkbox"/>
+<label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+<span class="md-ellipsis">
+    
+  
+    Flows
+  
+
+    
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_4_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_4">
+<span class="md-nav__icon md-icon"></span>
+            
+  
+    Flows
+  
+
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../upload_flow/">
+<span class="md-ellipsis">
+    
+  
+    Ingestion
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../archival_retrieval_flow/">
+<span class="md-ellipsis">
+    
+  
+    Archival and Retrieval
+  
+
+    
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_5" type="checkbox"/>
+<label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+<span class="md-ellipsis">
+    
+  
+    Code Reference
+  
+
+    
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_5_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_5">
+<span class="md-nav__icon md-icon"></span>
+            
+  
+    Code Reference
+  
+
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../reference/Summary/">
+<span class="md-ellipsis">
+    
+  
+    Summary
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_5_2" type="checkbox"/>
+<label class="md-nav__link" for="__nav_5_2" id="__nav_5_2_label" tabindex="0">
+<span class="md-ellipsis">
+    
+  
+    Config
+  
+
+    
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_5_2_label" class="md-nav" data-md-level="2">
+<label class="md-nav__title" for="__nav_5_2">
+<span class="md-nav__icon md-icon"></span>
+            
+  
+    Config
+  
+
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../reference/config/blocks/">
+<span class="md-ellipsis">
+    
+  
+    Blocks
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../reference/config/concurrency_limits/">
+<span class="md-ellipsis">
+    
+  
+    Concurrency limits
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../reference/config/variables/">
+<span class="md-ellipsis">
+    
+  
+    Variables
+  
+
+    
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_5_3" type="checkbox"/>
+<label class="md-nav__link" for="__nav_5_3" id="__nav_5_3_label" tabindex="0">
+<span class="md-ellipsis">
+    
+  
+    Flows
+  
+
+    
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_5_3_label" class="md-nav" data-md-level="2">
+<label class="md-nav__title" for="__nav_5_3">
+<span class="md-nav__icon md-icon"></span>
+            
+  
+    Flows
+  
+
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../reference/flows/archive_datasets_flow/">
+<span class="md-ellipsis">
+    
+  
+    Archive datasets flow
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../reference/flows/flow_utils/">
+<span class="md-ellipsis">
+    
+  
+    Flow utils
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../reference/flows/mock_flows/">
+<span class="md-ellipsis">
+    
+  
+    Mock flows
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../reference/flows/retrieve_datasets_flow/">
+<span class="md-ellipsis">
+    
+  
+    Retrieve datasets flow
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../reference/flows/task_utils/">
+<span class="md-ellipsis">
+    
+  
+    Task utils
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_5_3_6" type="checkbox"/>
+<label class="md-nav__link" for="__nav_5_3_6" id="__nav_5_3_6_label" tabindex="0">
+<span class="md-ellipsis">
+    
+  
+    Tests
+  
+
+    
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_5_3_6_label" class="md-nav" data-md-level="3">
+<label class="md-nav__title" for="__nav_5_3_6">
+<span class="md-nav__icon md-icon"></span>
+            
+  
+    Tests
+  
+
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../reference/flows/tests/conftest/">
+<span class="md-ellipsis">
+    
+  
+    Conftest
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../reference/flows/tests/helpers/">
+<span class="md-ellipsis">
+    
+  
+    Helpers
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../reference/flows/tests/scicat_unittest_mock/">
+<span class="md-ellipsis">
+    
+  
+    Scicat unittest mock
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../reference/flows/tests/test_archival_flow/">
+<span class="md-ellipsis">
+    
+  
+    Test archival flow
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../reference/flows/tests/test_retrieval_flow/">
+<span class="md-ellipsis">
+    
+  
+    Test retrieval flow
+  
+
+    
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_5_4" type="checkbox"/>
+<label class="md-nav__link" for="__nav_5_4" id="__nav_5_4_label" tabindex="0">
+<span class="md-ellipsis">
+    
+  
+    Scicat
+  
+
+    
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_5_4_label" class="md-nav" data-md-level="2">
+<label class="md-nav__title" for="__nav_5_4">
+<span class="md-nav__icon md-icon"></span>
+            
+  
+    Scicat
+  
+
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../reference/scicat/scicat_interface/">
+<span class="md-ellipsis">
+    
+  
+    Scicat interface
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../reference/scicat/scicat_tasks/">
+<span class="md-ellipsis">
+    
+  
+    Scicat tasks
+  
+
+    
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_5_5" type="checkbox"/>
+<label class="md-nav__link" for="__nav_5_5" id="__nav_5_5_label" tabindex="0">
+<span class="md-ellipsis">
+    
+  
+    Tests
+  
+
+    
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_5_5_label" class="md-nav" data-md-level="2">
+<label class="md-nav__title" for="__nav_5_5">
+<span class="md-nav__icon md-icon"></span>
+            
+  
+    Tests
+  
+
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../reference/tests/scicat_service_mock/">
+<span class="md-ellipsis">
+    
+  
+    Scicat service mock
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../reference/tests/test_e2e/">
+<span class="md-ellipsis">
+    
+  
+    Test e2e
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../reference/tests/test_scicat_tasks/">
+<span class="md-ellipsis">
+    
+  
+    Test scicat tasks
+  
+
+    
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_5_6" type="checkbox"/>
+<label class="md-nav__link" for="__nav_5_6" id="__nav_5_6_label" tabindex="0">
+<span class="md-ellipsis">
+    
+  
+    Utils
+  
+
+    
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_5_6_label" class="md-nav" data-md-level="2">
+<label class="md-nav__title" for="__nav_5_6">
+<span class="md-nav__icon md-icon"></span>
+            
+  
+    Utils
+  
+
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../reference/utils/datablocks/">
+<span class="md-ellipsis">
+    
+  
+    Datablocks
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../reference/utils/log/">
+<span class="md-ellipsis">
+    
+  
+    Log
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../reference/utils/model/">
+<span class="md-ellipsis">
+    
+  
+    Model
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../reference/utils/s3_storage_interface/">
+<span class="md-ellipsis">
+    
+  
+    S3 storage interface
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../reference/utils/script_generation/">
+<span class="md-ellipsis">
+    
+  
+    Script generation
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_5_6_6" type="checkbox"/>
+<label class="md-nav__link" for="__nav_5_6_6" id="__nav_5_6_6_label" tabindex="0">
+<span class="md-ellipsis">
+    
+  
+    Tests
+  
+
+    
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_5_6_6_label" class="md-nav" data-md-level="3">
+<label class="md-nav__title" for="__nav_5_6_6">
+<span class="md-nav__icon md-icon"></span>
+            
+  
+    Tests
+  
+
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../reference/utils/tests/test_datablocks/">
+<span class="md-ellipsis">
+    
+  
+    Test datablocks
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../reference/utils/tests/test_s3/">
+<span class="md-ellipsis">
+    
+  
+    Test s3
+  
+
+    
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+</ul>
+</nav>
+</li>
+</ul>
+</nav>
+</li>
+</ul>
+</nav>
+</div>
+</div>
+</div>
+<div class="md-content" data-md-component="content">
+<article class="md-content__inner md-typeset">
+<h1 id="deployment">Deployment</h1>
+<p><div class="mxgraph" data-mxgraph='{"toolbar-position": "bottom", "toolbar-nohide": "0", "tooltips": "1", "border": 5, "resize": "1", "edit": "_blank", "lightbox": "1", "toolbar": "pages tags zoom layers lightbox", "xml": "&lt;mxfile host=\"65bd71144e\"&gt;\n    &lt;diagram id=\"yUpXesffEtbtTizqdA8Y\" name=\"Page-1\"&gt;\n        &lt;mxGraphModel dx=\"2117\" dy=\"1045\" grid=\"1\" gridSize=\"10\" guides=\"1\" tooltips=\"1\" connect=\"1\" arrows=\"1\" fold=\"1\" page=\"1\" pageScale=\"1\" pageWidth=\"850\" pageHeight=\"1100\" math=\"0\" shadow=\"0\"&gt;\n            &lt;root&gt;\n                &lt;mxCell id=\"0\"/&gt;\n                &lt;mxCell id=\"1\" parent=\"0\"/&gt;\n                &lt;mxCell id=\"6\" value=\"ScopeM\" style=\"verticalAlign=top;align=left;spacingTop=8;spacingLeft=2;spacingRight=12;shape=cube;size=10;direction=south;fontStyle=4;html=1;\" parent=\"1\" vertex=\"1\"&gt;\n                    &lt;mxGeometry x=\"410\" y=\"130\" width=\"1040\" height=\"890\" as=\"geometry\"/&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"31\" value=\"\" style=\"group\" parent=\"1\" vertex=\"1\" connectable=\"0\"&gt;\n                    &lt;mxGeometry x=\"1480\" y=\"870\" width=\"230\" height=\"150\" as=\"geometry\"/&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"4\" value=\"ETHZ LTS\" style=\"verticalAlign=top;align=left;spacingTop=8;spacingLeft=2;spacingRight=12;shape=cube;size=10;direction=south;fontStyle=4;html=1;\" parent=\"31\" vertex=\"1\"&gt;\n                    &lt;mxGeometry width=\"230\" height=\"150\" as=\"geometry\"/&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"29\" value=\"\u00abComponent\u00bb&amp;lt;br&amp;gt;&amp;lt;b&amp;gt;LTS Share&amp;lt;/b&amp;gt;\" style=\"html=1;dropTarget=0;\" parent=\"31\" vertex=\"1\"&gt;\n                    &lt;mxGeometry x=\"20\" y=\"40\" width=\"180\" height=\"90\" as=\"geometry\"/&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"30\" value=\"\" style=\"shape=module;jettyWidth=8;jettyHeight=4;\" parent=\"29\" vertex=\"1\"&gt;\n                    &lt;mxGeometry x=\"1\" width=\"20\" height=\"20\" relative=\"1\" as=\"geometry\"&gt;\n                        &lt;mxPoint x=\"-27\" y=\"7\" as=\"offset\"/&gt;\n                    &lt;/mxGeometry&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"32\" value=\"\" style=\"group\" parent=\"1\" vertex=\"1\" connectable=\"0\"&gt;\n                    &lt;mxGeometry x=\"120\" y=\"470\" width=\"250\" height=\"160\" as=\"geometry\"/&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"40\" value=\"\" style=\"group\" parent=\"32\" vertex=\"1\" connectable=\"0\"&gt;\n                    &lt;mxGeometry width=\"250\" height=\"160\" as=\"geometry\"/&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"33\" value=\"PSI\" style=\"verticalAlign=top;align=left;spacingTop=8;spacingLeft=2;spacingRight=12;shape=cube;size=10;direction=south;fontStyle=4;html=1;\" parent=\"40\" vertex=\"1\"&gt;\n                    &lt;mxGeometry width=\"250\" height=\"160\" as=\"geometry\"/&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"34\" value=\"\u00abComponent\u00bb&amp;lt;br&amp;gt;&amp;lt;b&amp;gt;Scicat Backend&amp;lt;/b&amp;gt;\" style=\"html=1;dropTarget=0;\" parent=\"40\" vertex=\"1\"&gt;\n                    &lt;mxGeometry x=\"35\" y=\"50\" width=\"180\" height=\"90\" as=\"geometry\"/&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"35\" value=\"\" style=\"shape=module;jettyWidth=8;jettyHeight=4;\" parent=\"34\" vertex=\"1\"&gt;\n                    &lt;mxGeometry x=\"1\" width=\"20\" height=\"20\" relative=\"1\" as=\"geometry\"&gt;\n                        &lt;mxPoint x=\"-27\" y=\"7\" as=\"offset\"/&gt;\n                    &lt;/mxGeometry&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"36\" value=\"\" style=\"group\" parent=\"1\" vertex=\"1\" connectable=\"0\"&gt;\n                    &lt;mxGeometry x=\"1160\" y=\"290\" width=\"250\" height=\"160\" as=\"geometry\"/&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"37\" value=\"Storage Server\" style=\"verticalAlign=top;align=left;spacingTop=8;spacingLeft=2;spacingRight=12;shape=cube;size=10;direction=south;fontStyle=4;html=1;\" parent=\"36\" vertex=\"1\"&gt;\n                    &lt;mxGeometry width=\"250\" height=\"160\" as=\"geometry\"/&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"38\" value=\"\u00abComponent\u00bb&amp;lt;br&amp;gt;&amp;lt;b&amp;gt;S3 Server&amp;lt;/b&amp;gt;\" style=\"html=1;dropTarget=0;\" parent=\"36\" vertex=\"1\"&gt;\n                    &lt;mxGeometry x=\"35\" y=\"50\" width=\"180\" height=\"90\" as=\"geometry\"/&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"39\" value=\"\" style=\"shape=module;jettyWidth=8;jettyHeight=4;\" parent=\"38\" vertex=\"1\"&gt;\n                    &lt;mxGeometry x=\"1\" width=\"20\" height=\"20\" relative=\"1\" as=\"geometry\"&gt;\n                        &lt;mxPoint x=\"-27\" y=\"7\" as=\"offset\"/&gt;\n                    &lt;/mxGeometry&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"43\" value=\"\" style=\"group\" parent=\"1\" vertex=\"1\" connectable=\"0\"&gt;\n                    &lt;mxGeometry x=\"750\" y=\"170\" width=\"350\" height=\"810\" as=\"geometry\"/&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"3\" value=\"Virtual Machine\" style=\"verticalAlign=top;align=left;spacingTop=8;spacingLeft=2;spacingRight=12;shape=cube;size=10;direction=south;fontStyle=4;html=1;\" parent=\"43\" vertex=\"1\"&gt;\n                    &lt;mxGeometry width=\"350\" height=\"810\" as=\"geometry\"/&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"12\" value=\"\u00abSubsystem\u00bb&amp;lt;br&amp;gt;&amp;lt;b&amp;gt;Prefect&amp;lt;/b&amp;gt;\" style=\"html=1;dropTarget=0;\" parent=\"43\" vertex=\"1\"&gt;\n                    &lt;mxGeometry x=\"75\" y=\"650\" width=\"180\" height=\"90\" as=\"geometry\"/&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"13\" value=\"\" style=\"shape=module;jettyWidth=8;jettyHeight=4;\" parent=\"12\" vertex=\"1\"&gt;\n                    &lt;mxGeometry x=\"1\" width=\"20\" height=\"20\" relative=\"1\" as=\"geometry\"&gt;\n                        &lt;mxPoint x=\"-27\" y=\"7\" as=\"offset\"/&gt;\n                    &lt;/mxGeometry&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"25\" value=\"\" style=\"group\" parent=\"43\" vertex=\"1\" connectable=\"0\"&gt;\n                    &lt;mxGeometry x=\"50\" y=\"380\" width=\"250\" height=\"160\" as=\"geometry\"/&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"65\" value=\"\" style=\"group\" vertex=\"1\" connectable=\"0\" parent=\"25\"&gt;\n                    &lt;mxGeometry width=\"250\" height=\"160\" as=\"geometry\"/&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"26\" value=\"Server Container\" style=\"verticalAlign=top;align=left;spacingTop=8;spacingLeft=2;spacingRight=12;shape=cube;size=10;direction=south;fontStyle=4;html=1;\" parent=\"65\" vertex=\"1\"&gt;\n                    &lt;mxGeometry width=\"250\" height=\"160\" as=\"geometry\"/&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"27\" value=\"\u00abComponent\u00bb&amp;lt;br&amp;gt;&amp;lt;b&amp;gt;Backend&amp;lt;/b&amp;gt;\" style=\"html=1;dropTarget=0;\" parent=\"65\" vertex=\"1\"&gt;\n                    &lt;mxGeometry x=\"35\" y=\"50\" width=\"180\" height=\"90\" as=\"geometry\"/&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"28\" value=\"\" style=\"shape=module;jettyWidth=8;jettyHeight=4;\" parent=\"27\" vertex=\"1\"&gt;\n                    &lt;mxGeometry x=\"1\" width=\"20\" height=\"20\" relative=\"1\" as=\"geometry\"&gt;\n                        &lt;mxPoint x=\"-27\" y=\"7\" as=\"offset\"/&gt;\n                    &lt;/mxGeometry&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"66\" value=\"\" style=\"group\" vertex=\"1\" connectable=\"0\" parent=\"43\"&gt;\n                    &lt;mxGeometry x=\"50\" y=\"98\" width=\"250\" height=\"160\" as=\"geometry\"/&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"67\" value=\"Traefik Container\" style=\"verticalAlign=top;align=left;spacingTop=8;spacingLeft=2;spacingRight=12;shape=cube;size=10;direction=south;fontStyle=4;html=1;\" vertex=\"1\" parent=\"66\"&gt;\n                    &lt;mxGeometry width=\"250\" height=\"160\" as=\"geometry\"/&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"68\" value=\"\u00abComponent\u00bb&amp;lt;br&amp;gt;&amp;lt;b&amp;gt;Traefik&amp;lt;/b&amp;gt;\" style=\"html=1;dropTarget=0;\" vertex=\"1\" parent=\"66\"&gt;\n                    &lt;mxGeometry x=\"35\" y=\"50\" width=\"180\" height=\"90\" as=\"geometry\"/&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"69\" value=\"\" style=\"shape=module;jettyWidth=8;jettyHeight=4;\" vertex=\"1\" parent=\"68\"&gt;\n                    &lt;mxGeometry x=\"1\" width=\"20\" height=\"20\" relative=\"1\" as=\"geometry\"&gt;\n                        &lt;mxPoint x=\"-27\" y=\"7\" as=\"offset\"/&gt;\n                    &lt;/mxGeometry&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"70\" value=\"\" style=\"edgeStyle=elbowEdgeStyle;elbow=horizontal;endArrow=classic;html=1;curved=0;rounded=0;endSize=8;startSize=8;dashed=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;\" edge=\"1\" parent=\"43\" source=\"68\" target=\"27\"&gt;\n                    &lt;mxGeometry width=\"50\" height=\"50\" relative=\"1\" as=\"geometry\"&gt;\n                        &lt;mxPoint x=\"170\" y=\"250\" as=\"sourcePoint\"/&gt;\n                        &lt;mxPoint x=\"455\" y=\"225\" as=\"targetPoint\"/&gt;\n                        &lt;Array as=\"points\"/&gt;\n                    &lt;/mxGeometry&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"71\" value=\"\" style=\"edgeStyle=elbowEdgeStyle;elbow=horizontal;endArrow=classic;html=1;curved=0;rounded=0;endSize=8;startSize=8;dashed=1;exitX=0.439;exitY=1.022;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;exitPerimeter=0;\" edge=\"1\" parent=\"43\" source=\"27\" target=\"12\"&gt;\n                    &lt;mxGeometry width=\"50\" height=\"50\" relative=\"1\" as=\"geometry\"&gt;\n                        &lt;mxPoint x=\"164.5\" y=\"560\" as=\"sourcePoint\"/&gt;\n                        &lt;mxPoint x=\"164.5\" y=\"752\" as=\"targetPoint\"/&gt;\n                        &lt;Array as=\"points\"/&gt;\n                    &lt;/mxGeometry&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"44\" value=\"\" style=\"group\" parent=\"1\" vertex=\"1\" connectable=\"0\"&gt;\n                    &lt;mxGeometry x=\"450\" y=\"820\" width=\"250\" height=\"160\" as=\"geometry\"/&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"45\" value=\"Workstation\" style=\"verticalAlign=top;align=left;spacingTop=8;spacingLeft=2;spacingRight=12;shape=cube;size=10;direction=south;fontStyle=4;html=1;\" parent=\"44\" vertex=\"1\"&gt;\n                    &lt;mxGeometry width=\"250\" height=\"160\" as=\"geometry\"/&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"46\" value=\"\u00abComponent\u00bb&amp;lt;br&amp;gt;&amp;lt;b&amp;gt;Ingestor&amp;lt;/b&amp;gt;\" style=\"html=1;dropTarget=0;\" parent=\"44\" vertex=\"1\"&gt;\n                    &lt;mxGeometry x=\"35\" y=\"50\" width=\"180\" height=\"90\" as=\"geometry\"/&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"47\" value=\"\" style=\"shape=module;jettyWidth=8;jettyHeight=4;\" parent=\"46\" vertex=\"1\"&gt;\n                    &lt;mxGeometry x=\"1\" width=\"20\" height=\"20\" relative=\"1\" as=\"geometry\"&gt;\n                        &lt;mxPoint x=\"-27\" y=\"7\" as=\"offset\"/&gt;\n                    &lt;/mxGeometry&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"48\" value=\"\" style=\"edgeStyle=elbowEdgeStyle;elbow=horizontal;endArrow=classic;html=1;curved=0;rounded=0;endSize=8;startSize=8;entryX=0;entryY=0.5;entryDx=0;entryDy=0;exitX=1;exitY=0.25;exitDx=0;exitDy=0;dashed=1;\" parent=\"1\" source=\"12\" target=\"38\" edge=\"1\"&gt;\n                    &lt;mxGeometry width=\"50\" height=\"50\" relative=\"1\" as=\"geometry\"&gt;\n                        &lt;mxPoint x=\"1270\" y=\"690\" as=\"sourcePoint\"/&gt;\n                        &lt;mxPoint x=\"1320\" y=\"640\" as=\"targetPoint\"/&gt;\n                        &lt;Array as=\"points\"&gt;\n                            &lt;mxPoint x=\"1130\" y=\"530\"/&gt;\n                        &lt;/Array&gt;\n                    &lt;/mxGeometry&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"49\" value=\"\" style=\"edgeStyle=elbowEdgeStyle;elbow=horizontal;endArrow=classic;html=1;curved=0;rounded=0;endSize=8;startSize=8;entryX=0;entryY=0.5;entryDx=0;entryDy=0;exitX=1;exitY=0.75;exitDx=0;exitDy=0;dashed=1;jumpStyle=arc;\" parent=\"1\" source=\"12\" target=\"29\" edge=\"1\"&gt;\n                    &lt;mxGeometry width=\"50\" height=\"50\" relative=\"1\" as=\"geometry\"&gt;\n                        &lt;mxPoint x=\"1015\" y=\"882.5\" as=\"sourcePoint\"/&gt;\n                        &lt;mxPoint x=\"1205\" y=\"395\" as=\"targetPoint\"/&gt;\n                        &lt;Array as=\"points\"&gt;\n                            &lt;mxPoint x=\"1260\" y=\"910\"/&gt;\n                        &lt;/Array&gt;\n                    &lt;/mxGeometry&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"50\" value=\"\" style=\"edgeStyle=elbowEdgeStyle;elbow=horizontal;endArrow=classic;html=1;curved=0;rounded=0;endSize=8;startSize=8;entryX=0.5;entryY=1;entryDx=0;entryDy=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;dashed=1;jumpStyle=gap;\" parent=\"1\" source=\"46\" target=\"38\" edge=\"1\"&gt;\n                    &lt;mxGeometry width=\"50\" height=\"50\" relative=\"1\" as=\"geometry\"&gt;\n                        &lt;mxPoint x=\"1015\" y=\"882.5\" as=\"sourcePoint\"/&gt;\n                        &lt;mxPoint x=\"1205\" y=\"395\" as=\"targetPoint\"/&gt;\n                        &lt;Array as=\"points\"&gt;\n                            &lt;mxPoint x=\"1280\" y=\"1000\"/&gt;\n                        &lt;/Array&gt;\n                    &lt;/mxGeometry&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"51\" value=\"\" style=\"edgeStyle=elbowEdgeStyle;elbow=horizontal;endArrow=classic;html=1;curved=0;rounded=0;endSize=8;startSize=8;exitX=0;exitY=0.5;exitDx=0;exitDy=0;dashed=1;entryX=0.5;entryY=1;entryDx=0;entryDy=0;\" parent=\"1\" source=\"46\" target=\"34\" edge=\"1\"&gt;\n                    &lt;mxGeometry width=\"50\" height=\"50\" relative=\"1\" as=\"geometry\"&gt;\n                        &lt;mxPoint x=\"1015\" y=\"882.5\" as=\"sourcePoint\"/&gt;\n                        &lt;mxPoint x=\"230\" y=\"710\" as=\"targetPoint\"/&gt;\n                        &lt;Array as=\"points\"&gt;\n                            &lt;mxPoint x=\"245\" y=\"760\"/&gt;\n                        &lt;/Array&gt;\n                    &lt;/mxGeometry&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"54\" value=\"\" style=\"rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=none;endFill=0;sketch=0;targetPerimeterSpacing=0;dashed=1;fontFamily=Helvetica;fontSize=11;fontColor=default;align=center;startSize=8;endSize=8;strokeColor=default;edgeStyle=elbowEdgeStyle;elbow=horizontal;startArrow=none;\" parent=\"1\" source=\"64\" target=\"34\" edge=\"1\"&gt;\n                    &lt;mxGeometry width=\"50\" height=\"50\" relative=\"1\" as=\"geometry\"&gt;\n                        &lt;mxPoint x=\"1015\" y=\"882.5\" as=\"sourcePoint\"/&gt;\n                        &lt;mxPoint x=\"1205\" y=\"395\" as=\"targetPoint\"/&gt;\n                        &lt;Array as=\"points\"/&gt;\n                    &lt;/mxGeometry&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"57\" value=\"\" style=\"rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=none;endFill=0;sketch=0;sourcePerimeterSpacing=0;targetPerimeterSpacing=0;dashed=1;jumpStyle=arc;exitX=1;exitY=0.25;exitDx=0;exitDy=0;\" parent=\"1\" source=\"34\" target=\"59\" edge=\"1\"&gt;\n                    &lt;mxGeometry relative=\"1\" as=\"geometry\"&gt;\n                        &lt;mxPoint x=\"620\" y=\"265\" as=\"sourcePoint\"/&gt;\n                    &lt;/mxGeometry&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"58\" value=\"\" style=\"rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=halfCircle;endFill=0;entryX=0.5;entryY=0.5;endSize=6;strokeWidth=1;sketch=0;dashed=1;jumpStyle=arc;exitX=0;exitY=0.5;exitDx=0;exitDy=0;\" parent=\"1\" source=\"68\" target=\"59\" edge=\"1\"&gt;\n                    &lt;mxGeometry relative=\"1\" as=\"geometry\"&gt;\n                        &lt;mxPoint x=\"660\" y=\"265\" as=\"sourcePoint\"/&gt;\n                    &lt;/mxGeometry&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"61\" value=\"Job Schema\" style=\"edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];\" parent=\"58\" vertex=\"1\" connectable=\"0\"&gt;\n                    &lt;mxGeometry x=\"0.8866\" y=\"-2\" relative=\"1\" as=\"geometry\"&gt;\n                        &lt;mxPoint x=\"33\" y=\"2\" as=\"offset\"/&gt;\n                    &lt;/mxGeometry&gt;\n                &lt;/mxCell&gt;\n                &lt;object label=\"\" id=\"59\"&gt;\n                    &lt;mxCell style=\"ellipse;whiteSpace=wrap;html=1;align=center;aspect=fixed;resizable=0;points=[];outlineConnect=0;sketch=0;\" parent=\"1\" vertex=\"1\"&gt;\n                        &lt;mxGeometry x=\"510\" y=\"357\" width=\"10\" height=\"10\" as=\"geometry\"/&gt;\n                    &lt;/mxCell&gt;\n                &lt;/object&gt;\n                &lt;mxCell id=\"63\" value=\"\" style=\"rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=none;endFill=0;sketch=0;sourcePerimeterSpacing=0;dashed=1;fontFamily=Helvetica;fontSize=11;fontColor=default;align=center;startSize=8;endSize=8;strokeColor=default;edgeStyle=elbowEdgeStyle;elbow=horizontal;exitX=0;exitY=0.5;exitDx=0;exitDy=0;\" parent=\"1\" source=\"12\" target=\"64\" edge=\"1\"&gt;\n                    &lt;mxGeometry width=\"50\" height=\"50\" relative=\"1\" as=\"geometry\"&gt;\n                        &lt;mxPoint x=\"825\" y=\"895\" as=\"sourcePoint\"/&gt;\n                        &lt;mxPoint x=\"335\" y=\"565\" as=\"targetPoint\"/&gt;\n                        &lt;Array as=\"points\"&gt;\n                            &lt;mxPoint x=\"720\" y=\"770\"/&gt;\n                        &lt;/Array&gt;\n                    &lt;/mxGeometry&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"64\" value=\"Scicat Jobs Schema&amp;lt;br&amp;gt;Scicat Dataset Schema\" style=\"shape=providedRequiredInterface;html=1;verticalLabelPosition=bottom;sketch=0;flipV=1;flipH=1;\" parent=\"1\" vertex=\"1\"&gt;\n                    &lt;mxGeometry x=\"650\" y=\"555\" width=\"20\" height=\"20\" as=\"geometry\"/&gt;\n                &lt;/mxCell&gt;\n            &lt;/root&gt;\n        &lt;/mxGraphModel&gt;\n    &lt;/diagram&gt;\n&lt;/mxfile&gt;"}' style="max-width:100%;border:1px solid transparent;"></div></p>
+<h2 id="service-deployment">Service Deployment</h2>
+<p>The services on the virtual machine can be deployed using a single docker-compose file:</p>
+<pre><code class="language-bash">docker compose --env-file .env --env-file .development.env up -d
+</code></pre>
+<p>There are configuration parameters for all the services for production and develoment:</p>
+<h3 id="production">Production</h3>
+<pre><code class="language-bash">
+</code></pre>
+<h3 id="development">Development</h3>
+<p>For development, it is useful to override some configuration:</p>
+<pre><code class="language-bash">
+</code></pre>
+<blockquote>
+<p>Note: The <code>lts-mock-volume</code> is a local volume here and not the LTS share.</p>
+</blockquote>
+<h2 id="prefect-deployment">Prefect Deployment</h2>
+<p>Prefect is set up in a slightly non-standard way (with respect to their described use cases). There are two workers deployed (archival/retrieval) that mount the hosts Docker socket in order
+to create containers at runtime in which the flows run. The flows are baked into the containers and the code is not pulled from any repository (Prefect would allow to, for example, store the code in an S3 bucket). The ETHZ LTS volume is mounted in a Docker volume such that the runtime containers can mount those during startup.</p>
+<p><div class="mxgraph" data-mxgraph='{"toolbar-position": "bottom", "toolbar-nohide": "0", "tooltips": "1", "border": 5, "resize": "1", "edit": "_blank", "lightbox": "1", "toolbar": "pages tags zoom layers lightbox", "xml": "&lt;mxfile host=\"65bd71144e\"&gt;\n    &lt;diagram id=\"SdmrrcvR9TLJoBex3L37\" name=\"Page-1\"&gt;\n        &lt;mxGraphModel dx=\"2117\" dy=\"1045\" grid=\"1\" gridSize=\"10\" guides=\"1\" tooltips=\"1\" connect=\"1\" arrows=\"1\" fold=\"1\" page=\"1\" pageScale=\"1\" pageWidth=\"850\" pageHeight=\"1100\" math=\"0\" shadow=\"0\"&gt;\n            &lt;root&gt;\n                &lt;mxCell id=\"0\"/&gt;\n                &lt;mxCell id=\"1\" parent=\"0\"/&gt;\n                &lt;mxCell id=\"8\" value=\"Host System\" style=\"verticalAlign=top;align=left;spacingTop=8;spacingLeft=2;spacingRight=12;shape=cube;size=10;direction=south;fontStyle=4;html=1;\" vertex=\"1\" parent=\"1\"&gt;\n                    &lt;mxGeometry x=\"440\" y=\"120\" width=\"920\" height=\"810\" as=\"geometry\"/&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"78\" value=\"\" style=\"group\" vertex=\"1\" connectable=\"0\" parent=\"1\"&gt;\n                    &lt;mxGeometry x=\"1080\" y=\"651\" width=\"250\" height=\"160\" as=\"geometry\"/&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"79\" value=\"\" style=\"group\" vertex=\"1\" connectable=\"0\" parent=\"78\"&gt;\n                    &lt;mxGeometry width=\"250\" height=\"160\" as=\"geometry\"/&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"80\" value=\"Runtime Container\" style=\"verticalAlign=top;align=left;spacingTop=8;spacingLeft=2;spacingRight=12;shape=cube;size=10;direction=south;fontStyle=4;html=1;\" vertex=\"1\" parent=\"79\"&gt;\n                    &lt;mxGeometry width=\"250\" height=\"160\" as=\"geometry\"/&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"81\" value=\"\u00abComponent\u00bb&amp;lt;br&amp;gt;&amp;lt;b&amp;gt;Prefect Flow&amp;lt;/b&amp;gt;\" style=\"html=1;dropTarget=0;\" vertex=\"1\" parent=\"79\"&gt;\n                    &lt;mxGeometry x=\"35\" y=\"50\" width=\"180\" height=\"90\" as=\"geometry\"/&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"82\" value=\"\" style=\"shape=module;jettyWidth=8;jettyHeight=4;\" vertex=\"1\" parent=\"81\"&gt;\n                    &lt;mxGeometry x=\"1\" width=\"20\" height=\"20\" relative=\"1\" as=\"geometry\"&gt;\n                        &lt;mxPoint x=\"-27\" y=\"7\" as=\"offset\"/&gt;\n                    &lt;/mxGeometry&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"73\" value=\"\" style=\"group\" vertex=\"1\" connectable=\"0\" parent=\"1\"&gt;\n                    &lt;mxGeometry x=\"500\" y=\"650\" width=\"250\" height=\"160\" as=\"geometry\"/&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"74\" value=\"\" style=\"group\" vertex=\"1\" connectable=\"0\" parent=\"73\"&gt;\n                    &lt;mxGeometry width=\"250\" height=\"160\" as=\"geometry\"/&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"75\" value=\"Runtime Container\" style=\"verticalAlign=top;align=left;spacingTop=8;spacingLeft=2;spacingRight=12;shape=cube;size=10;direction=south;fontStyle=4;html=1;\" vertex=\"1\" parent=\"74\"&gt;\n                    &lt;mxGeometry width=\"250\" height=\"160\" as=\"geometry\"/&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"76\" value=\"\u00abComponent\u00bb&amp;lt;br&amp;gt;&amp;lt;b&amp;gt;Prefect Flow&amp;lt;/b&amp;gt;\" style=\"html=1;dropTarget=0;\" vertex=\"1\" parent=\"74\"&gt;\n                    &lt;mxGeometry x=\"35\" y=\"50\" width=\"180\" height=\"90\" as=\"geometry\"/&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"77\" value=\"\" style=\"shape=module;jettyWidth=8;jettyHeight=4;\" vertex=\"1\" parent=\"76\"&gt;\n                    &lt;mxGeometry x=\"1\" width=\"20\" height=\"20\" relative=\"1\" as=\"geometry\"&gt;\n                        &lt;mxPoint x=\"-27\" y=\"7\" as=\"offset\"/&gt;\n                    &lt;/mxGeometry&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"68\" value=\"\" style=\"group\" vertex=\"1\" connectable=\"0\" parent=\"1\"&gt;\n                    &lt;mxGeometry x=\"1070\" y=\"660\" width=\"250\" height=\"160\" as=\"geometry\"/&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"69\" value=\"\" style=\"group\" vertex=\"1\" connectable=\"0\" parent=\"68\"&gt;\n                    &lt;mxGeometry width=\"250\" height=\"160\" as=\"geometry\"/&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"70\" value=\"Runtime Container\" style=\"verticalAlign=top;align=left;spacingTop=8;spacingLeft=2;spacingRight=12;shape=cube;size=10;direction=south;fontStyle=4;html=1;\" vertex=\"1\" parent=\"69\"&gt;\n                    &lt;mxGeometry width=\"250\" height=\"160\" as=\"geometry\"/&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"71\" value=\"\u00abComponent\u00bb&amp;lt;br&amp;gt;&amp;lt;b&amp;gt;Prefect Flow&amp;lt;/b&amp;gt;\" style=\"html=1;dropTarget=0;\" vertex=\"1\" parent=\"69\"&gt;\n                    &lt;mxGeometry x=\"35\" y=\"50\" width=\"180\" height=\"90\" as=\"geometry\"/&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"72\" value=\"\" style=\"shape=module;jettyWidth=8;jettyHeight=4;\" vertex=\"1\" parent=\"71\"&gt;\n                    &lt;mxGeometry x=\"1\" width=\"20\" height=\"20\" relative=\"1\" as=\"geometry\"&gt;\n                        &lt;mxPoint x=\"-27\" y=\"7\" as=\"offset\"/&gt;\n                    &lt;/mxGeometry&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"63\" value=\"\" style=\"group\" vertex=\"1\" connectable=\"0\" parent=\"1\"&gt;\n                    &lt;mxGeometry x=\"490\" y=\"660\" width=\"250\" height=\"160\" as=\"geometry\"/&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"64\" value=\"\" style=\"group\" vertex=\"1\" connectable=\"0\" parent=\"63\"&gt;\n                    &lt;mxGeometry width=\"250\" height=\"160\" as=\"geometry\"/&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"65\" value=\"Runtime Container\" style=\"verticalAlign=top;align=left;spacingTop=8;spacingLeft=2;spacingRight=12;shape=cube;size=10;direction=south;fontStyle=4;html=1;\" vertex=\"1\" parent=\"64\"&gt;\n                    &lt;mxGeometry width=\"250\" height=\"160\" as=\"geometry\"/&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"66\" value=\"\u00abComponent\u00bb&amp;lt;br&amp;gt;&amp;lt;b&amp;gt;Prefect Flow&amp;lt;/b&amp;gt;\" style=\"html=1;dropTarget=0;\" vertex=\"1\" parent=\"64\"&gt;\n                    &lt;mxGeometry x=\"35\" y=\"50\" width=\"180\" height=\"90\" as=\"geometry\"/&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"67\" value=\"\" style=\"shape=module;jettyWidth=8;jettyHeight=4;\" vertex=\"1\" parent=\"66\"&gt;\n                    &lt;mxGeometry x=\"1\" width=\"20\" height=\"20\" relative=\"1\" as=\"geometry\"&gt;\n                        &lt;mxPoint x=\"-27\" y=\"7\" as=\"offset\"/&gt;\n                    &lt;/mxGeometry&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"7\" value=\"\" style=\"group\" vertex=\"1\" connectable=\"0\" parent=\"1\"&gt;\n                    &lt;mxGeometry x=\"720\" y=\"170\" width=\"350\" height=\"810\" as=\"geometry\"/&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"14\" value=\"\" style=\"group\" vertex=\"1\" connectable=\"0\" parent=\"7\"&gt;\n                    &lt;mxGeometry x=\"340\" y=\"500\" width=\"250\" height=\"160\" as=\"geometry\"/&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"15\" value=\"\" style=\"group\" vertex=\"1\" connectable=\"0\" parent=\"14\"&gt;\n                    &lt;mxGeometry width=\"250\" height=\"160\" as=\"geometry\"/&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"16\" value=\"Runtime Container\" style=\"verticalAlign=top;align=left;spacingTop=8;spacingLeft=2;spacingRight=12;shape=cube;size=10;direction=south;fontStyle=4;html=1;\" vertex=\"1\" parent=\"15\"&gt;\n                    &lt;mxGeometry width=\"250\" height=\"160\" as=\"geometry\"/&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"17\" value=\"\u00abComponent\u00bb&amp;lt;br&amp;gt;&amp;lt;b&amp;gt;Prefect Flow&amp;lt;/b&amp;gt;\" style=\"html=1;dropTarget=0;\" vertex=\"1\" parent=\"15\"&gt;\n                    &lt;mxGeometry x=\"35\" y=\"50\" width=\"180\" height=\"90\" as=\"geometry\"/&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"18\" value=\"\" style=\"shape=module;jettyWidth=8;jettyHeight=4;\" vertex=\"1\" parent=\"17\"&gt;\n                    &lt;mxGeometry x=\"1\" width=\"20\" height=\"20\" relative=\"1\" as=\"geometry\"&gt;\n                        &lt;mxPoint x=\"-27\" y=\"7\" as=\"offset\"/&gt;\n                    &lt;/mxGeometry&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"19\" value=\"\" style=\"group\" vertex=\"1\" connectable=\"0\" parent=\"7\"&gt;\n                    &lt;mxGeometry x=\"50\" y=\"20\" width=\"250\" height=\"160\" as=\"geometry\"/&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"20\" value=\"Prefect Container\" style=\"verticalAlign=top;align=left;spacingTop=8;spacingLeft=2;spacingRight=12;shape=cube;size=10;direction=south;fontStyle=4;html=1;\" vertex=\"1\" parent=\"19\"&gt;\n                    &lt;mxGeometry width=\"250\" height=\"160\" as=\"geometry\"/&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"21\" value=\"\u00abComponent\u00bb&amp;lt;br&amp;gt;&amp;lt;b&amp;gt;Prefect Server&amp;lt;/b&amp;gt;\" style=\"html=1;dropTarget=0;\" vertex=\"1\" parent=\"19\"&gt;\n                    &lt;mxGeometry x=\"35\" y=\"50\" width=\"180\" height=\"90\" as=\"geometry\"/&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"22\" value=\"\" style=\"shape=module;jettyWidth=8;jettyHeight=4;\" vertex=\"1\" parent=\"21\"&gt;\n                    &lt;mxGeometry x=\"1\" width=\"20\" height=\"20\" relative=\"1\" as=\"geometry\"&gt;\n                        &lt;mxPoint x=\"-27\" y=\"7\" as=\"offset\"/&gt;\n                    &lt;/mxGeometry&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"9\" value=\"\" style=\"group\" vertex=\"1\" connectable=\"0\" parent=\"7\"&gt;\n                    &lt;mxGeometry x=\"340\" y=\"250\" width=\"250\" height=\"160\" as=\"geometry\"/&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"10\" value=\"\" style=\"group\" vertex=\"1\" connectable=\"0\" parent=\"9\"&gt;\n                    &lt;mxGeometry width=\"250\" height=\"160\" as=\"geometry\"/&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"11\" value=\"Worker Container\" style=\"verticalAlign=top;align=left;spacingTop=8;spacingLeft=2;spacingRight=12;shape=cube;size=10;direction=south;fontStyle=4;html=1;\" vertex=\"1\" parent=\"10\"&gt;\n                    &lt;mxGeometry width=\"250\" height=\"160\" as=\"geometry\"/&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"12\" value=\"\u00abComponent\u00bb&amp;lt;br&amp;gt;&amp;lt;b&amp;gt;Prefect Retrieval Worker&amp;lt;/b&amp;gt;\" style=\"html=1;dropTarget=0;\" vertex=\"1\" parent=\"10\"&gt;\n                    &lt;mxGeometry x=\"35\" y=\"50\" width=\"180\" height=\"90\" as=\"geometry\"/&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"13\" value=\"\" style=\"shape=module;jettyWidth=8;jettyHeight=4;\" vertex=\"1\" parent=\"12\"&gt;\n                    &lt;mxGeometry x=\"1\" width=\"20\" height=\"20\" relative=\"1\" as=\"geometry\"&gt;\n                        &lt;mxPoint x=\"-27\" y=\"7\" as=\"offset\"/&gt;\n                    &lt;/mxGeometry&gt;\n                &lt;/mxCell&gt;\n                &lt;object label=\"\" id=\"35\"&gt;\n                    &lt;mxCell style=\"ellipse;whiteSpace=wrap;html=1;align=center;aspect=fixed;resizable=0;points=[];outlineConnect=0;sketch=0;\" vertex=\"1\" parent=\"1\"&gt;\n                        &lt;mxGeometry x=\"510\" y=\"357\" width=\"10\" height=\"10\" as=\"geometry\"/&gt;\n                    &lt;/mxCell&gt;\n                &lt;/object&gt;\n                &lt;mxCell id=\"38\" value=\"\u00abComponent\u00bb&amp;lt;br&amp;gt;&amp;lt;b&amp;gt;Docker Socket&amp;lt;/b&amp;gt;\" style=\"html=1;dropTarget=0;\" vertex=\"1\" parent=\"1\"&gt;\n                    &lt;mxGeometry x=\"805\" y=\"620\" width=\"180\" height=\"90\" as=\"geometry\"/&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"39\" value=\"\" style=\"shape=module;jettyWidth=8;jettyHeight=4;\" vertex=\"1\" parent=\"38\"&gt;\n                    &lt;mxGeometry x=\"1\" width=\"20\" height=\"20\" relative=\"1\" as=\"geometry\"&gt;\n                        &lt;mxPoint x=\"-27\" y=\"7\" as=\"offset\"/&gt;\n                    &lt;/mxGeometry&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"40\" value=\"\" style=\"edgeStyle=elbowEdgeStyle;elbow=horizontal;endArrow=classic;html=1;curved=0;rounded=0;endSize=8;startSize=8;dashed=1;entryX=1;entryY=0.25;entryDx=0;entryDy=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;\" edge=\"1\" parent=\"1\"&gt;\n                    &lt;mxGeometry width=\"50\" height=\"50\" relative=\"1\" as=\"geometry\"&gt;\n                        &lt;mxPoint x=\"1095\" y=\"515\" as=\"sourcePoint\"/&gt;\n                        &lt;mxPoint x=\"985\" y=\"642.5\" as=\"targetPoint\"/&gt;\n                        &lt;Array as=\"points\"&gt;\n                            &lt;mxPoint x=\"1020\" y=\"580\"/&gt;\n                        &lt;/Array&gt;\n                    &lt;/mxGeometry&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"41\" value=\"\" style=\"edgeStyle=elbowEdgeStyle;elbow=horizontal;endArrow=classic;html=1;curved=0;rounded=0;endSize=8;startSize=8;dashed=1;entryX=0;entryY=0;entryDx=85;entryDy=250;exitX=1;exitY=0.75;exitDx=0;exitDy=0;entryPerimeter=0;\" edge=\"1\" parent=\"1\" source=\"38\" target=\"16\"&gt;\n                    &lt;mxGeometry width=\"50\" height=\"50\" relative=\"1\" as=\"geometry\"&gt;\n                        &lt;mxPoint x=\"845\" y=\"525\" as=\"sourcePoint\"/&gt;\n                        &lt;mxPoint x=\"710\" y=\"652.5\" as=\"targetPoint\"/&gt;\n                    &lt;/mxGeometry&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"42\" value=\"\" style=\"group\" vertex=\"1\" connectable=\"0\" parent=\"1\"&gt;\n                    &lt;mxGeometry x=\"480\" y=\"670\" width=\"250\" height=\"160\" as=\"geometry\"/&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"43\" value=\"\" style=\"group\" vertex=\"1\" connectable=\"0\" parent=\"42\"&gt;\n                    &lt;mxGeometry width=\"250\" height=\"160\" as=\"geometry\"/&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"44\" value=\"Runtime Container\" style=\"verticalAlign=top;align=left;spacingTop=8;spacingLeft=2;spacingRight=12;shape=cube;size=10;direction=south;fontStyle=4;html=1;\" vertex=\"1\" parent=\"43\"&gt;\n                    &lt;mxGeometry width=\"250\" height=\"160\" as=\"geometry\"/&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"45\" value=\"\u00abComponent\u00bb&amp;lt;br&amp;gt;&amp;lt;b&amp;gt;Prefect Flow&amp;lt;/b&amp;gt;\" style=\"html=1;dropTarget=0;\" vertex=\"1\" parent=\"43\"&gt;\n                    &lt;mxGeometry x=\"35\" y=\"50\" width=\"180\" height=\"90\" as=\"geometry\"/&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"46\" value=\"\" style=\"shape=module;jettyWidth=8;jettyHeight=4;\" vertex=\"1\" parent=\"45\"&gt;\n                    &lt;mxGeometry x=\"1\" width=\"20\" height=\"20\" relative=\"1\" as=\"geometry\"&gt;\n                        &lt;mxPoint x=\"-27\" y=\"7\" as=\"offset\"/&gt;\n                    &lt;/mxGeometry&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"47\" value=\"\" style=\"group\" vertex=\"1\" connectable=\"0\" parent=\"1\"&gt;\n                    &lt;mxGeometry x=\"480\" y=\"420\" width=\"250\" height=\"160\" as=\"geometry\"/&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"48\" value=\"\" style=\"group\" vertex=\"1\" connectable=\"0\" parent=\"47\"&gt;\n                    &lt;mxGeometry width=\"250\" height=\"160\" as=\"geometry\"/&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"49\" value=\"Worker Container\" style=\"verticalAlign=top;align=left;spacingTop=8;spacingLeft=2;spacingRight=12;shape=cube;size=10;direction=south;fontStyle=4;html=1;\" vertex=\"1\" parent=\"48\"&gt;\n                    &lt;mxGeometry width=\"250\" height=\"160\" as=\"geometry\"/&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"50\" value=\"\u00abComponent\u00bb&amp;lt;br&amp;gt;&amp;lt;b&amp;gt;Prefect Archival Worker&amp;lt;/b&amp;gt;\" style=\"html=1;dropTarget=0;\" vertex=\"1\" parent=\"48\"&gt;\n                    &lt;mxGeometry x=\"35\" y=\"50\" width=\"180\" height=\"90\" as=\"geometry\"/&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"51\" value=\"\" style=\"shape=module;jettyWidth=8;jettyHeight=4;\" vertex=\"1\" parent=\"50\"&gt;\n                    &lt;mxGeometry x=\"1\" width=\"20\" height=\"20\" relative=\"1\" as=\"geometry\"&gt;\n                        &lt;mxPoint x=\"-27\" y=\"7\" as=\"offset\"/&gt;\n                    &lt;/mxGeometry&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"52\" value=\"\" style=\"edgeStyle=elbowEdgeStyle;elbow=horizontal;endArrow=classic;html=1;curved=0;rounded=0;endSize=8;startSize=8;dashed=1;entryX=0;entryY=0.25;entryDx=0;entryDy=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;\" edge=\"1\" parent=\"1\" source=\"50\" target=\"38\"&gt;\n                    &lt;mxGeometry width=\"50\" height=\"50\" relative=\"1\" as=\"geometry\"&gt;\n                        &lt;mxPoint x=\"1105\" y=\"525\" as=\"sourcePoint\"/&gt;\n                        &lt;mxPoint x=\"995\" y=\"652.5\" as=\"targetPoint\"/&gt;\n                        &lt;Array as=\"points\"&gt;\n                            &lt;mxPoint x=\"770\" y=\"580\"/&gt;\n                        &lt;/Array&gt;\n                    &lt;/mxGeometry&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"53\" value=\"\" style=\"edgeStyle=elbowEdgeStyle;elbow=horizontal;endArrow=classic;html=1;curved=0;rounded=0;endSize=8;startSize=8;dashed=1;entryX=0;entryY=0;entryDx=75;entryDy=0;exitX=0;exitY=0.75;exitDx=0;exitDy=0;entryPerimeter=0;\" edge=\"1\" parent=\"1\" source=\"38\" target=\"44\"&gt;\n                    &lt;mxGeometry width=\"50\" height=\"50\" relative=\"1\" as=\"geometry\"&gt;\n                        &lt;mxPoint x=\"995\" y=\"697.5\" as=\"sourcePoint\"/&gt;\n                        &lt;mxPoint x=\"1070\" y=\"765\" as=\"targetPoint\"/&gt;\n                    &lt;/mxGeometry&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"54\" value=\"\" style=\"group\" vertex=\"1\" connectable=\"0\" parent=\"1\"&gt;\n                    &lt;mxGeometry x=\"810\" y=\"800\" width=\"170\" height=\"110\" as=\"geometry\"/&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"55\" value=\"\" style=\"group\" vertex=\"1\" connectable=\"0\" parent=\"54\"&gt;\n                    &lt;mxGeometry width=\"170\" height=\"110.00000000000001\" as=\"geometry\"/&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"56\" value=\"Docker Volumes\" style=\"verticalAlign=top;align=left;spacingTop=8;spacingLeft=2;spacingRight=12;shape=cube;size=10;direction=south;fontStyle=4;html=1;\" vertex=\"1\" parent=\"55\"&gt;\n                    &lt;mxGeometry width=\"170\" height=\"110.00000000000001\" as=\"geometry\"/&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"57\" value=\"\u00abComponent\u00bb&amp;lt;br&amp;gt;&amp;lt;b&amp;gt;ETH LTS NFS Share&amp;lt;/b&amp;gt;\" style=\"html=1;dropTarget=0;\" vertex=\"1\" parent=\"55\"&gt;\n                    &lt;mxGeometry x=\"23.8\" y=\"34.375\" width=\"122.4\" height=\"61.87500000000001\" as=\"geometry\"/&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"58\" value=\"\" style=\"shape=module;jettyWidth=8;jettyHeight=4;\" vertex=\"1\" parent=\"57\"&gt;\n                    &lt;mxGeometry x=\"1\" width=\"20\" height=\"20\" relative=\"1\" as=\"geometry\"&gt;\n                        &lt;mxPoint x=\"-27\" y=\"7\" as=\"offset\"/&gt;\n                    &lt;/mxGeometry&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"59\" value=\"\" style=\"edgeStyle=elbowEdgeStyle;elbow=horizontal;endArrow=classic;html=1;curved=0;rounded=0;endSize=8;startSize=8;dashed=1;entryX=0;entryY=0;entryDx=160;entryDy=130;entryPerimeter=0;exitX=0.527;exitY=0;exitDx=0;exitDy=0;exitPerimeter=0;\" edge=\"1\" parent=\"1\" source=\"56\" target=\"16\"&gt;\n                    &lt;mxGeometry width=\"50\" height=\"50\" relative=\"1\" as=\"geometry\"&gt;\n                        &lt;mxPoint x=\"1030\" y=\"890\" as=\"sourcePoint\"/&gt;\n                        &lt;mxPoint x=\"1080\" y=\"840\" as=\"targetPoint\"/&gt;\n                        &lt;Array as=\"points\"&gt;\n                            &lt;mxPoint x=\"1180\" y=\"850\"/&gt;\n                        &lt;/Array&gt;\n                    &lt;/mxGeometry&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"60\" value=\"\" style=\"edgeStyle=elbowEdgeStyle;elbow=horizontal;endArrow=classic;html=1;curved=0;rounded=0;endSize=8;startSize=8;dashed=1;entryX=0;entryY=0;entryDx=160;entryDy=130;entryPerimeter=0;exitX=0;exitY=0;exitDx=60.00000000000001;exitDy=170;exitPerimeter=0;\" edge=\"1\" parent=\"1\" source=\"56\" target=\"44\"&gt;\n                    &lt;mxGeometry width=\"50\" height=\"50\" relative=\"1\" as=\"geometry\"&gt;\n                        &lt;mxPoint x=\"770\" y=\"770\" as=\"sourcePoint\"/&gt;\n                        &lt;mxPoint x=\"970\" y=\"750\" as=\"targetPoint\"/&gt;\n                        &lt;Array as=\"points\"&gt;\n                            &lt;mxPoint x=\"600\" y=\"870\"/&gt;\n                        &lt;/Array&gt;\n                    &lt;/mxGeometry&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"61\" value=\"\" style=\"edgeStyle=elbowEdgeStyle;elbow=horizontal;endArrow=classic;html=1;curved=0;rounded=0;endSize=8;startSize=8;dashed=1;entryX=0;entryY=0;entryDx=85;entryDy=250;exitX=0;exitY=0;exitDx=0;exitDy=120;exitPerimeter=0;entryPerimeter=0;\" edge=\"1\" parent=\"1\" source=\"49\" target=\"20\"&gt;\n                    &lt;mxGeometry width=\"50\" height=\"50\" relative=\"1\" as=\"geometry\"&gt;\n                        &lt;mxPoint x=\"705\" y=\"525\" as=\"sourcePoint\"/&gt;\n                        &lt;mxPoint x=\"815\" y=\"652.5\" as=\"targetPoint\"/&gt;\n                        &lt;Array as=\"points\"&gt;\n                            &lt;mxPoint x=\"610\" y=\"310\"/&gt;\n                        &lt;/Array&gt;\n                    &lt;/mxGeometry&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"62\" value=\"\" style=\"edgeStyle=elbowEdgeStyle;elbow=horizontal;endArrow=classic;html=1;curved=0;rounded=0;endSize=8;startSize=8;dashed=1;entryX=0;entryY=0;entryDx=75;entryDy=0;entryPerimeter=0;\" edge=\"1\" parent=\"1\" target=\"20\"&gt;\n                    &lt;mxGeometry width=\"50\" height=\"50\" relative=\"1\" as=\"geometry\"&gt;\n                        &lt;mxPoint x=\"1210\" y=\"420\" as=\"sourcePoint\"/&gt;\n                        &lt;mxPoint x=\"780\" y=\"285\" as=\"targetPoint\"/&gt;\n                        &lt;Array as=\"points\"&gt;\n                            &lt;mxPoint x=\"1210\" y=\"310\"/&gt;\n                        &lt;/Array&gt;\n                    &lt;/mxGeometry&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"83\" value=\"\" style=\"group\" vertex=\"1\" connectable=\"0\" parent=\"1\"&gt;\n                    &lt;mxGeometry x=\"805\" y=\"390\" width=\"180\" height=\"110\" as=\"geometry\"/&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"84\" value=\"Postgres Container\" style=\"verticalAlign=top;align=left;spacingTop=8;spacingLeft=2;spacingRight=12;shape=cube;size=10;direction=south;fontStyle=4;html=1;\" vertex=\"1\" parent=\"83\"&gt;\n                    &lt;mxGeometry width=\"180\" height=\"110\" as=\"geometry\"/&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"85\" value=\"\u00abComponent\u00bb&amp;lt;br&amp;gt;&amp;lt;b&amp;gt;Postgres&amp;lt;/b&amp;gt;\" style=\"html=1;dropTarget=0;\" vertex=\"1\" parent=\"83\"&gt;\n                    &lt;mxGeometry x=\"25.2\" y=\"34.375\" width=\"129.60000000000002\" height=\"61.875\" as=\"geometry\"/&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"86\" value=\"\" style=\"shape=module;jettyWidth=8;jettyHeight=4;\" vertex=\"1\" parent=\"85\"&gt;\n                    &lt;mxGeometry x=\"1\" width=\"20\" height=\"20\" relative=\"1\" as=\"geometry\"&gt;\n                        &lt;mxPoint x=\"-27\" y=\"7\" as=\"offset\"/&gt;\n                    &lt;/mxGeometry&gt;\n                &lt;/mxCell&gt;\n                &lt;mxCell id=\"88\" value=\"\" style=\"endArrow=classic;html=1;dashed=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;\" edge=\"1\" parent=\"1\" source=\"21\"&gt;\n                    &lt;mxGeometry width=\"50\" height=\"50\" relative=\"1\" as=\"geometry\"&gt;\n                        &lt;mxPoint x=\"1150\" y=\"250\" as=\"sourcePoint\"/&gt;\n                        &lt;mxPoint x=\"895\" y=\"390\" as=\"targetPoint\"/&gt;\n                    &lt;/mxGeometry&gt;\n                &lt;/mxCell&gt;\n            &lt;/root&gt;\n        &lt;/mxGraphModel&gt;\n    &lt;/diagram&gt;\n&lt;/mxfile&gt;"}' style="max-width:100%;border:1px solid transparent;"></div></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Technology</th>
+<th>Description</th>
+<th>Endpoint</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Prefect Server</td>
+<td>Workflow orchestration <a href="https://www.prefect.io">https://www.prefect.io</a></td>
+<td></td>
+<td><a href="http://localhost/prefect-ui/dashboard">http://localhost/prefect-ui/dashboard</a></td>
+</tr>
+<tr>
+<td>Postgres Database</td>
+<td>Database for Prefect</td>
+<td></td>
+<td>n/a</td>
+</tr>
+<tr>
+<td>Prefect Worker</td>
+<td><a href="https://docs.prefect.io/3.0/deploy/infrastructure-concepts/workers">https://docs.prefect.io/3.0/deploy/infrastructure-concepts/workers</a></td>
+<td></td>
+<td>n/a</td>
+</tr>
+<tr>
+<td>Runtime Container</td>
+<td><a href="https://github.com/SwissOpenEM/ScopeMArchiver/blob/main/backend/runtime.Dockerfile">runtime.Dockerfile</a></td>
+<td></td>
+<td>n/a</td>
+</tr>
+</tbody>
+</table>
+<h3 id="prefect-server">Prefect Server</h3>
+<p>In order to run Prefect server, variables, secrets and concurrency limits need to be configured.</p>
+<h4 id="configuration">Configuration</h4>
+<p>All of the configuration can be done by running</p>
+<p><code>bash
+    docker compose --env-file .env --env-file .development.env run --rm prefect-config</code></p>
+<p>with the appropriate PREFECT_API_URL set.</p>
+<h5 id="variables">Variables</h5>
+<p>Variables are used at runtime and are fetched from the server by the flow. External endpoints and other parameters of the flow belong here:</p>
+<pre><code class="language-toml">[archiver]
+ARCHIVER_SCRATCH_FOLDER = "/storage"
+ARCHIVER_TARGET_SIZE_GB = 500
+
+[minio]
+MINIO_REGION = "eu-west-1"                        # S3 region
+MINIO_RETRIEVAL_BUCKET = "retrieval"              # S3 bucket where datasets are retrieved to
+MINIO_LANDINGZONE_BUCKET = "landingzone"          # S3 bucket where datasets are uploaded to  
+MINIO_STAGING_BUCKET = "staging"                  # S3 internally used bucket where datasets are staged before moving to storage
+MINIO_ENDPOINT = "scopem-openemdata.ethz.ch:9090" # S3 endpoint of storage server
+MINIO_URL_EXPIRATION_DAYS = 7
+
+[scicat]
+SCICAT_ENDPOINT = "https://scopem-openem.ethz.ch/scicat/backend"
+SCICAT_API_PREFIX = "/api/v3" # Route prefix of Scicat instance
+SCICAT_DATASETS_API_PREFIX = "/api/v3" # Route prefix of Scicat dataset endpoints
+SCICAT_JOBS_API_PREFIX = "/api/v3" # jobs endpoints for jobs endpoints
+</code></pre>
+<h5 id="concurrrency-limits">Concurrrency Limits</h5>
+<p>There are certain sections of the code (tasks) that can only run in a limited manner concurrently (i.e. writing to the LTS), see <a href="https://docs.prefect.io/3.0/develop/task-run-limits#limit-concurrent-task-runs-with-tags">https://docs.prefect.io/3.0/develop/task-run-limits#limit-concurrent-task-runs-with-tags</a>.</p>
+<pre><code class="language-toml">LTS_WRITE_LIMIT = 4
+LTS_READ_LIMIT = 4
+</code></pre>
+<h5 id="internal-secrets">Internal Secrets</h5>
+<p>Internal secrets can be created at deployment time.</p>
+<pre><code class="language-bash"># Postgres
+echo "postgres_user" &gt; .secrets/postgresuser.txt
+openssl rand -base64 12 &gt; .secrets/postgrespass.txt # creates random string
+</code></pre>
+<h5 id="external-secrets">External Secrets</h5>
+<p>The Minio deployment might already provide its own secrets and can be added manually in the UI too.</p>
+<pre><code class="language-bash"># Minio
+echo "minioadminuser" &gt; .secrets/miniouser.txt
+openssl rand -base64 12 &gt; .secrets/miniopass.txt # creates random string
+
+// TODO: Needed ?
+# Github
+echo "&lt;github_user&gt;" &gt; .secrets/githubuser.txt
+echo "&lt;github_access_token&gt;" &gt; .secrets/githubpass.txt
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>github-openem-username</td>
+<td>Username for Github container registry</td>
+</tr>
+<tr>
+<td>github-openem-access-token</td>
+<td>Personal access token to Github container registry</td>
+</tr>
+</tbody>
+</table>
+<h3 id="prefect-worker">Prefect Worker</h3>
+<p>Workers can only be deployed on a machine that has access to</p>
+<ul>
+<li>the Prefect server (no authentication implemented in Prefect for on-premise deployement currently)</li>
+<li>the S3 storage</li>
+<li>the ETHZ LTS share (ip whitelisting within ETHZ network)</li>
+</ul>
+<p>They can be started by the following command:</p>
+<pre><code class="language-bash">docker compose --env-file .env --env-file .development.env up -d prefect-archival-worker
+docker compose --env-file .env --env-file .development.env up -d prefect-retrieval-worker
+</code></pre>
+<blockquote>
+<p>Note: due to a bug in Prefect the workers concurrency limit needs to be set manually in the UI.</p>
+</blockquote>
+<h3 id="flows">Flows</h3>
+<p>The <a href="../backend/archiver/flows/__init__.py">flows</a> can be deployed using a container:</p>
+<pre><code class="language-bash">docker compose --env-file .env --env-file .development.env run --rm prefect-flows-deployment
+</code></pre>
+<p>This deploys the flows as defined in the <a href="https://github.com/SwissOpenEM/ScopeMArchiver/backend/prefect.yaml">prefect.yaml</a> and requires the secrets set up in the previous step.</p>
+</article>
+</div>
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+</div>
+</main>
+<footer class="md-footer">
+<div class="md-footer-meta md-typeset">
+<div class="md-footer-meta__inner md-grid">
+<div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" rel="noopener" target="_blank">
+      Material for MkDocs
+    </a>
+</div>
+</div>
+</div>
+</footer>
+</div>
+<div class="md-dialog" data-md-component="dialog">
+<div class="md-dialog__inner md-typeset"></div>
+</div>
+<script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["toc.follow", "toc.integrate"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+<script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+<script src="../assets/javascripts/panzoom.min.js"></script>
+<script src="../assets/javascripts/zoompan.js"></script>
+<script src="https://viewer.diagrams.net/js/viewer-static.min.js"></script></body>
+</html>
