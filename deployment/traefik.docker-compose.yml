@@ -1,36 +1,39 @@
 services:
   traefik:
-    image: "traefik:v3.3.4"
+    image: "traefik:latest"
     container_name: "traefik"
     command:
-      - "--log.level=DEBUG"
-      - "--api.insecure=false"
+      - "--log.level=TRACE"
+      - "--api.insecure=true"
       - "--api.dashboard=true"
       - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=true"
+      - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.websecure.address=:443"
       - "--entrypoints.web.address=:80"
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
       - "--metrics.prometheus=true"
       - "--providers.file.filename=/opt/traefik.yml"
       - "--entryPoints.web.observability.metrics=true"
+      - "--certificatesresolvers.certresolver.acme.email=wiphilip@ethz.ch"
+      - "--certificatesresolvers.certresolver.acme.storage=/acme/acme.json"
+      - "--certificatesresolvers.certresolver.acme.tlschallenge=true"
     ports:
       - "443:443"
       - "80:80"
     expose: 
       - "8080"
     volumes:
-      - ${CERTIFICATE_FILE:-/dev/null}:/opt/certs/cert.pem
-      - ${CERTIFICATE_KEY_FILE:-/dev/null}:/opt/certs/cert.key
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - acme:/acme
     labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.dashboard.rule=Host(`${HOST}`) && (PathPrefix(`/api`) || PathPrefix(`/dashboard`))"
-      - "traefik.http.routers.dashboard.middlewares=${AUTH_MIDDLEWARE}"
-      - "traefik.http.routers.dashboard.service=api@internal"
-      - "traefik.http.routers.dashboard.entrypoints=websecure"
-      - "traefik.http.routers.dashboard.tls"
-      - "traefik.frontend.headers.passHostHeader=true"
-      - "traefik.http.services.dashboard.loadbalancer.server.port=8080"
+      traefik.enable: true
+      traefik.http.routers.dashboard.rule: Host(`${HOST}`) && (PathPrefix(`/api`) || PathPrefix(`/dashboard`))
+      traefik.http.routers.dashboard.middlewares: ${AUTH_MIDDLEWARE}
+      traefik.http.routers.dashboard.service: api@internal
+      traefik.http.routers.dashboard.entrypoints: websecure
+      traefik.http.routers.dashboard.tls.certresolver: certresolver
+      traefik.frontend.headers.passHostHeader: true
+      traefik.http.services.dashboard.loadbalancer.server.port: 8080
     networks:
       - scopemarchiver_network
     configs:
@@ -38,6 +41,7 @@ services:
         target: /opt/traefik.yml
     secrets:
       - prometheus_auth
+
 
   authentik-proxy:
     image: ghcr.io/goauthentik/proxy
@@ -70,17 +74,6 @@ services:
 configs:
   traefik.yml:
     content: |
-      tls:
-        certificates:
-          - certFile: /opt/certs/cert.pem
-            keyFile: /opt/certs/cert.key
-            stores: 
-              - default
-        stores:
-          default:
-            defaultCertificate:
-              certFile: /opt/certs/cert.pem
-              keyFile: /opt/certs/cert.key
       http:
         routers:
           external-api-router:
@@ -101,3 +94,6 @@ secrets:
     file: ./.secrets/authentik_token
   prometheus_auth:
     file: ./.secrets/.htpasswd_prom
+
+volumes:
+  acme:

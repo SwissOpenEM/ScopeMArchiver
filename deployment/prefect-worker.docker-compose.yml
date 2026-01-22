@@ -20,7 +20,7 @@ services:
       - PREFECT_LOGGING_LEVEL=${PREFECT_LOGGING_LEVEL}
       - PREFECT_API_URL=http://prefect-server:4200/api
     labels:
-      - "traefik.enable=false"
+      traefik.enable: false
   prefect-retrieval-worker:
     image: prefecthq/prefect:${PREFECT_VERSION}
     restart: always
@@ -42,4 +42,4 @@ services:
       - PREFECT_LOGGING_LEVEL=${PREFECT_LOGGING_LEVEL}
       - PREFECT_API_URL=http://prefect-server:4200/api
     labels:
-      - "traefik.enable=false"
+      traefik.enable: false
