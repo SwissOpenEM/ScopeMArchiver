@@ -1,6 +1,6 @@
 # Deployment
 
-![arch](deployment.drawio)
+![arch](deployment.drawio.svg)
 
 
 
@@ -17,7 +17,7 @@ There are configuration parameters for all the services for production and devel
 ### Production
 
 ```bash
-{!../.env!}
+{!../deployment/.env.prod!}
 ```
 
 ### Development
@@ -25,7 +25,7 @@ There are configuration parameters for all the services for production and devel
 For development, it is useful to override some configuration:
 
 ```bash
-{!../.development.env!}
+{!../deployment/.env.development!}
 ```
 
 > Note: The `lts-mock-volume` is a local volume here and not the LTS share.
@@ -39,11 +39,11 @@ to create containers at runtime in which the flows run. The flows are baked into
 
 ![prefect](prefect.drawio)
 
-| Name              | Technology                                                                                                               | Description | Endpoint                                |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------ | ----------- | --------------------------------------- |
-| Prefect Server    | Workflow orchestration <https://www.prefect.io>                                                                          |             | <http://localhost/prefect-ui/dashboard> |
-| Postgres Database | Database for Prefect                                                                                                     |             | n/a                                     |
-| Prefect Worker    | <https://docs.prefect.io/3.0/deploy/infrastructure-concepts/workers>                                                     |             | n/a                                     |
+| Name              | Technology                                                                                               | Description | Endpoint                                |
+|-------------------|----------------------------------------------------------------------------------------------------------|-------------|-----------------------------------------|
+| Prefect Server    | Workflow orchestration <https://www.prefect.io>                                                          |             | <http://localhost/prefect-ui/dashboard> |
+| Postgres Database | Database for Prefect                                                                                     |             | n/a                                     |
+| Prefect Worker    | <https://docs.prefect.io/3.0/deploy/infrastructure-concepts/workers>                                     |             | n/a                                     |
 | Runtime Container | [runtime.Dockerfile](https://github.com/SwissOpenEM/ScopeMArchiver/blob/main/backend/runtime.Dockerfile) |             | n/a                                     |
 
 ### Prefect Server
@@ -100,7 +100,7 @@ echo "<github_access_token>" > .secrets/githubpass.txt
 ```
 
 | Name                       | Description                                        |
-| -------------------------- | -------------------------------------------------- |
+|----------------------------|----------------------------------------------------|
 | github-openem-username     | Username for Github container registry             |
 | github-openem-access-token | Personal access token to Github container registry |
 

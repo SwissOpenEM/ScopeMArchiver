@@ -2,7 +2,7 @@
 
 ## Component Diagram
 
-![Compnents](components.drawio)
+![Components](components.drawio.svg)
 
 ### Components
 

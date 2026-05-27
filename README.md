@@ -124,5 +124,5 @@ docker run --rm -it -p 8000:8000 -v ${PWD}:/docs ghcr.io/swissopenem/scopemarchi
 Deploy documentation to GitHub Pages
 
 ```bash
-docker run --rm -it -v ~/.ssh:/root/.ssh -v ${PWD}:/docs ghcr.io/swissopenem/scopemarchiver-docs:latest gh-deploy
+docker run --rm -it -v ~/.ssh:/root/.ssh:ro -v ${PWD}:/docs ghcr.io/swissopenem/scopemarchiver-docs:latest gh-deploy
 ```
