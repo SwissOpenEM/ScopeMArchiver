@@ -18,7 +18,7 @@ dependencies = [
     "prefect==3.7.2",
     "pyjwt>=2.10.1",
     "pytest>=8.3.5",
-    "requests>=2.32.3",
+    "requests>=2.33.0",
     "uvicorn>=0.34.0",
 ]
 
