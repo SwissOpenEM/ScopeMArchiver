@@ -2,7 +2,7 @@ boto3>=1.36.23
 moto[s3]>=5.0.28
 prefect==3.7.2
 prefect-docker==0.6.6
-pytest>=8.3.4
+pytest>=9.0.3
 pytest-asyncio>=0.25.3
 requests>=2.33.0
 requests-mock>=1.12.1
