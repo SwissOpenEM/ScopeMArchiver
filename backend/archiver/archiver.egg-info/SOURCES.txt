@@ -1,0 +1,9 @@
+README.md
+pyproject.toml
+archiver.egg-info/PKG-INFO
+archiver.egg-info/SOURCES.txt
+archiver.egg-info/dependency_links.txt
+archiver.egg-info/requires.txt
+archiver.egg-info/top_level.txt
+tests/test_e2e.py
+tests/test_scicat_tasks.py

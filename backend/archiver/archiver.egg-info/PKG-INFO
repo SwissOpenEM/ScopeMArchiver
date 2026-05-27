@@ -1,0 +1,15 @@
+Metadata-Version: 2.4
+Name: archiver
+Version: 0.1.0
+Summary: Add your description here
+Requires-Python: ==3.13.*
+Description-Content-Type: text/markdown
+Requires-Dist: boto3>=1.36.23
+Requires-Dist: moto[s3]>=5.0.28
+Requires-Dist: prefect==3.7.2
+Requires-Dist: prefect-docker==0.6.6
+Requires-Dist: pytest>=8.3.4
+Requires-Dist: pytest-asyncio>=0.25.3
+Requires-Dist: requests>=2.32.3
+Requires-Dist: requests-mock>=1.12.1
+Requires-Dist: strenum>=0.4.15
