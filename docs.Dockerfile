@@ -1,4 +1,4 @@
-FROM squidfunk/mkdocs-material
+FROM zensical/zensical
 RUN pip install mkdocstrings
 RUN pip install "mkdocstrings[python]"
 RUN pip install mkdocs-gen-files
