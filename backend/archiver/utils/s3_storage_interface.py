@@ -28,10 +28,6 @@ class Bucket:
         return Bucket(Variables().MINIO_RETRIEVAL_BUCKET)
 
     @staticmethod
-    def staging_bucket() -> Bucket:  # type: ignore
-        return Bucket(Variables().MINIO_STAGING_BUCKET)
-
-    @staticmethod
     def landingzone_bucket(dataset_pid: str) -> Bucket:  # type: ignore
         sanatized_name = dataset_pid
         for c in ["_", "/"]:

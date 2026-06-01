@@ -176,7 +176,7 @@ def upload_datablocks_to_s3(dataset_id: str) -> List[Path]:
     return datablocks_operations.upload_objects_to_s3(
         client=s3_client,
         prefix=prefix,
-        bucket=Bucket.staging_bucket(),
+        bucket=Bucket.retrieval_bucket(),
         source_folder=datablocks_scratch_folder,
         ext=".tar",
         progress_callback=update_progress,
@@ -184,7 +184,7 @@ def upload_datablocks_to_s3(dataset_id: str) -> List[Path]:
 
 
 @task(task_run_name=generate_task_name_dataset)
-def verify_objects(dataset_id: str, uploaded_objects: List[Path]) -> List[DataBlock]:
+def verify_objects(dataset_id: str, uploaded_objects: List[Path]):
     s3_client = get_s3_client()
     prefix = StoragePaths.relative_datablocks_folder(dataset_id)
 
@@ -192,7 +192,7 @@ def verify_objects(dataset_id: str, uploaded_objects: List[Path]) -> List[DataBl
         client=s3_client,
         uploaded_objects=uploaded_objects,
         minio_prefix=prefix,
-        bucket=Bucket.staging_bucket(),
+        bucket=Bucket.retrieval_bucket(),
     )
     if len(missing_objects) > 0:
         raise SystemError(f"{len(missing_objects)} datablocks missing")

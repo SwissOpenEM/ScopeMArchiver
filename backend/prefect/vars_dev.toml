@@ -7,7 +7,6 @@ ARCHIVER_TARGET_SIZE_GB = 20
 MINIO_REGION = "eu-west-1"                        # S3 region
 MINIO_RETRIEVAL_BUCKET = "dev.retrieval"              # S3 bucket where datasets are retrieved to
 MINIO_LANDINGZONE_BUCKET = "dev.landingzone"          # S3 bucket where datasets are uploaded to  
-MINIO_STAGING_BUCKET = "dev.staging"                  # S3 internally used bucket where datasets are staged before copying to storage
 MINIO_ENDPOINT = "scopem-openemdata.ethz.ch:9090" # S3 endpoint of storage server
 MINIO_URL_EXPIRATION_DAYS = 7
 

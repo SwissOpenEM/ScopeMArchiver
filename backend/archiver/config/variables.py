@@ -27,7 +27,6 @@ class PrefectVariablesModel(BaseSettings):
 
     MINIO_REGION: str = ""
     MINIO_RETRIEVAL_BUCKET: str = ""
-    MINIO_STAGING_BUCKET: str = ""
     MINIO_LANDINGZONE_BUCKET: str = ""
     MINIO_ENDPOINT: str = ""
     MINIO_EXTERNAL_ENDPOINT: str = ""
@@ -92,10 +91,6 @@ class Variables:
     @property
     def MINIO_LANDINGZONE_BUCKET(self) -> str:
         return self.__get("minio_landingzone_bucket")
-
-    @property
-    def MINIO_STAGING_BUCKET(self) -> str:
-        return self.__get("minio_staging_bucket")
 
     @property
     def MINIO_REGION(self) -> str:

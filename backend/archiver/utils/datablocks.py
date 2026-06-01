@@ -392,7 +392,7 @@ def find_object_in_s3(client: S3Storage, dataset_id, datablock_name):
         o.Name
         for o in list_datablocks(
             client,
-            bucket=Bucket.staging_bucket(),
+            bucket=Bucket.retrieval_bucket(),
             prefix=StoragePaths.relative_datablocks_folder(dataset_id),
         )
     )
@@ -437,7 +437,7 @@ def verify_checksum(dataset_id: str, datablock: DataBlock, expected_checksum: st
 def print_error_log():
     getLogger().error("dsmerror.log:\n")
     try:
-        error_log =Path("dsmerror.log") 
+        error_log = Path("dsmerror.log")
         if not error_log.exists:
             getLogger().error(f"dsmerror.log not found: {error_log}")
             return
@@ -512,13 +512,13 @@ def verify_datablock_content(datablock: DataBlock, datablock_path: str):
             )
 
 
-@log
-def cleanup_s3_staging(client: S3Storage, dataset_id: str) -> None:
-    delete_objects_from_s3(
-        client,
-        prefix=StoragePaths.relative_datablocks_folder(dataset_id),
-        bucket=Bucket.staging_bucket(),
-    )
+# @log
+# def cleanup_s3_staging(client: S3Storage, dataset_id: str) -> None:
+#     delete_objects_from_s3(
+#         client,
+#         prefix=StoragePaths.relative_datablocks_folder(dataset_id),
+#         bucket=Bucket.staging_bucket(),
+#     )
 
 
 @log
