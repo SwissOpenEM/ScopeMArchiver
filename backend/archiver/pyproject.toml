@@ -65,7 +65,7 @@ dev = [
     "requests-mock>=1.12.1",
 ]
 lint = [
-    "mypy>=1.15.0",
+    "mypy>=2.1.0",
     "ruff>=0.9.6",
 ]
 
