@@ -8,7 +8,6 @@ from openapi_server.models.abort_dataset_upload_resp import AbortDatasetUploadRe
 from openapi_server.models.upload_request_successful_resp import UploadRequestSuccessfulResp
 from openapi_server.models.upload_request_unsuccessful_resp import UploadRequestUnsuccessfulResp
 from openapi_server.settings import GetSettings
-import minio
 import os
 import json
 
@@ -32,21 +31,21 @@ def create_bucket_name(dataset_id: str) -> str:
     return sanitized_name
 
 
-async def get_minio_credentials():
-    user_block = await Secret.load("minio-user")
-    password_block = await Secret.load("minio-password")
+async def get_s3_credentials():
+    user_block = await Secret.load("s3-user")
+    password_block = await Secret.load("s3-password")
     return SecretStr(user_block.get()), SecretStr(password_block.get())
 
 
 async def get_s3_client():
     settings = GetSettings()
-    user, password = await get_minio_credentials()
+    user, password = await get_s3_credentials()
     s3_client = boto3.client(
         "s3",
-        endpoint_url=f"https://{settings.MINIO_ENDPOINT}",
+        endpoint_url=f"https://{settings.S3_ENDPOINT}",
         aws_access_key_id=user.get_secret_value(),
         aws_secret_access_key=password.get_secret_value(),
-        region_name=settings.MINIO_REGION,
+        region_name=settings.S3_REGION,
         config=Config(signature_version="s3v4"),
     )
 
@@ -55,13 +54,13 @@ async def get_s3_client():
 
 async def get_s3_resource():
     settings = GetSettings()
-    user, password = await get_minio_credentials()
+    user, password = await get_s3_credentials()
     s3_resource = boto3.resource(
         "s3",
-        endpoint_url=f"https://{settings.MINIO_ENDPOINT}",
+        endpoint_url=f"https://{settings.S3_ENDPOINT}",
         aws_access_key_id=user.get_secret_value(),
         aws_secret_access_key=password.get_secret_value(),
-        region_name=settings.MINIO_REGION,
+        region_name=settings.S3_REGION,
         config=Config(signature_version="s3v4"),
     )
 
@@ -72,11 +71,11 @@ async def get_minio_admin_client():
     settings = GetSettings()
     user_block = await Secret.load("minio-user")
     password_block = await Secret.load("minio-password")
-    os.environ["MINIO_ACCESS_KEY"] = user_block.get()
-    os.environ["MINIO_SECRET_KEY"] = password_block.get()
+    os.environ["S3_ACCESS_KEY"] = user_block.get()
+    os.environ["S3_SECRET_KEY"] = password_block.get()
     provider = minio.credentials.EnvMinioProvider()
     client = minio.MinioAdmin(
-        endpoint=f"{settings.MINIO_ENDPOINT}", credentials=provider, region=settings.MINIO_REGION
+        endpoint=f"{settings.S3_ENDPOINT}", credentials=provider, region=settings.S3_REGION
     )
     return client
 
@@ -203,7 +202,7 @@ def create_bucket(client: boto3, bucket: str):
         ACL="authenticated-read",
         Bucket=bucket,
         CreateBucketConfiguration={
-            "LocationConstraint": GetSettings().MINIO_REGION,
+            "LocationConstraint": GetSettings().S3_REGION,
         },
         ObjectLockEnabledForBucket=False,
         ObjectOwnership="ObjectWriter",
@@ -214,7 +213,7 @@ def create_bucket(client: boto3, bucket: str):
 
 def get_bucket_names(client) -> List[str]:
     response = client.list_buckets(
-        MaxBuckets=1000, ContinuationToken="", Prefix="", BucketRegion=GetSettings().MINIO_REGION
+        MaxBuckets=1000, ContinuationToken="", Prefix="", BucketRegion=GetSettings().S3_REGION
     )
 
     buckets = [r["Name"] for r in response["Buckets"]]
@@ -257,7 +256,7 @@ async def request_upload(
     total_quota_gib = get_total_quota(admin, buckets)
     free_space_factor = GetSettings().FREE_SPACE_FACTOR
 
-    _TOTAL_AVAILABLE_GIB = GetSettings().MINIO_TOTAL_LANDING_SPACE_TB * _TB / _GiB
+    _TOTAL_AVAILABLE_GIB = GetSettings().S3_TOTAL_LANDING_SPACE_TB * _TB / _GiB
     max_available_storage_gib = _TOTAL_AVAILABLE_GIB * free_space_factor
 
     bucket_name = create_bucket_name(dataset_id)

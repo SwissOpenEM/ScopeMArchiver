@@ -25,7 +25,7 @@ class Bucket:
 
     @staticmethod
     def retrieval_bucket() -> Bucket:  # type: ignore
-        return Bucket(Variables().MINIO_RETRIEVAL_BUCKET)
+        return Bucket(Variables().S3_RETRIEVAL_BUCKET)
 
     @staticmethod
     def landingzone_bucket(dataset_pid: str) -> Bucket:  # type: ignore
@@ -37,10 +37,10 @@ class Bucket:
 
 
 @log_debug
-def download_file(s3_client, obj, minio_prefix, destination_folder, bucket):
+def download_file(s3_client, obj, prefix, destination_folder, bucket):
     item_name = Path(obj.key).name
     item_dir = Path(obj.key).parent
-    item_parent_dirs = item_dir.relative_to(minio_prefix)
+    item_parent_dirs = item_dir.relative_to(prefix)
     local_filedir = destination_folder / item_parent_dirs
     local_filedir.mkdir(parents=True, exist_ok=True)
     local_filepath = local_filedir / item_name
@@ -64,7 +64,7 @@ class S3Storage:
         self._PASSWORD = password
         self._REGION = region
 
-        self._minio = boto3.client(
+        self._client = boto3.client(
             "s3",
             endpoint_url=f"https://{self._URL}" if self._URL is not None and self._URL != "" else None,
             aws_access_key_id=self._USER.strip(),
@@ -73,14 +73,15 @@ class S3Storage:
             config=Config(signature_version="s3v4", max_pool_connections=32),
         )
 
-        self._external_minio = boto3.client(
+        self._external_s3_client = boto3.client(
             "s3",
-            endpoint_url=f"https://{Variables().MINIO_EXTERNAL_ENDPOINT}",
+            endpoint_url=f"https://{Variables().S3_EXTERNAL_ENDPOINT}",
             aws_access_key_id=self._USER.strip(),
             aws_secret_access_key=self._PASSWORD.get_secret_value().strip(),
             region_name=self._REGION,
             config=Config(signature_version="s3v4", max_pool_connections=32),
         )
+
         self._resource = boto3.resource(
             "s3",
             endpoint_url=f"https://{self._URL}" if self._URL is not None and self._URL != "" else None,
@@ -103,11 +104,10 @@ class S3Storage:
     def get_presigned_url(self, bucket: Bucket, filename: str) -> str:
         days_to_seconds = 60 * 60 * 24
 
-        presigned_url = self._external_minio.generate_presigned_url(
+        presigned_url = self._external_s3_client.generate_presigned_url(
             "get_object",
             Params={"Bucket": bucket.name, "Key": filename},
-            ExpiresIn=Variables().MINIO_URL_EXPIRATION_DAYS
-            * days_to_seconds,  # URL expiration time in seconds
+            ExpiresIn=Variables().S3_URL_EXPIRATION_DAYS * days_to_seconds,  # URL expiration time in seconds
         )
         return presigned_url
 
@@ -123,7 +123,7 @@ class S3Storage:
 
         # the only way to reset the expiration date is to copy the object to itself apparently
         copy_source = {"Bucket": bucket_name, "Key": filename}
-        self._minio.copy_object(
+        self._client.copy_object(
             Bucket=bucket_name,
             Key=filename,
             CopySource=copy_source,
@@ -134,25 +134,25 @@ class S3Storage:
     @log_debug
     def stat_object(self, bucket: Bucket, filename: str) -> StatInfo | None:
         try:
-            object = self._minio.head_object(Bucket=bucket.name, Key=filename)
+            object = self._client.head_object(Bucket=bucket.name, Key=filename)
             return S3Storage.StatInfo(Size=object["ContentLength"])
         except Exception:
             return None
 
     @log_debug
     def fget_object(self, bucket: Bucket, folder: str, object_name: str, target_path: Path):
-        self._minio.download_file(Bucket=bucket.name, Key=object_name, Filename=str(target_path.absolute()))
+        self._client.download_file(Bucket=bucket.name, Key=object_name, Filename=str(target_path.absolute()))
 
     @log
     def download_objects(
         self,
-        minio_prefix: Path,
+        prefix: Path,
         bucket: Bucket,
         destination_folder: Path,
         progress_callback: Callable[[float], None] | None = None,
     ) -> List[Path]:
         remote_bucket = self._resource.Bucket(bucket.name)
-        objs = remote_bucket.objects.filter(Prefix=str(minio_prefix))
+        objs = remote_bucket.objects.filter(Prefix=str(prefix))
 
         files: List[Path] = []
 
@@ -160,9 +160,7 @@ class S3Storage:
 
         with ThreadPoolExecutor(max_workers=Variables().ARCHIVER_NUM_WORKERS) as executor:
             future_to_key = {
-                executor.submit(
-                    download_file, self._minio, key, minio_prefix, destination_folder, bucket
-                ): key
+                executor.submit(download_file, self._client, key, prefix, destination_folder, bucket): key
                 for key in objs
             }
 
@@ -198,7 +196,7 @@ class S3Storage:
 
     @log
     def fput_object(self, source_file: Path, destination_file: Path, bucket: Bucket):
-        self._minio.upload_file(
+        self._client.upload_file(
             Bucket=bucket.name,
             Key=str(destination_file),
             Filename=str(source_file),
@@ -210,16 +208,16 @@ class S3Storage:
         )
 
     @log
-    def delete_objects(self, minio_prefix: Path, bucket: Bucket) -> None:
+    def delete_objects(self, prefix: Path, bucket: Bucket) -> None:
         remote_bucket = self._resource.Bucket(bucket.name)
-        objs = remote_bucket.objects.filter(Prefix=str(minio_prefix))
+        objs = remote_bucket.objects.filter(Prefix=str(prefix))
 
         for obj in objs:
-            self._minio.delete_object(Bucket=bucket.name, Key=obj.key)
+            self._client.delete_object(Bucket=bucket.name, Key=obj.key)
 
     @log
     def create_bucket(self, bucket: Bucket) -> None:
-        self._minio.create_bucket(
+        self._client.create_bucket(
             ACL="authenticated-read",
             Bucket=bucket.name,
             CreateBucketConfiguration={
@@ -231,14 +229,14 @@ class S3Storage:
 
     @log
     def delete_bucket(self, bucket: Bucket) -> None:
-        self._minio.delete_bucket(Bucket=bucket.name)
+        self._client.delete_bucket(Bucket=bucket.name)
 
 
 @functools.cache
 def get_s3_client() -> S3Storage:
     return S3Storage(
-        url=Variables().MINIO_ENDPOINT,
-        user=Blocks().MINIO_USER,
-        password=Blocks().MINIO_PASSWORD,
-        region=Variables().MINIO_REGION,
+        url=Variables().S3_ENDPOINT,
+        user=Blocks().S3_USER,
+        password=Blocks().S3_PASSWORD,
+        region=Variables().S3_REGION,
     )

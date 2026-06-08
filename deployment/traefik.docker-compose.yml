@@ -82,12 +82,12 @@ configs:
               - websecure
             tls: ""
             service: 
-              external-api-minio
+              external-api-s3
         services:
-          external-api-minio:
+          external-api-s3:
             loadBalancer:
               servers:
-                - url: "https://${MINIO_ENDPOINT}"
+                - url: "https://${S3_ENDPOINT}"
               passHostHeader: true
 secrets:
   authentik_token:

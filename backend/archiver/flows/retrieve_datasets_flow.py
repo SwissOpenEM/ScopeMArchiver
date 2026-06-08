@@ -137,15 +137,9 @@ def retrieve_single_dataset_flow(dataset_id: str, job_id: UUID):
     # The error does not propagate correctly through the dependent tasks
     # https://github.com/PrefectHQ/prefect/issues/12028
     for datablock in missing_datablocks.result():
-        copy_to_scratch = retrieve_datablock_to_scratch.submit(dataset_id=dataset_id, datablock=datablock)
-
-        verify_datablock = verify_data_on_scratch.submit(
-            dataset_id=dataset_id, datablock=datablock, wait_for=[copy_to_scratch]
-        )
-        upload_data = upload_data_to_s3.submit(
-            dataset_id=dataset_id, datablock=datablock, wait_for=[verify_datablock]
-        )
-        retrieval_tasks.append(upload_data)
+        # TODO: Restore task
+        restore_task = None
+        retrieval_tasks.append(restore_task)
 
     scicat_token = get_scicat_access_token.submit(wait_for=retrieval_tasks)
 

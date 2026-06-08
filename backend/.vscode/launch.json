@@ -12,8 +12,8 @@
       "env": {
         "PREFECT_API_URL": "http://localhost/api",
         "PREFECT_LOGGING_LEVEL": "DEBUG",
-        "MINIO_ENDPOINT": "scopem-openemdata.ethz.ch:9090",
-        "MINIO_EXTERNAL_ENDPOINT": "scopem-openemdata.ethz.ch:9090",
+        "S3_ENDPOINT": "scopem-openemdata.ethz.ch:9090",
+        "S3_EXTERNAL_ENDPOINT": "scopem-openemdata.ethz.ch:9090",
         "ARCHIVER_SCRATCH_FOLDER": "/tmp/data/scratch/",
       },
       "module": "archiver.flows",

@@ -15,7 +15,7 @@ def aws_credentials():
     os.environ["AWS_SECURITY_TOKEN"] = "testing"
     os.environ["AWS_SESSION_TOKEN"] = "testing"
     os.environ["AWS_DEFAULT_REGION"] = "eu-west-1"
-    os.environ["MINIO_EXTERNAL_ENDPOINT"] = "minio.com"
+    os.environ["S3_EXTERNAL_ENDPOINT"] = "aws.com"
 
 
 @pytest.fixture(scope="function")
@@ -86,7 +86,7 @@ def test_s3_interface(s3):
 
     assert len(listed_objects) == 1
 
-    s3.delete_objects(bucket=bucket, minio_prefix="/tmp")
+    s3.delete_objects(bucket=bucket, prefix="/tmp")
 
     listed_objects = s3.list_objects(bucket=bucket, folder="/tmp")
 

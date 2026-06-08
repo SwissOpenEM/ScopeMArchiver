@@ -12,9 +12,9 @@ def aws_and_s3_credentials():
     os.environ["AWS_SECURITY_TOKEN"] = "testing"
     os.environ["AWS_SESSION_TOKEN"] = "testing"
     os.environ["AWS_DEFAULT_REGION"] = "eu-west-1"
-    os.environ["MINIO_REGION"] = "eu-west-1"
-    os.environ["MINIO_ENDPOINT"] = "endpoint:9000"
-    os.environ["MINIO_EXTERNAL_ENDPOINT"] = "endpoint:9000"
+    os.environ["S3_REGION"] = "eu-west-1"
+    os.environ["S3_ENDPOINT"] = "endpoint:9000"
+    os.environ["S3_EXTERNAL_ENDPOINT"] = "endpoint:9000"
 
 
 @pytest.fixture(scope="function")

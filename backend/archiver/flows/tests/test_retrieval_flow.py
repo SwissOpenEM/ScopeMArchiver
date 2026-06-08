@@ -56,13 +56,11 @@ def mock_retrieve_datablock(*args, **kwargs):
 @patch("utils.datablocks.verify_datablock_content")
 @patch("utils.datablocks.upload_datablock")
 @patch("utils.datablocks.cleanup_scratch")
-@patch("utils.datablocks.cleanup_s3_staging")
 @patch("utils.datablocks.cleanup_s3_landingzone")
 @patch("utils.datablocks.cleanup_s3_retrieval")
 async def test_scicat_api_retrieval(
     mock_cleanup_s3_retrieval: MagicMock,
     mock_cleanup_s3_landingzone: MagicMock,
-    mock_cleanup_s3_staging: MagicMock,
     mock_cleanup_scratch: MagicMock,
     mock_upload_datablock: MagicMock,
     mock_verify_datablock_content: MagicMock,
@@ -120,10 +118,8 @@ async def test_scicat_api_retrieval(
         )
 
         mock_upload_datablock.assert_called()
-        mock_cleanup_s3_staging.assert_not_called()
         mock_cleanup_s3_retrieval.assert_not_called()
         mock_cleanup_s3_landingzone.assert_not_called()
-        mock_cleanup_s3_staging.assert_not_called()
         mock_cleanup_scratch.assert_called_once_with(dataset_id)
         mock_verify_datablock_content.assert_called()
 
@@ -143,13 +139,11 @@ async def test_scicat_api_retrieval(
 @patch("utils.datablocks.verify_datablock_content")
 @patch("utils.datablocks.upload_datablock")
 @patch("utils.datablocks.cleanup_scratch")
-@patch("utils.datablocks.cleanup_s3_staging")
 @patch("utils.datablocks.cleanup_s3_landingzone")
 @patch("utils.datablocks.cleanup_s3_retrieval")
 async def test_datablock_not_found(
     mock_cleanup_s3_retrieval: MagicMock,
     mock_cleanup_s3_landingzone: MagicMock,
-    mock_cleanup_s3_staging: MagicMock,
     mock_cleanup_scratch: MagicMock,
     mock_upload_datablock: MagicMock,
     mock_verify_datablock_content: MagicMock,
@@ -209,6 +203,5 @@ async def test_datablock_not_found(
         mock_upload_datablock.assert_not_called()
         mock_cleanup_s3_retrieval.assert_called_once_with(expected_s3_client, dataset_id)
         mock_cleanup_s3_landingzone.assert_not_called()
-        mock_cleanup_s3_staging.assert_not_called()
         mock_cleanup_scratch.assert_called_once_with(dataset_id)
         mock_verify_datablock_content.assert_not_called()

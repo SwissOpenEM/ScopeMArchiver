@@ -11,7 +11,7 @@
       "env": {
         "PREFECT_API_URL": "https://scopem-openem2.ethz.ch/archiver/prefect/api",
         "PREFECT_LOGGING_LEVEL": "INFO",
-        "MINIO_ENDPOINT": "scopem-openemdata.ethz.ch:9090",
+        "S3_ENDPOINT": "scopem-openemdata.ethz.ch:9090",
         "SECRETS_DIR": "${workspaceFolder}/../../.secrets",
         "UVICORN_ROOT_PATH": "",
         "UVICORN_RELOAD": "true",

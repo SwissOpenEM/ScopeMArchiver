@@ -3,12 +3,12 @@
 ARCHIVER_SCRATCH_FOLDER = "/storage"
 ARCHIVER_TARGET_SIZE_GB = 20
 
-[minio]
-MINIO_REGION = "eu-west-1"                        # S3 region
-MINIO_RETRIEVAL_BUCKET = "dev.retrieval"              # S3 bucket where datasets are retrieved to
-MINIO_LANDINGZONE_BUCKET = "dev.landingzone"          # S3 bucket where datasets are uploaded to  
-MINIO_ENDPOINT = "scopem-openemdata.ethz.ch:9090" # S3 endpoint of storage server
-MINIO_URL_EXPIRATION_DAYS = 7
+[s3]
+S3_REGION = "eu-west-1"                        # S3 region
+S3_RETRIEVAL_BUCKET = "dev.retrieval"              # S3 bucket where datasets are retrieved to
+S3_LANDINGZONE_BUCKET = "dev.landingzone"          # S3 bucket where datasets are uploaded to  
+S3_ENDPOINT = "scopem-openemdata.ethz.ch:9090" # S3 endpoint of storage server
+S3_URL_EXPIRATION_DAYS = 7
 
 [scicat]
 SCICAT_ENDPOINT = "https://scopem-openem2.ethz.ch/scicat/backend"

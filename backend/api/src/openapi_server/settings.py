@@ -9,11 +9,11 @@ class Settings(BaseSettings):
     UVICORN_ROOT_PATH: str = "/"
     UVICORN_RELOAD: bool = False
     UVICORN_LOG_LEVEL: str = "info"
-    MINIO_ENDPOINT: str = "scopem-openemdata.ethz.ch:9000"
-    MINIO_REGION: str = "eu-west-1"
+    S3_ENDPOINT: str = "scopem-openemdata.ethz.ch:9000"
+    S3_REGION: str = "eu-west-1"
     URL_EXPIRATION_SECONDS: int = 3600
     FREE_SPACE_FACTOR: float = 0.9
-    MINIO_TOTAL_LANDING_SPACE_TB: int = 100
+    S3_TOTAL_LANDING_SPACE_TB: int = 100
 
     # JWT Token settings
     IDP_URL: str = "https://scopem-openem2.ethz.ch/keycloak"

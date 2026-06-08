@@ -31,9 +31,9 @@ SCICAT_LOGIN_PATH = "/auth/login"
 
 PREFECT_SERVER_URL = "https://scopem-openem.ethz.ch/archiver/prefect/api"
 
-MINIO_SERVER_URL = "scopem-openemdata.ethz.ch:9090"
-MINIO_USER = ""
-MINIO_PASSWORD = ""
+S3_SERVER_URL = "scopem-openemdata.ethz.ch:9090"
+S3_USER = ""
+S3_PASSWORD = ""
 
 
 LOGGER = logging.getLogger(__name__)
@@ -65,9 +65,9 @@ def scicat_token_setup():
 @pytest.fixture
 def s3_client() -> S3Storage:
     return S3Storage(
-        url=MINIO_SERVER_URL,
-        user=MINIO_USER,
-        password=SecretStr(MINIO_PASSWORD),
+        url=S3_SERVER_URL,
+        user=S3_USER,
+        password=SecretStr(S3_PASSWORD),
         region="eu-west-1",
     )
 
@@ -239,7 +239,7 @@ async def test_end_to_end(scicat_token_setup, set_env, s3_client):
     assert dataset_lifecycle.get("archivable")
     assert not dataset_lifecycle.get("retrievable")
 
-    # Verify datablocks in MINIO
+    # Verify datablocks in S3
     orig_datablocks = list(
         map(
             lambda idx: s3_client.stat_object(
@@ -330,13 +330,13 @@ async def test_end_to_end(scicat_token_setup, set_env, s3_client):
     datablock_url = jobResult[0].get("url")
     datablock_name = jobResult[0].get("name")
 
-    # verify file can be downloaded from MINIO via url in jobresult
+    # verify file can be downloaded from S3 via url in jobresult
     with tempfile.TemporaryDirectory() as temp_dir:
         dest_file: Path = Path(temp_dir) / datablock_name
         urllib.request.urlretrieve(datablock_url, dest_file)
         assert dest_file.exists()
 
-    # Verify retrieved datablock in MINIO
+    # Verify retrieved datablock in S3
     retrieved_datablock = s3_client.stat_object(
         bucket=Bucket("retrieval"),
         filename=f"openem-network/datasets/{dataset_pid}/datablocks/{dataset_pid}_0.tar",

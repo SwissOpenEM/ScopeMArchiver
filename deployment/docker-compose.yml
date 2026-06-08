@@ -9,7 +9,7 @@ include:
   # S3 storage
   # - minio.docker-compose.yml
   # Monitoring stack
-  - monitoring.docker-compose.yml
+  # - monitoring.docker-compose.yml
 
 
 networks:
