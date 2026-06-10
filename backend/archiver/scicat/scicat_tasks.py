@@ -232,7 +232,7 @@ def create_download_script(job_result_entries: List[JobResultEntry]) -> str:
 
 
 def create_presigned_url(client: S3Storage, datablock: DataBlock):
-    url = client.get_presigned_url(Bucket.retrieval_bucket(), datablock.archiveId)
+    url = client.get_presigned_url(Bucket.archival_bucket(), datablock.archiveId)
     return url
 
 

@@ -23,7 +23,7 @@ from .s3 import (
     abort_upload,
     complete_multipart_upload,
     abort_multipart_upload,
-    create_bucket_name,
+    landingzone_bucket_name,
     create_presigned_url,
     create_presigned_urls_multipart,
     request_upload,
@@ -41,7 +41,7 @@ class BaseS3UploadApiImpl(BaseS3uploadApi):
         complete_upload_body: CompleteUploadBody,
     ) -> CompleteUploadResp:
         try:
-            bucket = create_bucket_name(complete_upload_body.dataset_id)
+            bucket = await landingzone_bucket_name()
             return await complete_multipart_upload(bucket, complete_upload_body)
         except Exception as e:
             _LOGGER.error(str(e))
@@ -54,7 +54,7 @@ class BaseS3UploadApiImpl(BaseS3uploadApi):
         abort_upload_body: AbortUploadBody,
     ) -> AbortUploadResp:
         try:
-            bucket = create_bucket_name(abort_upload_body.dataset_id)
+            bucket = await landingzone_bucket_name()
             await abort_multipart_upload(
                 bucket_name=bucket,
                 object_name=abort_upload_body.object_name,
@@ -76,7 +76,7 @@ class BaseS3UploadApiImpl(BaseS3uploadApi):
         presigned_url_body: PresignedUrlBody,
     ) -> PresignedUrlResp:
         try:
-            bucket = create_bucket_name(presigned_url_body.dataset_id)
+            bucket = await landingzone_bucket_name()
             if presigned_url_body.parts == 1:
                 url = await create_presigned_url(
                     bucket_name=bucket,

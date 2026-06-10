@@ -176,7 +176,7 @@ def upload_datablocks_to_s3(dataset_id: str) -> List[Path]:
     return datablocks_operations.upload_objects_to_s3(
         client=s3_client,
         prefix=prefix,
-        bucket=Bucket.retrieval_bucket(),
+        bucket=Bucket.archival_bucket(),
         source_folder=datablocks_scratch_folder,
         ext=".tar",
         progress_callback=update_progress,
@@ -192,7 +192,7 @@ def verify_objects(dataset_id: str, uploaded_objects: List[Path]) -> None:
         client=s3_client,
         uploaded_objects=uploaded_objects,
         prefix=prefix,
-        bucket=Bucket.retrieval_bucket(),
+        bucket=Bucket.archival_bucket(),
     )
     if len(missing_objects) > 0:
         raise SystemError(f"{len(missing_objects)} datablocks missing")
@@ -309,7 +309,6 @@ def archive_single_dataset_flow(dataset_id: str):
     datablocks = create_datablocks_flow(dataset_id)
 
     upload = upload_datablocks_to_s3.submit(dataset_id=dataset_id)
-    # archive_datablock(dataset_id=dataset_id, datablocks=datablocks)
 
     access_token = get_scicat_access_token.submit(wait_for=[upload])
     update_scicat_archival_dataset_lifecycle.submit(

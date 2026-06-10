@@ -5,9 +5,8 @@ ARCHIVER_TARGET_SIZE_GB = 500
 
 [s3]
 S3_REGION = "eu-west-1"                        # S3 region
-S3_RETRIEVAL_BUCKET = "retrieval"              # S3 bucket where datasets are retrieved to
-S3_LANDINGZONE_BUCKET = "landingzone"          # S3 bucket where datasets are uploaded to  
-S3_ENDPOINT = "scopem-openemdata.ethz.ch:9090" # S3 endpoint of storage server
+S3_ARCHIVAL_BUCKET = "prod.archival"              # S3 bucket where datasets are retrieved to
+S3_LANDINGZONE_BUCKET = "prod.landingzone"          # S3 bucket where datasets are uploaded to  
 S3_URL_EXPIRATION_DAYS = 7
 
 [scicat]

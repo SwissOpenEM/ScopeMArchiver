@@ -68,9 +68,7 @@ def mock_archive_file(file: Path):
 @patch("utils.datablocks.archive_datablock", mock_archive_datablock)
 @patch("utils.datablocks.cleanup_scratch")
 @patch("utils.datablocks.cleanup_s3_landingzone")
-@patch("utils.datablocks.cleanup_s3_retrieval")
 def test_scicat_api_archiving(
-    mock_cleanup_s3_retrieval: MagicMock,
     mock_cleanup_s3_landingzone: MagicMock,
     mock_cleanup_scratch: MagicMock,
     job_id: UUID,
@@ -129,7 +127,6 @@ def test_scicat_api_archiving(
             "archive", SciCatClient.STATUSMESSAGE.FINISHED_SUCCESSFULLY
         )
 
-        mock_cleanup_s3_retrieval.assert_not_called()
         mock_cleanup_s3_landingzone.assert_called_once_with(expected_s3_client, dataset_id)
         mock_cleanup_scratch.assert_called_once_with(dataset_id)
 
@@ -149,9 +146,7 @@ def test_scicat_api_archiving(
 @patch("utils.datablocks.verify_objects", mock_empty_list)
 @patch("utils.datablocks.cleanup_scratch")
 @patch("utils.datablocks.cleanup_s3_landingzone")
-@patch("utils.datablocks.cleanup_s3_retrieval")
 def test_create_datablocks_user_error(
-    mock_cleanup_s3_retrieval: MagicMock,
     mock_cleanup_s3_landingzone: MagicMock,
     mock_cleanup_scratch: MagicMock,
     job_id: UUID,
@@ -210,7 +205,6 @@ def test_create_datablocks_user_error(
             SciCatClient.ARCHIVESTATUSMESSAGE.MISSING_FILES
         )
 
-        mock_cleanup_s3_retrieval.assert_not_called()
         mock_cleanup_s3_landingzone.assert_not_called()
         mock_cleanup_scratch.assert_called_once_with(dataset_id)
 
@@ -226,14 +220,11 @@ def test_create_datablocks_user_error(
 @patch("utils.datablocks.download_objects_from_s3", mock_list)
 @patch("utils.datablocks.create_tarfiles", mock_void_function)
 @patch("utils.datablocks.create_datablock_entries", mock_create_datablock_entries)
-@patch("utils.datablocks.upload_objects_to_s3", mock_void_function)
 @patch("utils.datablocks.verify_objects", mock_empty_list)
-@patch("utils.datablocks.archive_datablock", raise_system_error)
+@patch("utils.datablocks.upload_objects_to_s3", raise_system_error)
 @patch("utils.datablocks.cleanup_scratch")
 @patch("utils.datablocks.cleanup_s3_landingzone")
-@patch("utils.datablocks.cleanup_s3_retrieval")
 def test_archive_datablock_failure(
-    mock_cleanup_s3_retrieval: MagicMock,
     mock_cleanup_s3_landingzone: MagicMock,
     mock_cleanup_scratch: MagicMock,
     job_id: UUID,
@@ -287,6 +278,5 @@ def test_archive_datablock_failure(
         )
 
         # 6: cleanup
-        mock_cleanup_s3_retrieval.assert_not_called()
         mock_cleanup_s3_landingzone.assert_not_called()
         mock_cleanup_scratch.assert_called_once_with(dataset_id)

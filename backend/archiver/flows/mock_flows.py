@@ -26,6 +26,7 @@ from scicat.scicat_tasks import get_scicat_access_token
 from utils.model import DatasetListEntry, Job
 from .task_utils import generate_task_name_dataset
 
+from prefect import get_run_logger
 from prefect.flow_runs import wait_for_flow_run
 
 
@@ -47,6 +48,7 @@ def create_dummy_dataset(
     dataset_root = Variables().ARCHIVER_SCRATCH_FOLDER / dataset_id
 
     raw_files_folder = dataset_root / "raw_files"
+    get_run_logger().info(raw_files_folder)
     if not raw_files_folder.exists():
         raw_files_folder.mkdir(parents=True)
 
@@ -56,7 +58,7 @@ def create_dummy_dataset(
         )
 
     bucket = Bucket.landingzone_bucket(dataset_id)
-    get_s3_client().create_bucket(bucket)
+    # get_s3_client().create_bucket(bucket)
 
     files = upload_objects_to_s3(
         get_s3_client(),

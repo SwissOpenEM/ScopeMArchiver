@@ -17,6 +17,11 @@ def env_fixture():
         "S3_PASSWORD": "pw",
         "IDP_CLIENT_SECRET": "secret",
         "IDP_PASSWORD": "pw",
+        "IDP_USERNAME": "archiver-service",
+        "IDP_REALM": "facility",
+        "IDP_AUDIENCE": "account",
+        "IDP_CLIENT_ID": "archiver-service-api",
+        "IDP_URL": "https://scopem-openem2.ethz.ch/keycloak",
         "JOB_ENDPOINT_PASSWORD": "pw",
         "JOB_ENDPOINT_USERNAME": "username",
     }

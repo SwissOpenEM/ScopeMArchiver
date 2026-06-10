@@ -26,7 +26,7 @@ class PrefectVariablesModel(BaseSettings):
     )
 
     S3_REGION: str = ""
-    S3_RETRIEVAL_BUCKET: str = ""
+    S3_ARCHIVAL_BUCKET: str = ""
     S3_LANDINGZONE_BUCKET: str = ""
     S3_ENDPOINT: str = ""
     S3_EXTERNAL_ENDPOINT: str = ""
@@ -85,8 +85,8 @@ class Variables:
         return self.__get("scicat_jobs_api_prefix") or ""
 
     @property
-    def S3_RETRIEVAL_BUCKET(self) -> str:
-        return self.__get("s3_retrieval_bucket")
+    def S3_ARCHIVAL_BUCKET(self) -> str:
+        return self.__get("s3_archival_bucket")
 
     @property
     def S3_LANDINGZONE_BUCKET(self) -> str:

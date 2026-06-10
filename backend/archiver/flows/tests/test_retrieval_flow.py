@@ -34,11 +34,7 @@ def mock_scicat_get_token() -> str:
     return "secret-test-string"
 
 
-def mock_find_missing_datablocks_in_s3(*args, **kwargs):
-    return kwargs["datablocks"]
-
-
-def mock_retrieve_datablock(*args, **kwargs):
+def mock_restore_datablock(*args, **kwargs):
     pass
 
 
@@ -50,20 +46,13 @@ def mock_retrieve_datablock(*args, **kwargs):
     ],
 )
 @patch("scicat.scicat_tasks.scicat_client", mock_scicat_client)
-@patch("utils.datablocks.find_missing_datablocks_in_s3", mock_find_missing_datablocks_in_s3)
 @patch("scicat.scicat_tasks.create_presigned_url", mock_create_presigned_url)
-@patch("utils.datablocks.retrieve_datablock", mock_retrieve_datablock)
-@patch("utils.datablocks.verify_datablock_content")
-@patch("utils.datablocks.upload_datablock")
+@patch("utils.datablocks.restore_datablock", mock_restore_datablock)
 @patch("utils.datablocks.cleanup_scratch")
 @patch("utils.datablocks.cleanup_s3_landingzone")
-@patch("utils.datablocks.cleanup_s3_retrieval")
 async def test_scicat_api_retrieval(
-    mock_cleanup_s3_retrieval: MagicMock,
     mock_cleanup_s3_landingzone: MagicMock,
     mock_cleanup_scratch: MagicMock,
-    mock_upload_datablock: MagicMock,
-    mock_verify_datablock_content: MagicMock,
     job_id: UUID,
     dataset_id: str,
     mocked_s3,
@@ -117,11 +106,8 @@ async def test_scicat_api_retrieval(
             retrievable=True,
         )
 
-        mock_upload_datablock.assert_called()
-        mock_cleanup_s3_retrieval.assert_not_called()
         mock_cleanup_s3_landingzone.assert_not_called()
         mock_cleanup_scratch.assert_called_once_with(dataset_id)
-        mock_verify_datablock_content.assert_called()
 
 
 @pytest.mark.asyncio
@@ -132,21 +118,16 @@ async def test_scicat_api_retrieval(
     ],
 )
 @patch("scicat.scicat_tasks.scicat_client", mock_scicat_client)
-@patch("utils.datablocks.find_missing_datablocks_in_s3", mock_find_missing_datablocks_in_s3)
 @patch("scicat.scicat_tasks.create_presigned_url", mock_create_presigned_url)
 @patch("scicat.scicat_tasks.create_presigned_url", mock_create_presigned_url)
-@patch("utils.datablocks.retrieve_datablock", mock_raise_system_error)
-@patch("utils.datablocks.verify_datablock_content")
+@patch("utils.datablocks.restore_datablock", mock_raise_system_error)
 @patch("utils.datablocks.upload_datablock")
 @patch("utils.datablocks.cleanup_scratch")
 @patch("utils.datablocks.cleanup_s3_landingzone")
-@patch("utils.datablocks.cleanup_s3_retrieval")
 async def test_datablock_not_found(
-    mock_cleanup_s3_retrieval: MagicMock,
     mock_cleanup_s3_landingzone: MagicMock,
     mock_cleanup_scratch: MagicMock,
     mock_upload_datablock: MagicMock,
-    mock_verify_datablock_content: MagicMock,
     job_id,
     dataset_id,
     mocked_s3,
@@ -201,7 +182,5 @@ async def test_datablock_not_found(
         )
 
         mock_upload_datablock.assert_not_called()
-        mock_cleanup_s3_retrieval.assert_called_once_with(expected_s3_client, dataset_id)
         mock_cleanup_s3_landingzone.assert_not_called()
         mock_cleanup_scratch.assert_called_once_with(dataset_id)
-        mock_verify_datablock_content.assert_not_called()

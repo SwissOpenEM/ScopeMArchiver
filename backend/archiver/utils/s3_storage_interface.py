@@ -1,19 +1,19 @@
 from __future__ import annotations
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import functools
+import time
 from typing import Callable, List
 import boto3
 from boto3.s3.transfer import TransferConfig
 from botocore.client import Config
 
-import datetime
 
 from dataclasses import dataclass
 from pathlib import Path
 
 from pydantic import SecretStr
 
-from .log import log_debug, log
+from .log import log_debug, log, getLogger
 
 from config.variables import Variables
 from config.blocks import Blocks
@@ -24,37 +24,12 @@ class Bucket:
     name: str
 
     @staticmethod
-    def retrieval_bucket() -> Bucket:  # type: ignore
-        return Bucket(Variables().S3_RETRIEVAL_BUCKET)
+    def archival_bucket() -> Bucket:  # type: ignore
+        return Bucket(Variables().S3_ARCHIVAL_BUCKET)
 
     @staticmethod
     def landingzone_bucket(dataset_pid: str) -> Bucket:  # type: ignore
-        sanatized_name = dataset_pid
-        for c in ["_", "/"]:
-            sanatized_name = sanatized_name.replace(c, "-")
-        sanatized_name = sanatized_name.lower()
-        return Bucket(sanatized_name)
-
-
-@log_debug
-def download_file(s3_client, obj, prefix, destination_folder, bucket):
-    item_name = Path(obj.key).name
-    item_dir = Path(obj.key).parent
-    item_parent_dirs = item_dir.relative_to(prefix)
-    local_filedir = destination_folder / item_parent_dirs
-    local_filedir.mkdir(parents=True, exist_ok=True)
-    local_filepath = local_filedir / item_name
-
-    if local_filepath.exists():
-        return local_filepath
-
-    config = TransferConfig(
-        multipart_threshold=100 * 1024 * 1024,
-        max_concurrency=2,
-        multipart_chunksize=100 * 1024 * 1024,
-    )
-    s3_client.download_file(bucket.name, obj.key, local_filepath, Config=config)
-    return local_filepath
+        return Bucket(Variables().S3_LANDINGZONE_BUCKET)
 
 
 class S3Storage:
@@ -70,16 +45,47 @@ class S3Storage:
             aws_access_key_id=self._USER.strip(),
             aws_secret_access_key=self._PASSWORD.get_secret_value().strip(),
             region_name=self._REGION,
-            config=Config(signature_version="s3v4", max_pool_connections=32),
+            verify=False,
+            config=Config(
+                signature_version="s3v4",
+                connect_timeout=30,
+                read_timeout=60,
+                retries={"max_attempts": 3, "mode": "adaptive"},
+                max_pool_connections=5,  # Reduce for local node
+                tcp_keepalive=True,  # Keep connection alive
+                s3={"payload_signing_enabled": True, "addressing_style": "path"},
+            ),
         )
 
+        def remove_expect_header(request, **kwargs):
+            request.headers.pop("Expect", None)
+
+        self._client.meta.events.register("before-send.s3.PutObject", remove_expect_header)
+
+        def force_standard_storage_class(params, **kwargs):
+            params["StorageClass"] = "GLACIER"
+
+        self._client.meta.events.register("provide-client-params.s3.PutObject", force_standard_storage_class)
+        self._client.meta.events.register(
+            "provide-client-params.s3.CreateMultipartUpload",
+            force_standard_storage_class,
+        )
         self._external_s3_client = boto3.client(
             "s3",
             endpoint_url=f"https://{Variables().S3_EXTERNAL_ENDPOINT}",
             aws_access_key_id=self._USER.strip(),
             aws_secret_access_key=self._PASSWORD.get_secret_value().strip(),
+            verify=False,
             region_name=self._REGION,
-            config=Config(signature_version="s3v4", max_pool_connections=32),
+            config=Config(
+                signature_version="s3v4",
+                connect_timeout=30,
+                read_timeout=60,
+                retries={"max_attempts": 3, "mode": "adaptive"},
+                max_pool_connections=5,
+                tcp_keepalive=True,
+                s3={"payload_signing_enabled": True, "addressing_style": "path"},
+            ),
         )
 
         self._resource = boto3.resource(
@@ -88,6 +94,7 @@ class S3Storage:
             aws_access_key_id=self._USER.strip(),
             aws_secret_access_key=self._PASSWORD.get_secret_value().strip(),
             region_name=self._REGION,
+            verify=False,
             config=Config(signature_version="s3v4"),
         )
 
@@ -116,22 +123,6 @@ class S3Storage:
         Size: int
 
     @log_debug
-    def reset_expiry_date(self, bucket_name: str, filename: str, retention_period_days: int) -> None:
-        new_expiration_date = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(
-            days=retention_period_days
-        )
-
-        # the only way to reset the expiration date is to copy the object to itself apparently
-        copy_source = {"Bucket": bucket_name, "Key": filename}
-        self._client.copy_object(
-            Bucket=bucket_name,
-            Key=filename,
-            CopySource=copy_source,
-            MetadataDirective="REPLACE",  # This is important to replace metadata
-            Expires=new_expiration_date.isoformat(),
-        )
-
-    @log_debug
     def stat_object(self, bucket: Bucket, filename: str) -> StatInfo | None:
         try:
             object = self._client.head_object(Bucket=bucket.name, Key=filename)
@@ -140,8 +131,60 @@ class S3Storage:
             return None
 
     @log_debug
-    def fget_object(self, bucket: Bucket, folder: str, object_name: str, target_path: Path):
+    def fget_object(self, bucket: Bucket, folder: str, object_name: str, target_path: Path) -> None:
+        self.restore_objects(bucket=Bucket, objects=[object_name])
+        self.check_restore(bucket=Bucket, object=object_name)
+
         self._client.download_file(Bucket=bucket.name, Key=object_name, Filename=str(target_path.absolute()))
+
+    @log
+    def restore_objects(self, bucket: Bucket, objects: List[str]) -> None:
+        for obj in objects:
+            self._client.restore_object(
+                Bucket=bucket.name,
+                Key=obj,
+                RestoreRequest={
+                    "Days": Variables().S3_URL_EXPIRATION_DAYS,
+                    "GlacierJobParameters": {
+                        "Tier": "Expedited"  # Expedited (~5min) | Standard (~5hr) | Bulk (~12hr)
+                    },
+                },
+            )
+
+    @log
+    def check_restore(self, bucket: Bucket, object: str) -> None:
+        while True:
+            head = self._client.head_object(Bucket=bucket.name, Key=object)
+            restore_status = head.get("Restore", "")
+            getLogger().debug(restore_status)
+            if 'ongoing-request="false"' in restore_status:
+                getLogger().info("Restore complete, ready to download")
+                break
+            getLogger().debug("Still restoring, waiting 60s...")
+            time.sleep(10)
+
+    @log_debug
+    def download_file(self, obj, prefix, destination_folder, bucket):
+        item_name = Path(obj.key).name
+        item_dir = Path(obj.key).parent
+        item_parent_dirs = item_dir.relative_to(prefix)
+        local_filedir = destination_folder / item_parent_dirs
+        local_filedir.mkdir(parents=True, exist_ok=True)
+        local_filepath = local_filedir / item_name
+
+        if local_filepath.exists():
+            return local_filepath
+
+        self.check_restore(bucket, obj.key)
+
+        config = TransferConfig(
+            multipart_threshold=100 * 1024 * 1024,
+            max_concurrency=2,
+            multipart_chunksize=100 * 1024 * 1024,
+        )
+
+        self._client.download_file(bucket.name, obj.key, local_filepath, Config=config)
+        return local_filepath
 
     @log
     def download_objects(
@@ -154,13 +197,22 @@ class S3Storage:
         remote_bucket = self._resource.Bucket(bucket.name)
         objs = remote_bucket.objects.filter(Prefix=str(prefix))
 
+        self.restore_objects(bucket=bucket, objects=[obj.key for obj in objs])
+
         files: List[Path] = []
 
         count = 0
 
         with ThreadPoolExecutor(max_workers=Variables().ARCHIVER_NUM_WORKERS) as executor:
             future_to_key = {
-                executor.submit(download_file, self._client, key, prefix, destination_folder, bucket): key
+                executor.submit(
+                    S3Storage.download_file,
+                    self,
+                    key,
+                    prefix,
+                    destination_folder,
+                    bucket,
+                ): key
                 for key in objs
             }
 
@@ -200,7 +252,7 @@ class S3Storage:
             Bucket=bucket.name,
             Key=str(destination_file),
             Filename=str(source_file),
-            ExtraArgs={},
+            ExtraArgs={"StorageClass": "GLACIER"},
             Config=TransferConfig(
                 multipart_threshold=64 * 1024 * 1024,
                 multipart_chunksize=64 * 1024 * 1024,

@@ -18,20 +18,20 @@ from prefect.client.orchestration import PrefectClient
 
 from prefect.flow_runs import wait_for_flow_run
 
-EXTERNAL_BACKEND_SERVER_URL = "scopem-openem.ethz.ch/archiver"
+EXTERNAL_BACKEND_SERVER_URL = "scopem-openem2.ethz.ch/archiver"
 BACKEND_API_PREFIX = "/api/v1"
 BACKEND_API_CREATE_DATASET_PATH = "/archiver/new_dataset"
 
 
-SCICAT_BACKEND_ENDPOINT = "scopem-openem.ethz.ch/scicat/backend"
+SCICAT_BACKEND_ENDPOINT = "scopem-openem2.ethz.ch/scicat/backend"
 SCICAT_BACKEND_API_PREFIX = "/api/v3"
 SCICAT_JOB_PATH = "/jobs"
 SCICAT_DATASETS_PATH = "/datasets"
 SCICAT_LOGIN_PATH = "/auth/login"
 
-PREFECT_SERVER_URL = "https://scopem-openem.ethz.ch/archiver/prefect/api"
+PREFECT_SERVER_URL = "https://scopem-openem2.ethz.ch/archiver/prefect/api"
 
-S3_SERVER_URL = "scopem-openemdata.ethz.ch:9090"
+S3_SERVER_URL = "sp109.ethz.ch:18000"
 S3_USER = ""
 S3_PASSWORD = ""
 

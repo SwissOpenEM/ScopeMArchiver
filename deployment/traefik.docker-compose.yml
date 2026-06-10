@@ -76,19 +76,36 @@ configs:
     content: |
       http:
         routers:
-          external-api-router:
+          external-s3-router:
             rule: "Host(`$HOST`) && PathPrefix(`/`)"
             entryPoints:
               - websecure
-            tls: ""
-            service: 
-              external-api-s3
+            tls: {}
+            service: external-s3-storage
+
+        serversTransports:
+          forceInsecureTransport:
+            insecureSkipVerify: true
+
         services:
-          external-api-s3:
+          external-s3-storage:
             loadBalancer:
+              serversTransport: forceInsecureTransport
               servers:
                 - url: "https://${S3_ENDPOINT}"
               passHostHeader: true
+      # Enable for locally stored certificate
+      # tls:
+      #   certificates:
+      #     - certFile: /opt/certs/cert.pem
+      #       keyFile: /opt/certs/cert.key
+      #       stores: 
+      #         - default
+      #   stores:
+      #     default:
+      #       defaultCertificate:
+      #         certFile: /opt/certs/cert.pem
+      #         keyFile: /opt/certs/cert.key
 secrets:
   authentik_token:
     file: ./.secrets/authentik_token
