@@ -15,7 +15,7 @@ dependencies = [
     "boto3==1.35.95",
     "moto[s3]>=5.0.28",
     "prefect==3.7.2",
-    "prefect-docker==0.6.6",
+    "prefect-docker==0.7.2",
     "pytest>=9.0.3",
     "pytest-asyncio>=0.25.3",
     "requests>=2.33.0",
