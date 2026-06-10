@@ -26,6 +26,7 @@ from scicat.scicat_tasks import get_scicat_access_token
 from utils.model import DatasetListEntry, Job
 from .task_utils import generate_task_name_dataset
 
+from prefect import get_run_logger
 from prefect.flow_runs import wait_for_flow_run
 
 
@@ -47,6 +48,7 @@ def create_dummy_dataset(
     dataset_root = Variables().ARCHIVER_SCRATCH_FOLDER / dataset_id
 
     raw_files_folder = dataset_root / "raw_files"
+    get_run_logger().info(raw_files_folder)
     if not raw_files_folder.exists():
         raw_files_folder.mkdir(parents=True)
 
@@ -56,7 +58,7 @@ def create_dummy_dataset(
         )
 
     bucket = Bucket.landingzone_bucket(dataset_id)
-    get_s3_client().create_bucket(bucket)
+    # get_s3_client().create_bucket(bucket)
 
     files = upload_objects_to_s3(
         get_s3_client(),
@@ -304,8 +306,8 @@ def verify_dataset_in_scicat(dataset_pid, scicat_token):
     # assert not dataset_lifecycle.get("retrievable")
 
 
-@task(name="verify_dataset_in_minio")
-def verify_dataset_in_minio(dataset_pid):
+@task(name="verify_dataset_in_s3")
+def verify_dataset_in_s3(dataset_pid):
     s3_client = get_s3_client()
     orig_datablocks = list(
         map(
@@ -333,14 +335,14 @@ def wait_for_flow(scicat_job_id):
 
 
 @task
-def verify_data_from_minio(dataset_pid, datablock_name, datablock_url):
-    # verify file can be downloaded from MINIO via url in jobresult
+def verify_data_from_s3(dataset_pid, datablock_name, datablock_url):
+    # verify file can be downloaded from S3 via url in jobresult
     with tempfile.TemporaryDirectory() as temp_dir:
         dest_file: Path = Path(temp_dir) / datablock_name
         urllib.request.urlretrieve(datablock_url, dest_file)
         assert dest_file.exists()
     s3_client = get_s3_client()
-    # Verify retrieved datablock in MINIO
+    # Verify retrieved datablock in S3
     retrieved_datablock = s3_client.stat_object(
         bucket=Bucket("retrieval"),
         filename=f"openem-network/datasets/{dataset_pid}/datablocks/{dataset_pid}_0.tar",
@@ -385,7 +387,7 @@ def end_to_end_test_flow(
         dataset_pid=dataset_pid, scicat_token=scicat_token, wait_for=[wait]
     )
 
-    verify_s3 = verify_dataset_in_minio.submit(dataset_pid=dataset_pid, wait_for=[wait])
+    verify_s3 = verify_dataset_in_s3.submit(dataset_pid=dataset_pid, wait_for=[wait])
 
     # trigger archive job in scicat
     scicat_archival_job_id = scicat_create_archival_job.submit(
@@ -470,7 +472,7 @@ def end_to_end_test_flow(
     ASSERT(jobResult[0].get("datasetId") == dataset_pid)
     ASSERT(jobResult[0].get("url") is not None)
 
-    verify_data_from_minio.submit(
+    verify_data_from_s3.submit(
         dataset_pid=dataset_pid,
         datablock_name=jobResult[0].get("name"),
         datablock_url=jobResult[0].get("url"),

@@ -20,12 +20,12 @@ class Blocks:
         return s.get()
 
     @property
-    def MINIO_USER(self) -> str:
-        return self.__get("minio-user")
+    def S3_USER(self) -> str:
+        return self.__get("s3-user")
 
     @property
-    def MINIO_PASSWORD(self) -> SecretStr:
-        return SecretStr(self.__get("minio-password"))
+    def S3_PASSWORD(self) -> SecretStr:
+        return SecretStr(self.__get("s3-password"))
 
     @property
     def SCICAT_USER(self) -> str:

@@ -44,15 +44,6 @@ def on_get_datablocks_error(dataset_id: str, task: Task, task_run: TaskRun, stat
 
 
 @task(
-    task_run_name=generate_task_name_datablock,
-    tags=[ConcurrencyLimits().LTS_READ_TAG],
-    retry_delay_seconds=[60, 120, 240, 480, 960],
-)
-def retrieve_datablock_to_scratch(dataset_id: str, datablock: DataBlock):
-    datablocks_operations.retrieve_datablock(dataset_id, datablock)
-
-
-@task(
     task_run_name=generate_task_name_dataset,
 )
 def verify_data_on_scratch(dataset_id: str, datablock: DataBlock):
@@ -64,13 +55,11 @@ def verify_data_on_scratch(dataset_id: str, datablock: DataBlock):
 )
 def upload_data_to_s3(dataset_id: str, datablock: DataBlock):
     s3_client = get_s3_client()
-    datablocks_operations.upload_data_to_retrieval_bucket(s3_client, dataset_id, datablock)
+    datablocks_operations.upload_data_to_archival_bucket(s3_client, dataset_id, datablock)
 
 
 def on_dataset_flow_failure(flow: Flow, flow_run: FlowRun, state: State):
     datablocks_operations.cleanup_scratch(flow_run.parameters["dataset_id"])
-    s3_client = get_s3_client()
-    datablocks_operations.cleanup_s3_retrieval(s3_client, flow_run.parameters["dataset_id"])
 
     scicat_token = get_scicat_access_token()
 
@@ -87,21 +76,9 @@ def cleanup_dataset(flow: Flow, flow_run: FlowRun, state: State):
 
 
 @task()
-def find_missing_datablocks_in_s3(datablocks: List[DataBlock], bucket=Bucket("retrieval")) -> List[DataBlock]:
+def restore_datablock(datablock: DataBlock) -> None:
     s3_client = get_s3_client()
-    return datablocks_operations.find_missing_datablocks_in_s3(
-        client=s3_client, datablocks=datablocks, bucket=bucket
-    )
-
-
-@task()
-def reset_expiry_date(
-    all_datablocks: List[DataBlock], missing_datablocks: List[DataBlock], bucket=Bucket("retrieval")
-):
-    s3_client = get_s3_client()
-    filenames = list(set(d.archiveId for d in all_datablocks) - set(d.archiveId for d in missing_datablocks))
-
-    datablocks_operations.reset_expiry_date(client=s3_client, filenames=filenames, bucket=bucket)
+    datablocks_operations.restore_datablock(client=s3_client, datablock=datablock)
 
 
 @flow(
@@ -124,36 +101,18 @@ def retrieve_single_dataset_flow(dataset_id: str, job_id: UUID):
         on_failure=[partial(on_get_datablocks_error, dataset_id)]
     ).submit(dataset_id=dataset_id, token=scicat_token, wait_for=[dataset_update])  # type: ignore
 
-    missing_datablocks = find_missing_datablocks_in_s3.submit(datablocks=datablocks)
+    restore_tasks = []
+    for datablock in datablocks.result():
+        restore_task = restore_datablock.submit(datablock=datablock)
+        restore_tasks.append(restore_task)
 
-    retrieval_tasks = []
-    retrieval_tasks.append(
-        reset_expiry_date.submit(all_datablocks=datablocks, missing_datablocks=missing_datablocks)
-    )
-
-    # TODO: check if enough space available in bucket
-    # https://github.com/SwissOpenEM/ScopeMArchiver/issues/169
-
-    # The error does not propagate correctly through the dependent tasks
-    # https://github.com/PrefectHQ/prefect/issues/12028
-    for datablock in missing_datablocks.result():
-        copy_to_scratch = retrieve_datablock_to_scratch.submit(dataset_id=dataset_id, datablock=datablock)
-
-        verify_datablock = verify_data_on_scratch.submit(
-            dataset_id=dataset_id, datablock=datablock, wait_for=[copy_to_scratch]
-        )
-        upload_data = upload_data_to_s3.submit(
-            dataset_id=dataset_id, datablock=datablock, wait_for=[verify_datablock]
-        )
-        retrieval_tasks.append(upload_data)
-
-    scicat_token = get_scicat_access_token.submit(wait_for=retrieval_tasks)
+    scicat_token = get_scicat_access_token.submit(wait_for=restore_tasks)
 
     update_scicat_retrieval_dataset_lifecycle.submit(
         dataset_id=dataset_id,
         status=SciCatClient.RETRIEVESTATUSMESSAGE.DATASET_RETRIEVED,
         token=scicat_token,
-        wait_for=retrieval_tasks,
+        wait_for=restore_tasks,
     ).result()  # type: ignore
 
 

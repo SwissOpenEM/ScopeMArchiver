@@ -56,7 +56,6 @@ services:
         /usr/bin/mc alias set local-minio http://minio:9000 $$MINIO_USER $$MINIO_PASS
         /usr/bin/mc mb -p local-minio/${MINIO_RETRIEVAL_BUCKET}
         /usr/bin/mc mb -p local-minio/${MINIO_LANDINGZONE_BUCKET}
-        /usr/bin/mc mb -p local-minio/${MINIO_STAGING_BUCKET}
     networks:
       - scopemarchiver_network
     secrets:

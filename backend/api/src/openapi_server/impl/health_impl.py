@@ -55,7 +55,7 @@ class BaseDefaultApiImpl(BaseHealthApi):
 
         return [
             HealthCheck(
-                description="Minio", endpoint=f"https://{GetSettings().MINIO_ENDPOINT}/minio/health/live"
+                description="Minio", endpoint=f"https://{GetSettings().S3_ENDPOINT}/minio/health/live"
             ),
             HealthCheck(description="Prefect", endpoint=f"{GetSettings().PREFECT_API_URL}/health"),
             HealthCheck(description="Scicat", endpoint=f"{scicat_path}/health"),

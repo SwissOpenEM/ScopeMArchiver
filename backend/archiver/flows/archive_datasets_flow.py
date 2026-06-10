@@ -176,7 +176,7 @@ def upload_datablocks_to_s3(dataset_id: str) -> List[Path]:
     return datablocks_operations.upload_objects_to_s3(
         client=s3_client,
         prefix=prefix,
-        bucket=Bucket.staging_bucket(),
+        bucket=Bucket.archival_bucket(),
         source_folder=datablocks_scratch_folder,
         ext=".tar",
         progress_callback=update_progress,
@@ -184,15 +184,15 @@ def upload_datablocks_to_s3(dataset_id: str) -> List[Path]:
 
 
 @task(task_run_name=generate_task_name_dataset)
-def verify_objects(dataset_id: str, uploaded_objects: List[Path]) -> List[DataBlock]:
+def verify_objects(dataset_id: str, uploaded_objects: List[Path]) -> None:
     s3_client = get_s3_client()
     prefix = StoragePaths.relative_datablocks_folder(dataset_id)
 
     missing_objects = datablocks_operations.verify_objects(
         client=s3_client,
         uploaded_objects=uploaded_objects,
-        minio_prefix=prefix,
-        bucket=Bucket.staging_bucket(),
+        prefix=prefix,
+        bucket=Bucket.archival_bucket(),
     )
     if len(missing_objects) > 0:
         raise SystemError(f"{len(missing_objects)} datablocks missing")
@@ -224,33 +224,6 @@ def verify_datablock_in_verification(dataset_id: str, datablock: DataBlock) -> N
     does only allow limited concurrent access.
     """
     datablocks_operations.verify_datablock_in_verification(dataset_id=dataset_id, datablock=datablock)
-
-
-# Flows
-@flow(
-    name="archive_datablocks_with_storage_protect",
-    log_prints=True,
-    flow_run_name=generate_subflow_run_name_job_id_dataset_id,
-)
-def archive_datablocks_with_storage_protect(dataset_id: str, datablocks: List[DataBlock]):
-    """Prefect (sub-)flow to move a datablock to the LTS. Implements the copying of data and verification via checksum.
-
-    Args:
-        dataset_id (str): _description_
-        datablock (DataBlock): _description_
-    """
-    tasks = []
-    all_tasks = []
-
-    for datablock in datablocks:
-        move = archive_datablock.submit(dataset_id=dataset_id, datablock=datablock)  # type: ignore
-        all_tasks.append(move)
-
-    wait_for_futures(tasks)
-
-    # this is necessary to propagate the errors of the tasks
-    for t in all_tasks:
-        t.result()
 
 
 @flow(name="create_datablocks", flow_run_name=generate_subflow_run_name_job_id_dataset_id)
@@ -313,20 +286,14 @@ def on_dataset_flow_failure(flow: Flow, flow_run: FlowRun, state: State):
     except Exception as e:
         getLogger().error(f"failed to reset datablocks {e}")
     datablocks_operations.cleanup_scratch(flow_run.parameters["dataset_id"])
-    try:
-        s3_client = get_s3_client()
-        datablocks_operations.cleanup_s3_staging(s3_client, flow_run.parameters["dataset_id"])
-    except Exception as e:
-        getLogger().error(f"failed to cleanup staging {e}")
 
 
 def cleanup_dataset(flow: Flow, flow_run: FlowRun, state: State):
     try:
         s3_client = get_s3_client()
         datablocks_operations.cleanup_s3_landingzone(s3_client, flow_run.parameters["dataset_id"])
-        datablocks_operations.cleanup_s3_staging(s3_client, flow_run.parameters["dataset_id"])
     except Exception as e:
-        getLogger().error(f"failed to cleanup staging or landingzone {e}")
+        getLogger().error(f"failed to cleanup landingzone {e}")
     datablocks_operations.cleanup_scratch(flow_run.parameters["dataset_id"])
 
 
@@ -341,9 +308,9 @@ def cleanup_dataset(flow: Flow, flow_run: FlowRun, state: State):
 def archive_single_dataset_flow(dataset_id: str):
     datablocks = create_datablocks_flow(dataset_id)
 
-    archive_datablocks_with_storage_protect(dataset_id=dataset_id, datablocks=datablocks)
+    upload = upload_datablocks_to_s3.submit(dataset_id=dataset_id)
 
-    access_token = get_scicat_access_token.submit()
+    access_token = get_scicat_access_token.submit(wait_for=[upload])
     update_scicat_archival_dataset_lifecycle.submit(
         dataset_id=dataset_id,
         status=SciCatClient.ARCHIVESTATUSMESSAGE.DATASET_ON_ARCHIVEDISK,
@@ -364,13 +331,6 @@ def on_job_flow_failure(flow: Flow, flow_run: FlowRun, state: State):
 
 def on_job_flow_cancellation(flow: Flow, flow_run: FlowRun, state: State):
     dataset_ids = flow_run.parameters["dataset_ids"]
-
-    try:
-        s3_client = get_s3_client()
-        for dataset_id in dataset_ids:
-            datablocks_operations.cleanup_s3_staging(s3_client, dataset_id)
-    except Exception:
-        pass
 
     for dataset_id in dataset_ids:
         datablocks_operations.cleanup_scratch(dataset_id)

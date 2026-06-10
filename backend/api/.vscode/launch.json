@@ -11,7 +11,6 @@
       "env": {
         "PREFECT_API_URL": "https://scopem-openem2.ethz.ch/archiver/prefect/api",
         "PREFECT_LOGGING_LEVEL": "INFO",
-        "MINIO_ENDPOINT": "scopem-openemdata.ethz.ch:9090",
         "SECRETS_DIR": "${workspaceFolder}/../../.secrets",
         "UVICORN_ROOT_PATH": "",
         "UVICORN_RELOAD": "true",
@@ -19,9 +18,14 @@
         "UVICORN_PORT": "8800",
         "IDP_CLIENT_SECRET": "ASFD",
         "IDP_PASSWORD": "ASFD",
+        "IDP_USERNAME": "archiver-service",
+        "IDP_REALM": "facility",
+        "IDP_AUDIENCE": "account",
+        "IDP_CLIENT_ID": "archiver-service-api",
+        "IDP_URL": "https://scopem-openem2.ethz.ch/keycloak",
         "JOB_ENDPOINT_PASSWORD": "pw",
         "JOB_ENDPOINT_USERNAME": "username",
-        "SCICAT_INGESTOR_GROUP": "ingestor"
+        "SCICAT_INGESTOR_GROUP": "unx-openem"
       },
       "cwd": "${workspaceFolder}/src",
       "module": "openapi_server",

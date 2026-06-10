@@ -12,16 +12,16 @@ services:
       - UVICORN_PORT=8000
       - UVICORN_LOG_LEVEL=info
       - UVICORN_RELOAD=False
-      - MINIO_ENDPOINT=${MINIO_EXTERNAL_ENDPOINT}
+      - S3_ENDPOINT=${S3_EXTERNAL_ENDPOINT}
       - IDP_URL=${IDP_URL}
       - IDP_USERNAME=${IDP_USERNAME}
       - IDP_REALM=${IDP_REALM}
       - IDP_AUDIENCE=${IDP_AUDIENCE}
       - IDP_CLIENT_ID=${IDP_CLIENT_ID}
       - SCICAT_INGESTOR_GROUP=${SCICAT_INGESTOR_GROUP}
-      - MINIO_TOTAL_LANDING_SPACE_TB=${MINIO_TOTAL_LANDING_SPACE_TB}
+      - S3_TOTAL_LANDING_SPACE_TB=${S3_TOTAL_LANDING_SPACE_TB}
     secrets:
-      - minio_metrics_token
+      - s3_metrics_token
       - idp_client_secret
       - idp_password
       - job_endpoint_username 
@@ -132,11 +132,11 @@ services:
       - PREFECT_LOGGING_LEVEL=${PREFECT_LOGGING_LEVEL}
       - PREFECT_API_URL=http://prefect-server:4200/api
       - SCICAT_ENDPOINT=${SCICAT_ENDPOINT}
-      - MINIO_EXTERNAL_ENDPOINT=${MINIO_EXTERNAL_ENDPOINT}
-      - MINIO_ENDPOINT=${MINIO_ENDPOINT}
+      - S3_EXTERNAL_ENDPOINT=${S3_EXTERNAL_ENDPOINT}
+      - S3_ENDPOINT=${S3_ENDPOINT}
       # Secrets are stored as blocks, removing _FILE suffix
-      - MINIO_USER_FILE=/run/secrets/minio_user
-      - MINIO_PASSWORD_FILE=/run/secrets/minio_password
+      - S3_USER_FILE=/run/secrets/s3_user
+      - S3_PASSWORD_FILE=/run/secrets/s3_password
       - GITHUB_USER_FILE=/run/secrets/github_user
       - GITHUB_PASSWORD_FILE=/run/secrets/github_pass
       - SCICAT_USER_FILE=/run/secrets/scicat_user
@@ -148,13 +148,13 @@ services:
       - type: bind
         source: ../backend/prefect/concurrency-limits.toml
         target: /var/local/concurrency-limits.toml
-    command: "-v /var/local/vars.toml -s MINIO_USER_FILE MINIO_PASSWORD_FILE GITHUB_USER_FILE GITHUB_PASSWORD_FILE SCICAT_USER_FILE SCICAT_PASSWORD_FILE -l /var/local/concurrency-limits.toml"
+    command: "-v /var/local/vars.toml -s S3_USER_FILE S3_PASSWORD_FILE GITHUB_USER_FILE GITHUB_PASSWORD_FILE SCICAT_USER_FILE SCICAT_PASSWORD_FILE -l /var/local/concurrency-limits.toml"
     depends_on:
       prefect-server:
         condition: service_healthy
     secrets:
-      - minio_user
-      - minio_password
+      - s3_user
+      - s3_password
       - github_user
       - github_pass
       - scicat_user
@@ -184,7 +184,6 @@ services:
       - ARCHIVER_SCRATCH_FOLDER=${ARCHIVER_SCRATCH_FOLDER}
       - PREFECT_NETWORK=scopemarchiver_network
       - PREFECT_RUNTIME_IMAGE=${PREFECT_RUNTIME_IMAGE_NAME}:${OPENEM_IMAGE_TAG:-latest}
-      - PREFECT_HOST_STORAGE_CLIENT=${PREFECT_HOST_STORAGE_CLIENT_FOLDER}
     command: prefect --no-prompt deploy --all --prefect-file /prefect.yaml
     working_dir: /app/backend
     volumes:
@@ -224,12 +223,12 @@ secrets:
     file: ${SCICAT_USER_FILE}
   scicat_pass:
     file: ${SCICAT_PASSWORD_FILE}
-  minio_user:
-    file: ./.secrets/miniouser.txt
-  minio_password:
-    file: ./.secrets/miniopass.txt
-  minio_metrics_token:
-    file: ./.secrets/minio_metrics.txt
+  s3_user:
+    file: ./.secrets/s3user.txt
+  s3_password:
+    file: ./.secrets/s3pass.txt
+  s3_metrics_token:
+    file: ./.secrets/s3_metrics.txt
   idp_client_secret:
     file: ${IDP_CLIENT_SECRET_FILE}
   idp_password:

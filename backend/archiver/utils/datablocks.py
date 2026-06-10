@@ -203,7 +203,7 @@ def list_datablocks(client: S3Storage, prefix: Path, bucket: Bucket) -> List[S3S
     """List all objects in s3 bucket and path
 
     Args:
-        minio_prefix (Path): prefix for files to be listed
+        prefix (Path): prefix for files to be listed
         bucket (Bucket): s3 bucket
 
     Returns:
@@ -214,7 +214,11 @@ def list_datablocks(client: S3Storage, prefix: Path, bucket: Bucket) -> List[S3S
 
 @log
 def download_objects_from_s3(
-    client: S3Storage, prefix: Path, bucket: Bucket, destination_folder: Path, progress_callback
+    client: S3Storage,
+    prefix: Path,
+    bucket: Bucket,
+    destination_folder: Path,
+    progress_callback,
 ) -> List[Path]:
     """Download objects form s3 storage to folder
 
@@ -229,7 +233,7 @@ def download_objects_from_s3(
     destination_folder.mkdir(parents=True, exist_ok=True)
 
     files = client.download_objects(
-        minio_prefix=prefix,
+        prefix=prefix,
         bucket=bucket,
         destination_folder=destination_folder,
         progress_callback=progress_callback,
@@ -239,33 +243,6 @@ def download_objects_from_s3(
         raise SystemError(f"No files found in bucket {bucket.name} at {prefix}")
 
     return files
-
-
-@log
-def find_missing_datablocks_in_s3(
-    client: S3Storage, datablocks: List[DataBlock], bucket: Bucket
-) -> List[DataBlock]:
-    datablocks_not_in_retrieval_bucket = [
-        datablock
-        for datablock in datablocks
-        if client.stat_object(
-            bucket=bucket,
-            filename=f"{datablock.archiveId}",
-        )
-        is None
-    ]
-
-    return datablocks_not_in_retrieval_bucket
-
-
-@log
-def reset_expiry_date(client: S3Storage, filenames: List[str], bucket: Bucket):
-    retention_period = Variables().MINIO_URL_EXPIRATION_DAYS
-
-    for filename in filenames:
-        client.reset_expiry_date(
-            bucket_name=bucket.name, filename=f"{filename}", retention_period_days=retention_period
-        )
 
 
 @log
@@ -284,8 +261,9 @@ def upload_objects_to_s3(
     total_files = len(files_to_upload)
 
     for filepath in files_to_upload:
-        minio_path: Path = prefix / filepath.name
-        client.fput_object(source_folder / filepath.name, minio_path, bucket)
+        object_path: Path = prefix / filepath.name
+        assert Path(source_folder / filepath.name).exists()
+        client.fput_object(source_folder / filepath.name, object_path, bucket)
         uploaded_files.append(filepath)
         if progress_callback is not None:
             progress_callback(1.0 * len(uploaded_files) / total_files)
@@ -295,7 +273,7 @@ def upload_objects_to_s3(
 @log
 def delete_objects_from_s3(client: S3Storage, prefix: Path, bucket: Bucket):
     getLogger().info(f"Cleaning up objects in {bucket.name}/{prefix}")
-    client.delete_objects(minio_prefix=prefix, bucket=bucket)
+    client.delete_objects(prefix=prefix, bucket=bucket)
 
 
 @log
@@ -392,7 +370,7 @@ def find_object_in_s3(client: S3Storage, dataset_id, datablock_name):
         o.Name
         for o in list_datablocks(
             client,
-            bucket=Bucket.staging_bucket(),
+            bucket=Bucket.archival_bucket(),
             prefix=StoragePaths.relative_datablocks_folder(dataset_id),
         )
     )
@@ -434,56 +412,6 @@ def verify_checksum(dataset_id: str, datablock: DataBlock, expected_checksum: st
         )
 
 
-def print_error_log():
-    getLogger().error("dsmerror.log:\n")
-    try:
-        error_log =Path("dsmerror.log") 
-        if not error_log.exists:
-            getLogger().error(f"dsmerror.log not found: {error_log}")
-            return
-        with open(error_log, "r") as f:
-            for line in f:
-                getLogger().error(line)
-    except Exception as e:
-        getLogger().error(f"Failed to read dsmerror.log: {e}")
-
-
-@log
-def archive_file(file: Path):
-    """Archives the file in the backen storage system
-
-    Args:
-        file (Path): Source file and unique identifier in the storage system
-
-    Raises:
-        SystemError: raises if operation fails
-    """
-    if not file.exists() or not file.is_file():
-        raise SystemError(f"Source file {file} is not a file or does not exist")
-
-    with subprocess.Popen(
-        [
-            "dsmc",
-            "archive",
-            f"'{file}'",
-        ],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        universal_newlines=True,
-    ) as popen:
-        for line in popen.stdout:
-            getLogger().info(line)
-
-        popen.stdout.close()
-        return_code = popen.wait()
-        if return_code > 0:
-            getLogger().error(f"Finished with return code : {return_code}")
-            print_error_log()
-            raise SystemError("Archiving Operation failed")
-        else:
-            getLogger().info(f"Finished with return code : {return_code}")
-
-
 @log
 def verify_datablock_content(datablock: DataBlock, datablock_path: str):
     expected_checksums: Dict[str, str] = {
@@ -513,24 +441,6 @@ def verify_datablock_content(datablock: DataBlock, datablock_path: str):
 
 
 @log
-def cleanup_s3_staging(client: S3Storage, dataset_id: str) -> None:
-    delete_objects_from_s3(
-        client,
-        prefix=StoragePaths.relative_datablocks_folder(dataset_id),
-        bucket=Bucket.staging_bucket(),
-    )
-
-
-@log
-def cleanup_s3_retrieval(client: S3Storage, dataset_id: str) -> None:
-    delete_objects_from_s3(
-        client,
-        prefix=StoragePaths.relative_datablocks_folder(dataset_id),
-        bucket=Bucket.retrieval_bucket(),
-    )
-
-
-@log
 def cleanup_s3_landingzone(client: S3Storage, dataset_id: str) -> None:
     delete_objects_from_s3(
         client,
@@ -544,12 +454,12 @@ def cleanup_s3_landingzone(client: S3Storage, dataset_id: str) -> None:
 def verify_objects(
     client: S3Storage,
     uploaded_objects: List[Path],
-    minio_prefix: Path,
+    prefix: Path,
     bucket: Bucket,
 ) -> List[Path]:
     missing_files: List[Path] = []
     for f in uploaded_objects:
-        if not client.stat_object(filename=str(minio_prefix / f.name), bucket=bucket):
+        if not client.stat_object(filename=str(prefix / f.name), bucket=bucket):
             missing_files.append(f)
     return missing_files
 
@@ -561,7 +471,11 @@ def on_rmtree_error(func, path, _):
 @log
 def cleanup_scratch(dataset_id: str):
     getLogger().info(f"Cleaning up objects in scratch folder: {StoragePaths.scratch_folder(dataset_id)}")
-    shutil.rmtree(StoragePaths.scratch_folder(dataset_id), ignore_errors=True, onerror=on_rmtree_error)
+    shutil.rmtree(
+        StoragePaths.scratch_folder(dataset_id),
+        ignore_errors=True,
+        onexc=on_rmtree_error,
+    )
 
 
 @log
@@ -585,59 +499,11 @@ async def wait_for_file_accessible(file: Path, timeout_s=360):
 
 @log
 def upload_datablock(client: S3Storage, file: Path, datablock: DataBlock):
-    # upload to s3 retrieval bucket
     client.fput_object(
         source_file=file,
         destination_file=Path(datablock.archiveId),
-        bucket=Bucket.retrieval_bucket(),
+        bucket=Bucket.archival_bucket(),
     )
-
-
-@log
-def retrieve_file(file: Path):
-    """Copies a file to a destination folder (does not need to exist)
-
-    Args:
-        src_file (Path): Source file
-        dst_folder (Path): destination folder - needs to exist
-
-    Raises:
-        SystemError: raises if operation fails
-    """
-    getLogger().info(f"Start Retrieval operation for {file}")
-
-    with subprocess.Popen(
-        [
-            "dsmc",
-            "retrieve",
-            f"'{file}'",
-        ],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        universal_newlines=True,
-    ) as popen:
-        for line in popen.stdout:
-            getLogger().info(line)
-
-        popen.stdout.close()
-        return_code = popen.wait()
-        if return_code > 0:
-            getLogger().error(f"Finished with return code : {return_code}")
-            print_error_log()
-            raise SystemError("Retrieval Operation failed")
-        else:
-            getLogger().info(f"Finished with return code : {return_code}")
-
-
-@log
-def retrieve_datablock(dataset_id: str, datablock: DataBlock) -> None:
-    datablock_full_path = build_archiving_path(dataset_id=dataset_id, datablock=datablock)
-
-    # copy to local folder
-    scratch_destination_folder = StoragePaths.scratch_archival_datablocks_folder(dataset_id)
-    scratch_destination_folder.mkdir(exist_ok=True, parents=True)
-
-    retrieve_file(file=datablock_full_path)
 
 
 @log
@@ -657,7 +523,7 @@ def verify_datablock_on_scratch(dataset_id: str, datablock: DataBlock) -> None:
 
 
 @log
-def upload_data_to_retrieval_bucket(client: S3Storage, dataset_id: str, datablock: DataBlock) -> None:
+def upload_data_to_archival_bucket(client: S3Storage, dataset_id: str, datablock: DataBlock) -> None:
     scratch_destination_folder = StoragePaths.scratch_archival_datablocks_folder(dataset_id)
     assert scratch_destination_folder.exists()
     datablock_on_scratch = scratch_destination_folder / Path(datablock.archiveId).name
@@ -666,3 +532,8 @@ def upload_data_to_retrieval_bucket(client: S3Storage, dataset_id: str, databloc
 
 def count_files(folder: str) -> int:
     return sum(len(files) for _, _, files in os.walk(folder))
+
+
+@log
+def restore_datablock(client: S3Storage, datablock: DataBlock) -> None:
+    client.restore_objects(bucket=Bucket.archival_bucket(), objects=[datablock.archiveId])

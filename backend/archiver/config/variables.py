@@ -25,13 +25,12 @@ class PrefectVariablesModel(BaseSettings):
         validate_default=True,
     )
 
-    MINIO_REGION: str = ""
-    MINIO_RETRIEVAL_BUCKET: str = ""
-    MINIO_STAGING_BUCKET: str = ""
-    MINIO_LANDINGZONE_BUCKET: str = ""
-    MINIO_ENDPOINT: str = ""
-    MINIO_EXTERNAL_ENDPOINT: str = ""
-    MINIO_URL_EXPIRATION_DAYS: int = 7
+    S3_REGION: str = ""
+    S3_ARCHIVAL_BUCKET: str = ""
+    S3_LANDINGZONE_BUCKET: str = ""
+    S3_ENDPOINT: str = ""
+    S3_EXTERNAL_ENDPOINT: str = ""
+    S3_URL_EXPIRATION_DAYS: int = 7
 
     ARCHIVER_SCRATCH_FOLDER: Path = Path("")
     ARCHIVER_TARGET_SIZE_GB: int = 20
@@ -86,32 +85,28 @@ class Variables:
         return self.__get("scicat_jobs_api_prefix") or ""
 
     @property
-    def MINIO_RETRIEVAL_BUCKET(self) -> str:
-        return self.__get("minio_retrieval_bucket")
+    def S3_ARCHIVAL_BUCKET(self) -> str:
+        return self.__get("s3_archival_bucket")
 
     @property
-    def MINIO_LANDINGZONE_BUCKET(self) -> str:
-        return self.__get("minio_landingzone_bucket")
+    def S3_LANDINGZONE_BUCKET(self) -> str:
+        return self.__get("s3_landingzone_bucket")
 
     @property
-    def MINIO_STAGING_BUCKET(self) -> str:
-        return self.__get("minio_staging_bucket")
+    def S3_REGION(self) -> str:
+        return self.__get("s3_region")
 
     @property
-    def MINIO_REGION(self) -> str:
-        return self.__get("minio_region")
+    def S3_ENDPOINT(self) -> str:
+        return self.__get("s3_endpoint")
 
     @property
-    def MINIO_ENDPOINT(self) -> str:
-        return self.__get("minio_endpoint")
+    def S3_URL_EXPIRATION_DAYS(self) -> int:
+        return int(self.__get("s3_url_expiration_days") or 7)
 
     @property
-    def MINIO_URL_EXPIRATION_DAYS(self) -> int:
-        return int(self.__get("minio_url_expiration_days") or 7)
-
-    @property
-    def MINIO_EXTERNAL_ENDPOINT(self) -> str:
-        return self.__get("minio_external_endpoint")
+    def S3_EXTERNAL_ENDPOINT(self) -> str:
+        return self.__get("s3_external_endpoint")
 
     @property
     def ARCHIVER_SCRATCH_FOLDER(self) -> Path:

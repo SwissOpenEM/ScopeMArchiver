@@ -9,28 +9,24 @@ class Settings(BaseSettings):
     UVICORN_ROOT_PATH: str = "/"
     UVICORN_RELOAD: bool = False
     UVICORN_LOG_LEVEL: str = "info"
-    MINIO_ENDPOINT: str = "scopem-openemdata.ethz.ch:9000"
-    MINIO_REGION: str = "eu-west-1"
     URL_EXPIRATION_SECONDS: int = 3600
-    FREE_SPACE_FACTOR: float = 0.9
-    MINIO_TOTAL_LANDING_SPACE_TB: int = 100
 
     # JWT Token settings
     IDP_URL: str = "https://scopem-openem2.ethz.ch/keycloak"
     IDP_USERNAME: str = "archiver-service"
-    IDP_PASSWORD: SecretStr
+    IDP_PASSWORD: SecretStr = ""
     IDP_REALM: str = "facility"
     IDP_AUDIENCE: str = "account"
     IDP_CLIENT_ID: str = "archiver-service-api"
-    IDP_CLIENT_SECRET: SecretStr
+    IDP_CLIENT_SECRET: SecretStr = ""
     IDP_ALGORITHM: str = "RS256"
 
     PREFECT_API_URL: str = "http://prefect.io"
 
     SCICAT_INGESTOR_GROUP: str = "unx-openem"
 
-    JOB_ENDPOINT_USERNAME: SecretStr
-    JOB_ENDPOINT_PASSWORD: SecretStr
+    JOB_ENDPOINT_USERNAME: SecretStr = ""
+    JOB_ENDPOINT_PASSWORD: SecretStr = ""
 
     class Config:
         secrets_dir = os.environ.get("SECRETS_DIR", "/run/secrets")
