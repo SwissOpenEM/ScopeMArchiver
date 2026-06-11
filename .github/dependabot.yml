@@ -1,7 +1,7 @@
 version: 2
 updates:
   # Backend API – Python dependencies (managed with uv)
-  - package-ecosystem: "pip"
+  - package-ecosystem: "uv"
     directory: "/backend/api"
     schedule:
       interval: "weekly"
@@ -11,11 +11,13 @@ updates:
     # Restrict updates to minor and patch releases (no major bumps)
     allow:
       - dependency-type: "all"
+    cooldown:
+      default-days: 7
     # Optional: automatically merge safe updates
     # automerge: true
 
   # Backend Archiver – Python dependencies (managed with uv)
-  - package-ecosystem: "pip"
+  - package-ecosystem: "uv"
     directory: "/backend/archiver"
     schedule:
       interval: "weekly"
@@ -23,6 +25,8 @@ updates:
     open-pull-requests-limit: 10
     allow:
       - dependency-type: "all"
+    cooldown:
+      default-days: 7
 
   # Enable version updates for GitHub Actions
   - package-ecosystem: "github-actions"

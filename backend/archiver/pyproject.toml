@@ -15,7 +15,7 @@ dependencies = [
     "boto3==1.35.95",
     "moto[s3]>=5.0.28",
     "prefect==3.7.2",
-    "prefect-docker==0.7.2",
+    "prefect-docker==0.6.6",
     "pytest>=9.0.3",
     "pytest-asyncio>=0.25.3",
     "requests>=2.33.0",
@@ -66,7 +66,7 @@ dev = [
     "requests-mock>=1.12.1",
 ]
 lint = [
-    "mypy>=2.1.0",
+    "mypy>=1.15.0",
     "ruff>=0.9.6",
 ]
 
