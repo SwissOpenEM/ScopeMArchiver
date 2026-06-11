@@ -67,7 +67,7 @@ dev = [
 ]
 lint = [
     "mypy>=2.1.0",
-    "ruff>=0.9.6",
+    "ruff>=0.15.16",
 ]
 
 [tool.pytest.ini_options]
