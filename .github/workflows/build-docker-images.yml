@@ -101,7 +101,7 @@ jobs:
 
       - name: Get coverage report
         if: success()
-        uses: orgoro/coverage@v3.2
+        uses: orgoro/coverage@v3.3
         with:
             coverageFile: backend/api/coverage.xml
             token: ${{ secrets.GITHUB_TOKEN }}
@@ -168,7 +168,7 @@ jobs:
 
       - name: Get coverage report 
         if: success()
-        uses: orgoro/coverage@v3.2
+        uses: orgoro/coverage@v3.3
         with:
             coverageFile: backend/archiver/coverage.xml
             token: ${{ secrets.GITHUB_TOKEN }}
