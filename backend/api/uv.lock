@@ -113,7 +113,7 @@ lint = [
 [package.metadata]
 requires-dist = [
     { name = "boto3", specifier = ">=1.36.6" },
-    { name = "fastapi", extras = ["standard"], specifier = ">=0.115.7" },
+    { name = "fastapi", extras = ["standard"], specifier = ">=0.136.3" },
     { name = "gunicorn", specifier = ">=23.0.0" },
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "importlib-metadata", specifier = ">=8.5.0" },
