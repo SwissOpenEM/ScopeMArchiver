@@ -115,7 +115,7 @@ lint = [
 [package.metadata]
 requires-dist = [
     { name = "boto3", specifier = "==1.35.95" },
-    { name = "moto", extras = ["s3"], specifier = ">=5.0.28" },
+    { name = "moto", extras = ["s3"], specifier = ">=5.2.2" },
     { name = "prefect", specifier = "==3.7.2" },
     { name = "prefect-docker", specifier = "==0.6.6" },
     { name = "pytest", specifier = ">=9.0.3" },
@@ -128,7 +128,7 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "moto", extras = ["s3"], specifier = ">=5.0.28" },
+    { name = "moto", extras = ["s3"], specifier = ">=5.2.2" },
     { name = "pytest", specifier = ">=9.0.3" },
     { name = "pytest-asyncio", specifier = ">=0.25.3" },
     { name = "pytest-cov", specifier = ">=6.0.0" },
