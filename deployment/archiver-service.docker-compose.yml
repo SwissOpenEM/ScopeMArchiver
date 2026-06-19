@@ -1,14 +1,12 @@
 services:
   archiver-service-api:
     image: ${OPENEM_BACKEND_IMAGE_NAME}:${OPENEM_IMAGE_TAG}
-    container_name: archiver-service-api
     build:
       context: ../backend/api
       dockerfile: ./Dockerfile
     environment:
       - PREFECT_LOGGING_LEVEL=${PREFECT_LOGGING_LEVEL}
       - PREFECT_API_URL=http://prefect-server:4200/api
-      - UVICORN_ROOT_PATH=/archiver/api/v1
       - UVICORN_PORT=8000
       - UVICORN_LOG_LEVEL=info
       - UVICORN_RELOAD=False
@@ -18,7 +16,7 @@ services:
       - IDP_REALM=${IDP_REALM}
       - IDP_AUDIENCE=${IDP_AUDIENCE}
       - IDP_CLIENT_ID=${IDP_CLIENT_ID}
-      - SCICAT_INGESTOR_GROUP=${SCICAT_INGESTOR_GROUP}
+      - SCICAT_INGESTOR_GROUPSS=${SCICAT_INGESTOR_GROUPSS}
       - S3_TOTAL_LANDING_SPACE_TB=${S3_TOTAL_LANDING_SPACE_TB}
     secrets:
       - s3_metrics_token
@@ -28,21 +26,17 @@ services:
       - job_endpoint_password
     expose:
       - 8000
+    networks:
+      - ${ENVIRONMENT}_traefik_public
+      - internal
     privileged: false
     read_only: true
     labels:
       traefik.enable: true
-      traefik.http.routers.backend.rule: Host(`${HOST}`) && PathPrefix(`/archiver/api/v1`)
-      traefik.http.middlewares.backend-stripprefix.stripprefix.prefixes: /archiver/api/v1
-      traefik.http.routers.backend.entrypoints: websecure
-      traefik.http.routers.backend.tls.certresolver: certresolver
-      traefik.http.routers.backend.middlewares: backend-stripprefix
-      traefik.http.services.backend.loadbalancer.server.port: 8000
-    networks:
-      - scopemarchiver_network
+      traefik.docker.network: ${ENVIRONMENT}_traefik_public
+
   prefect-server:
     image: prefecthq/prefect:${PREFECT_VERSION}
-    container_name: prefect-server
     restart: always
     volumes:
       - prefect-volume:/root/.prefect
@@ -55,7 +49,9 @@ services:
         export PREFECT_API_DATABASE_USER=$$(cat /var/run/secrets/postgres_user)
         export PREFECT_API_DATABASE_CONNECTION_URL=postgresql+asyncpg://$$PREFECT_API_DATABASE_USER:$$PREFECT_API_DATABASE_PASSWORD@postgres:5432/prefect
         /opt/prefect/entrypoint.sh prefect server start
-
+    networks:
+      - ${ENVIRONMENT}_traefik_public
+      - internal
     secrets:
       - postgres_pass
       - postgres_user
@@ -73,9 +69,7 @@ services:
       - PREFECT_TASK_DEFAULT_RETRIES=2
       - PREFECT_TASK_DEFAULT_RETRY_DELAY_SECONDS=[1,10,100]
       # working; PREFECT has some issues with api prefixes...
-      - PREFECT_UI_SERVE_BASE=/archiver/prefect/ui
       - PREFECT_UI_URL=http://prefect-server:4200/api
-      - PREFECT_UI_API_URL=https://${HOST}/archiver/prefect/api
       - PREFECT_API_URL=http://prefect-server:4200/api
       - PREFECT_SERVER_API_HOST=0.0.0.0
       - PREFECT_SERVER_UI_SHOW_PROMOTIONAL_CONTENT=False
@@ -85,20 +79,7 @@ services:
       - postgres
     labels:
       traefik.enable: true
-      # UI
-      traefik.http.routers.prefect-server.rule: Host(`${HOST}`) && PathPrefix(`/archiver/prefect/ui`)
-      traefik.http.routers.prefect-server.entrypoints: websecure
-      traefik.http.routers.prefect-server.tls.certresolver: certresolver
-      traefik.http.services.prefect-server.loadbalancer.server.port: 4200
-      traefik.http.routers.prefect-server.middlewares: ${AUTH_MIDDLEWARE}
-      # API
-      traefik.http.routers.prefect-api-server.rule: Host(`${HOST}`) && PathPrefix(`/archiver/prefect/api`)
-      traefik.http.routers.prefect-api-server.entrypoints: websecure
-      traefik.http.routers.prefect-api-server.tls.certresolver: certresolver
-      traefik.http.middlewares.prefect-api-strip.stripprefix.prefixes: /archiver/prefect
-      traefik.http.routers.prefect-api-server.middlewares: prefect-api-strip${AUTH_MIDDLEWARE:+,$AUTH_MIDDLEWARE}
-    networks:
-      - scopemarchiver_network
+      traefik.docker.network: ${ENVIRONMENT}_traefik_public
   postgres:
     image: postgres:15.2-alpine
     restart: always
@@ -114,11 +95,10 @@ services:
     volumes:
       - postgres-volume:/var/lib/postgresql/data
     networks:
-      - scopemarchiver_network
+      - internal
 
   prefect-config:
     image: ${PREFECT_CONFIG_IMAGE_NAME}:${OPENEM_IMAGE_TAG:-latest}
-    container_name: prefect-config
     build:
       context: ../backend/
       dockerfile: ./prefect/config.Dockerfile
@@ -127,7 +107,7 @@ services:
       tags:
         - ${OPENEM_IMAGE_TAG}
     networks:
-      - scopemarchiver_network
+      - internal
     environment:
       - PREFECT_LOGGING_LEVEL=${PREFECT_LOGGING_LEVEL}
       - PREFECT_API_URL=http://prefect-server:4200/api
@@ -171,9 +151,8 @@ services:
         PREFECT_VERSION: ${PREFECT_VERSION}
         UID: 123
         GID: 123
-    container_name: prefect-flows-deployment
     networks:
-      - scopemarchiver_network
+      - internal
     environment:
       ### Prefect specific values
       - PREFECT_LOGGING_LEVEL=${PREFECT_LOGGING_LEVEL}
@@ -202,13 +181,9 @@ services:
       traefik.enable: false
 volumes:
   postgres-volume:
-    name: scopemarchiver_postgres-volume
     driver: local
-    # external: true
   prefect-volume:
-    name: scopemarchiver_prefect-volume
     driver: local
-    # external: true
 
 secrets:
   postgres_user:
@@ -237,3 +212,12 @@ secrets:
     file: ./.secrets/jobsusername.txt
   job_endpoint_password:
     file: ./.secrets/jobspassword.txt
+
+networks:
+  internal:
+  dev_traefik_public:
+    external: true
+  prod_traefik_public:
+    external: true
+  qa_traefik_public:
+    external: true

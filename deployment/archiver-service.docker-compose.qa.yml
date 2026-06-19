@@ -1,0 +1,30 @@
+services:
+  archiver-service-api:
+    environment:
+      - UVICORN_ROOT_PATH=/${ENVIRONMENT}/archiver/api/v1
+    labels:
+      traefik.http.routers.qa-backend.rule: Host(`${HOST}`) && PathPrefix(`/${ENVIRONMENT}/archiver/api/v1`)
+      traefik.http.middlewares.qa-backend-stripprefix.stripprefixregex.regex: /${ENVIRONMENT}/archiver/api/v1
+      traefik.http.routers.qa-backend.entrypoints: websecure
+      traefik.http.routers.qa-backend.tls.certresolver: certresolver
+      traefik.http.routers.qa-backend.middlewares: qa-backend-stripprefix
+      traefik.http.services.qa-backend.loadbalancer.server.port: 8000
+
+
+  prefect-server:
+    environment:
+      - PREFECT_UI_API_URL=https://${HOST}/${ENVIRONMENT}/archiver/prefect/api
+      - PREFECT_UI_SERVE_BASE=/${ENVIRONMENT}/archiver/prefect/ui
+    labels:
+      # UI
+      traefik.http.routers.qa-prefect-server.rule: Host(`${HOST}`) && PathPrefix(`/${ENVIRONMENT}/archiver/prefect/ui`)
+      traefik.http.routers.qa-prefect-server.entrypoints: websecure
+      traefik.http.routers.qa-prefect-server.tls.certresolver: certresolver
+      traefik.http.services.qa-prefect-server.loadbalancer.server.port: 4200
+      traefik.http.routers.qa-prefect-server.middlewares: ${AUTH_MIDDLEWARE}
+      # API
+      traefik.http.routers.qa-prefect-api-server.rule: Host(`${HOST}`) && PathPrefix(`/${ENVIRONMENT}/archiver/prefect/api`)
+      traefik.http.routers.qa-prefect-api-server.entrypoints: websecure
+      traefik.http.routers.qa-prefect-api-server.tls.certresolver: certresolver
+      traefik.http.middlewares.qa-prefect-api-strip.stripprefix.prefixes: /${ENVIRONMENT}/archiver/prefect
+      traefik.http.routers.qa-prefect-api-server.middlewares: ${ENVIRONMENT}-prefect-api-strip${AUTH_MIDDLEWARE:+,$AUTH_MIDDLEWARE}

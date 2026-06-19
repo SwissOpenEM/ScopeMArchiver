@@ -200,17 +200,17 @@ async def get_scicat_user_info(token) -> dict:
 async def check_scicat_token(token) -> bool:
     scicat_userinfo = await get_scicat_user_info(token)
     try:
-        groups = scicat_userinfo["profile"]["accessGroups"]
+        scicat_access_groups = scicat_userinfo["profile"]["accessGroups"]
     except KeyError as e:
         detail = "Userinfo from SciCat does not contain the profile.accessGroups attribute"
         _LOGGER.error(detail)
-        # return False
         raise HTTPException(status_code=401, detail=detail) from e
 
-    if GetSettings().SCICAT_INGESTOR_GROUP not in groups:
+    groups = GetSettings().SCICAT_INGESTOR_GROUPS.split(";")
+
+    if not any(g in scicat_access_groups for g in groups):
         detail = "SciCat user does have ingestor role"
         _LOGGER.error(detail)
-        # return False
         raise HTTPException(status_code=401, detail=detail)
     return True
 
