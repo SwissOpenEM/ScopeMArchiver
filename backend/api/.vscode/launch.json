@@ -25,7 +25,7 @@
         "IDP_URL": "https://scopem-openem2.ethz.ch/keycloak",
         "JOB_ENDPOINT_PASSWORD": "pw",
         "JOB_ENDPOINT_USERNAME": "username",
-        "SCICAT_INGESTOR_GROUP": "unx-openem"
+        "SCICAT_INGESTOR_GROUPS": "unx-openem;ethz-scopem;ethz-scopem-ops"
       },
       "cwd": "${workspaceFolder}/src",
       "module": "openapi_server",

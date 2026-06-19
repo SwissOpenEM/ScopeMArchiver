@@ -23,7 +23,7 @@ class Settings(BaseSettings):
 
     PREFECT_API_URL: str = "http://prefect.io"
 
-    SCICAT_INGESTOR_GROUP: str = "unx-openem"
+    SCICAT_INGESTOR_GROUPS: str = "unx-openem"
 
     JOB_ENDPOINT_USERNAME: SecretStr = ""
     JOB_ENDPOINT_PASSWORD: SecretStr = ""
