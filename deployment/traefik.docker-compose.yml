@@ -35,7 +35,9 @@ services:
       traefik.frontend.headers.passHostHeader: true
       traefik.http.services.dashboard.loadbalancer.server.port: 8080
     networks:
-      - scopemarchiver_network
+      - prod_traefik_public
+      - qa_traefik_public
+      - dev_traefik_public
     configs:
       - source: traefik.yml
         target: /opt/traefik.yml
@@ -55,9 +57,10 @@ services:
       AUTHENTIK_TOKEN:
       AUTHENTIK_LOG_LEVEL: info
     entrypoint: ["/bin/sh", "-c", "export AUTHENTIK_TOKEN=$(cat /run/secrets/authentik_token) && ./proxy"]
-
     networks:
-      - scopemarchiver_network
+      - dev_traefik_public
+      - prod_traefik_public
+      - qa_traefik_public
     secrets:
       - authentik_token
     labels:
@@ -94,18 +97,20 @@ configs:
               servers:
                 - url: "https://${S3_ENDPOINT}"
               passHostHeader: true
+  traefik_dev.yml:
+    content: |
       # Enable for locally stored certificate
-      # tls:
-      #   certificates:
-      #     - certFile: /opt/certs/cert.pem
-      #       keyFile: /opt/certs/cert.key
-      #       stores: 
-      #         - default
-      #   stores:
-      #     default:
-      #       defaultCertificate:
-      #         certFile: /opt/certs/cert.pem
-      #         keyFile: /opt/certs/cert.key
+      tls:
+        certificates:
+          - certFile: /opt/certs/cert.pem
+            keyFile: /opt/certs/cert.key
+            stores: 
+              - default
+        stores:
+          default:
+            defaultCertificate:
+              certFile: /opt/certs/cert.pem
+              keyFile: /opt/certs/cert.key
 secrets:
   authentik_token:
     file: ./.secrets/authentik_token
@@ -114,3 +119,14 @@ secrets:
 
 volumes:
   acme:
+
+networks:
+  dev_traefik_public:
+    name: prod_traefik_public
+    driver: bridge
+  prod_traefik_public:
+    name: prod_traefik_public
+    driver: bridge
+  qa_traefik_public:
+    name: qa_traefik_public
+    driver: bridge

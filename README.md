@@ -14,15 +14,39 @@ Refer to the [Github pages](#github-pages) for more details.
 Build all the services:
 
 ```bash
-docker compose --env-file .env.prod --env-file .env.development build
+docker compose --env-file .env.prod --env-file .env.dev build
 ```
 
-Starting up all services for development:
+### Deploy Traefik
+
+Traefik will route to containers in different networks for different deployment environments (defined by `-p (dev|prod|qa)`).
 
 ```bash
-docker compose --env-file .env.prod --env-file .env.development up -d
+docker compose --env-file .env.prod -f traefik.docker-compose.yml up -d
+```
+  
+
+Services that have no traffic routed through Traefik are setup in a separate network (i.e. `qa_internal`). Others, like API service, share a network with Traefik as well (i.e `qa_traefik_public`)
+
+
+### Deploy QA
+```bash
+# API server and Prefect
+ docker compose --env-file .env.prod --env-file .env.qa -p qa -f archiver-service.docker-compose.yml -f archiver-service.docker-compose.qa.yml up -d
+
+# Workers
+ docker compose --env-file .env.prod --env-file .env.qa -p qa -f prefect-worker.docker-compose.yml up -d
+
 ```
 
+### Deploy Prod
+
+```bash
+ docker compose --env-file .env.prod -p prod -f archiver-service.docker-compose.yml -f archiver-service.docker-compose.prod.yml up -d
+
+ docker compose --env-file .env.prod -p prod -f prefect-worker.docker-compose.yml up -d
+
+```
 ## Deploy Local Flows
 
 For development and debugging, a local process can serve flows, for example by running `python -m archiver.flows`. However, some more configuration is required to fully integration with the other services; therefore a VS Code launch command `Prefect Flows` can be used in [launch.json](./backend/.vscode/launch.json)). This allows to debug flows locally and the registered flows have a prefix, `DEV_`.
