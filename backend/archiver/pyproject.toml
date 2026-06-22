@@ -16,7 +16,7 @@ dependencies = [
     "moto[s3]>=5.0.28",
     "prefect==3.7.2",
     "prefect-docker==0.6.6",
-    "pytest>=9.0.3",
+    "pytest>=9.1.0",
     "pytest-asyncio>=0.25.3",
     "requests>=2.33.0",
     "requests-mock>=1.12.1",
@@ -60,7 +60,7 @@ indent-width = 4
 [dependency-groups]
 dev = [
     "moto[s3]>=5.0.28",
-    "pytest>=9.0.3",
+    "pytest>=9.1.0",
     "pytest-asyncio>=0.25.3",
     "pytest-cov>=6.0.0",
     "requests-mock>=1.12.1",
