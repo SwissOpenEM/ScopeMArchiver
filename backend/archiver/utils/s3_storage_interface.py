@@ -161,7 +161,7 @@ class S3Storage:
                 getLogger().info("Restore complete, ready to download")
                 break
             getLogger().debug("Still restoring, waiting 60s...")
-            time.sleep(10)
+            time.sleep(60)
 
     @log_debug
     def download_file(self, obj, prefix, destination_folder, bucket):
