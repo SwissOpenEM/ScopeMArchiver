@@ -57,7 +57,7 @@
         },
         "title": "Networks",
         "default": [
-          "dev_internal"
+          "qa_internal"
         ],
         "description": "Docker networks that created containers should be connected to."
       },

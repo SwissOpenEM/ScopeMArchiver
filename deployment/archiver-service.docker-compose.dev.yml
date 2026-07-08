@@ -1,0 +1,2 @@
+include:
+  - archiver-service.docker-compose.prod.yml

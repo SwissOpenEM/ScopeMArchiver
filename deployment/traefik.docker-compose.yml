@@ -38,8 +38,9 @@ services:
       - prod_traefik_public
       - qa_traefik_public
       - dev_traefik_public
+      - scopemarchiver_network
     configs:
-      - source: traefik.yml
+      - source: traefik_${ENVIRONMENT}.yml
         target: /opt/traefik.yml
     secrets:
       - prometheus_auth
@@ -75,7 +76,7 @@ services:
       traefik.http.middlewares.authentik.forwardauth.authResponseHeaders: X-authentik-username,X-authentik-groups,X-authentik-entitlements,X-authentik-email,X-authentik-name,X-authentik-uid,X-authentik-jwt,X-authentik-meta-jwks,X-authentik-meta-outpost,X-authentik-meta-provider,X-authentik-meta-app,X-authentik-meta-version
 
 configs:
-  traefik.yml:
+  traefik_prod.yml:
     content: |
       http:
         routers:
@@ -97,6 +98,8 @@ configs:
               servers:
                 - url: "https://${S3_ENDPOINT}"
               passHostHeader: true
+  traefik_qa.yml:
+    content: ""
   traefik_dev.yml:
     content: |
       # Enable for locally stored certificate
@@ -122,7 +125,7 @@ volumes:
 
 networks:
   dev_traefik_public:
-    name: prod_traefik_public
+    name: dev_traefik_public
     driver: bridge
   prod_traefik_public:
     name: prod_traefik_public
@@ -130,3 +133,5 @@ networks:
   qa_traefik_public:
     name: qa_traefik_public
     driver: bridge
+  scopemarchiver_network:
+    external: true

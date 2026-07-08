@@ -47,6 +47,18 @@ Services that have no traffic routed through Traefik are setup in a separate net
  docker compose --env-file .env.prod -p prod -f prefect-worker.docker-compose.yml up -d
 
 ```
+
+### Deploy Dev
+
+For development we deploy a similar configuration to 
+
+```bash
+# using the 
+ docker compose --env-file .env.prod --env-file .env.dev -p dev -f archiver-service.docker-compose.yml -f archiver-service.docker-compose.dev.yml up -d
+
+ docker compose --env-file .env.prod -p dev -f prefect-worker.docker-compose.yml up -d
+```
+
 ## Deploy Local Flows
 
 For development and debugging, a local process can serve flows, for example by running `python -m archiver.flows`. However, some more configuration is required to fully integration with the other services; therefore a VS Code launch command `Prefect Flows` can be used in [launch.json](./backend/.vscode/launch.json)). This allows to debug flows locally and the registered flows have a prefix, `DEV_`.

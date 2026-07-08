@@ -57,7 +57,7 @@
         },
         "title": "Networks",
         "default": [
-          "scopemarchiver_network"
+          "prod_internal"
         ],
         "description": "Docker networks that created containers should be connected to."
       },
