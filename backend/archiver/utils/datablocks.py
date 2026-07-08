@@ -445,9 +445,8 @@ def cleanup_s3_landingzone(client: S3Storage, dataset_id: str) -> None:
     delete_objects_from_s3(
         client,
         prefix=StoragePaths.relative_raw_files_folder(dataset_id),
-        bucket=Bucket.landingzone_bucket(dataset_id),
+        bucket=Bucket.landingzone_bucket(),
     )
-    client.delete_bucket(Bucket.landingzone_bucket(dataset_id))
 
 
 @log

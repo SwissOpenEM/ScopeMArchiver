@@ -28,7 +28,7 @@ class Bucket:
         return Bucket(Variables().S3_ARCHIVAL_BUCKET)
 
     @staticmethod
-    def landingzone_bucket(dataset_pid: str) -> Bucket:  # type: ignore
+    def landingzone_bucket() -> Bucket:  # type: ignore
         return Bucket(Variables().S3_LANDINGZONE_BUCKET)
 
 
