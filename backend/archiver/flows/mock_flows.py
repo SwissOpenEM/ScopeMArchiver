@@ -57,8 +57,7 @@ def create_dummy_dataset(
             f"dd if=/dev/urandom of={raw_files_folder}/file_{i}.bin bs={file_size_MB}M count=1 iflag=fullblock"
         )
 
-    bucket = Bucket.landingzone_bucket(dataset_id)
-    # get_s3_client().create_bucket(bucket)
+    bucket = Bucket.landingzone_bucket()
 
     files = upload_objects_to_s3(
         get_s3_client(),

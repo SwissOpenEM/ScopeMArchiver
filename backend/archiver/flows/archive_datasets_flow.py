@@ -59,7 +59,7 @@ def download_origdatablocks(dataset_id: str, origDataBlocks: List[OrigDataBlock]
         for _ in datablocks_operations.list_datablocks(
             s3_client,
             StoragePaths.relative_raw_files_folder(dataset_id),
-            Bucket.landingzone_bucket(dataset_id),
+            Bucket.landingzone_bucket(),
         )
     ):
         raise Exception(
@@ -87,18 +87,16 @@ def download_origdatablocks(dataset_id: str, origDataBlocks: List[OrigDataBlock]
             update_progress.last_progress = progress
             update_progress_artifact(artifact_id=progress_artifact_id, progress=progress)
 
-    getLogger().info(
-        f"Downloading {total_file_count} objects from bucket {Bucket.landingzone_bucket(dataset_id)}"
-    )
+    getLogger().info(f"Downloading {total_file_count} objects from bucket {Bucket.landingzone_bucket()}")
     # files with full path are downloaded to scratch root
     file_paths = datablocks_operations.download_objects_from_s3(
         s3_client,
         prefix=StoragePaths.relative_raw_files_folder(dataset_id),
-        bucket=Bucket.landingzone_bucket(dataset_id),
+        bucket=Bucket.landingzone_bucket(),
         destination_folder=raw_files_scratch_folder,
         progress_callback=update_progress,
     )
-    getLogger().info(f"Downloaded {len(file_paths)} objects from {Bucket.landingzone_bucket(dataset_id)}")
+    getLogger().info(f"Downloaded {len(file_paths)} objects from {Bucket.landingzone_bucket()}")
 
     return file_paths
 
