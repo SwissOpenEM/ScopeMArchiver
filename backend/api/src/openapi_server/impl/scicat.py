@@ -1,7 +1,9 @@
+from logging import getLogger
+
 from pydantic import SecretStr
 import urllib
 
-from httpx import AsyncClient
+from httpx import AsyncClient, HTTPStatusError
 
 from prefect.blocks.system import Secret
 from prefect.variables import Variable
@@ -9,6 +11,8 @@ from prefect.variables import Variable
 SCICAT_DATASET_PATH = "/datasets"
 SCICAT_JOB_PATH = "/jobs"
 SCICAT_LOGIN_PATH = "/auth/login"
+
+_LOGGER = getLogger("uvicorn.scicat")
 
 
 async def get_scicat_credentials():
@@ -29,7 +33,12 @@ async def get_scicat_token(
             },
         )
 
-        resp.raise_for_status()
+        try:
+            resp.raise_for_status()
+        except HTTPStatusError as e:
+            message = f"SciCat login failed: {resp.status_code} {resp.reason_phrase} - {resp.text}"
+            _LOGGER.error(message)
+            raise HTTPStatusError(message, request=e.request, response=e.response) from e
 
         return SecretStr(resp.json()["access_token"])
 
@@ -80,7 +89,15 @@ async def mark_dataset_as_archivable(dataset_id: str):
             headers=headers,
         )
 
-        response.raise_for_status()
+        try:
+            response.raise_for_status()
+        except HTTPStatusError as e:
+            message = (
+                f"SciCat mark-as-archivable failed for dataset {dataset_id}: "
+                f"{response.status_code} {response.reason_phrase} - {response.text}"
+            )
+            _LOGGER.error(message)
+            raise HTTPStatusError(message, request=e.request, response=e.response) from e
 
 
 async def start_archiving(owner_user: str, contact_email, owner_group: str, dataset_pid: str):
@@ -110,4 +127,12 @@ async def start_archiving(owner_user: str, contact_email, owner_group: str, data
             headers=headers,
         )
 
-        response.raise_for_status()
+        try:
+            response.raise_for_status()
+        except HTTPStatusError as e:
+            message = (
+                f"SciCat job creation failed for dataset {dataset_pid}: "
+                f"{response.status_code} {response.reason_phrase} - {response.text}"
+            )
+            _LOGGER.error(message)
+            raise HTTPStatusError(message, request=e.request, response=e.response) from e
