@@ -26,4 +26,3 @@ sequenceDiagram
 
 - Source folder never used: why?
 - Datafile list vs origdatablocks?
-

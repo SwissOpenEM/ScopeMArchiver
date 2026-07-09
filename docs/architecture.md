@@ -37,7 +37,6 @@
 | SciCat Frontend | Node.js <https://scicatproject.github.io>        | Data catalog frontend where datasets are registered and archival/retrieval is triggered | <https://discovery.psi.ch/>, <https://${HOST}/>                             |
 | SciCat Backend  | Node.js <https://scicatproject.github.io>        | Data catalog backend where datasets are registered and archival/retrieval is triggered  | <https://dacat.psi.ch/explorer/>, <https://${HOST}/scicat/backend/explorer> |
 
-
 ## Authentication
 
 Certain service pages do not support standard OAuth2/OIDC authentication mechanism, such as:
@@ -52,13 +51,13 @@ To protect these pages, we use a proxy technology called **Forward Auth**. To ac
 - we do this by registering a so called **middleware** in traefik
 - this middleware will be of type [forwardauth](https://doc.traefik.io/traefik/middlewares/http/forwardauth/) and redirects to a service called **authentik-proxy**, e.g. `traefik.http.middlewares.authentik.forwardauth.address: http://authentik-proxy:9000/outpost.goauthentik.io/auth/traefik`
 - `authentik-proxy` service integrates with Traefik's reverse proxy and acts as a **authentication gateway** to Authentik's **outpost**
-- an outpost in Authentik is a deployment that acts as a bridge between Authentik and external services, handling authentication and authorization. 
+- an outpost in Authentik is a deployment that acts as a bridge between Authentik and external services, handling authentication and authorization.
 - in Authentik (our identity broker) we need to register
   - **Application**: basically a name and a URL where the application can be found. It is onnected to one provider
-  - **Provider**: the mechanism we use _how_ to provide authentication and _source of the users_. For our use-case, we take a **Proxy Provider** of type **Forward Auth** at domain level, as all the service pages should be protected the same way. A provider can be connected to many applications.
-  - **Outpost**: an entity that talks to the Authentik-proxy service and provides a AUTHENTIK_TOKEN for that service. It is also connected to the provider. 
+  - **Provider**: the mechanism we use _how_ to provide authentication and _source of the users_. For our use-case, we take a **Proxy Provider** of type **Forward Auth** at domain level,
+  as all the service pages should be protected the same way. A provider can be connected to many applications.
+  - **Outpost**: an entity that talks to the Authentik-proxy service and provides a AUTHENTIK_TOKEN for that service. It is also connected to the provider.
 - for every service page that we would like to protect, we have to tell Traefik's router to use the `authentik` middleware defined earlier, e.g. `traefik.http.routers.dashboard.middlewares=authentik`
-
 
 The following sequence diagram illustrates the authentication mechanism.
 

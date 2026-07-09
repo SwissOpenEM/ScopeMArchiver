@@ -25,11 +25,10 @@ Traefik will route to containers in different networks for different deployment 
 docker compose --env-file .env.prod -f traefik.docker-compose.yml up -d
 ```
   
-
 Services that have no traffic routed through Traefik are setup in a separate network (i.e. `qa_internal`). Others, like API service, share a network with Traefik as well (i.e `qa_traefik_public`)
 
-
 ### Deploy QA
+
 ```bash
 # API server and Prefect
  docker compose --env-file .env.prod --env-file .env.qa -p qa -f archiver-service.docker-compose.yml -f archiver-service.docker-compose.qa.yml up -d
@@ -50,8 +49,6 @@ Services that have no traffic routed through Traefik are setup in a separate net
 
 ### Deploy Dev
 
-For development we deploy a similar configuration to 
-
 ```bash
 # using the 
  docker compose --env-file .env.prod --env-file .env.dev -p dev -f archiver-service.docker-compose.yml -f archiver-service.docker-compose.dev.yml up -d
@@ -61,15 +58,14 @@ For development we deploy a similar configuration to
 
 ## Deploy Local Flows
 
-For development and debugging, a local process can serve flows, for example by running `python -m archiver.flows`. However, some more configuration is required to fully integration with the other services; therefore a VS Code launch command `Prefect Flows` can be used in [launch.json](./backend/.vscode/launch.json)). This allows to debug flows locally and the registered flows have a prefix, `DEV_`.
-
-
+For development and debugging, a local process can serve flows, for example by running `python -m archiver.flows`. However, some more configuration is required to fully integration with the other services;
+therefore a VS Code launch command `Prefect Flows` can be used in [launch.json](./backend/.vscode/launch.json)). This allows to debug flows locally and the registered flows have a prefix, `DEV_`.
 
 ## Github Pages
 
 The latest documentation can be found in the [GitHub Pages](https://swissopenem.github.io/ScopeMArchiver/)
 
-## Bulding Github Pages
+## Building Github Pages
 
 Github pages are built on [mkdocs](https://hub.docker.com/r/squidfunk/mkdocs-material).
 

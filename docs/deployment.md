@@ -2,8 +2,6 @@
 
 ![arch](deployment.drawio.svg)
 
-
-
 ## Service Deployment
 
 The services on the virtual machine can be deployed using a single docker-compose file:
@@ -30,12 +28,11 @@ For development, it is useful to override some configuration:
 
 > Note: The `lts-mock-volume` is a local volume here and not the LTS share.
 
-
 ## Prefect Deployment
 
 Prefect is set up in a slightly non-standard way (with respect to their described use cases). There are two workers deployed (archival/retrieval) that mount the hosts Docker socket in order
-to create containers at runtime in which the flows run. The flows are baked into the containers and the code is not pulled from any repository (Prefect would allow to, for example, store the code in an S3 bucket). The ETHZ LTS volume is mounted in a Docker volume such that the runtime containers can mount those during startup.
-
+to create containers at runtime in which the flows run. The flows are baked into the containers and the code is not pulled from any repository (Prefect would allow to, for example, store the code in an S3 bucket). The ETHZ LTS
+volume is mounted in a Docker volume such that the runtime containers can mount those during startup.
 
 ![prefect](prefect.drawio)
 
@@ -49,7 +46,9 @@ to create containers at runtime in which the flows run. The flows are baked into
 ### Prefect Server
 
 In order to run Prefect server, variables, secrets and concurrency limits need to be configured.
+
 #### Configuration
+
 All of the configuration can be done by running
 
   ```bash
