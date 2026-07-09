@@ -26,4 +26,4 @@ services:
       traefik.http.routers.prod-prefect-api-server.entrypoints: websecure
       traefik.http.routers.prod-prefect-api-server.tls.certresolver: certresolver
       traefik.http.middlewares.prod-prefect-api-strip.stripprefix.prefixes: /archiver/prefect
-      traefik.http.routers.prod-prefect-api-server.middlewares: ${ENVIRONMENT}-prefect-api-strip${AUTH_MIDDLEWARE:+,$AUTH_MIDDLEWARE}
+      traefik.http.routers.prod-prefect-api-server.middlewares: prod-prefect-api-strip${AUTH_MIDDLEWARE:+,$AUTH_MIDDLEWARE}

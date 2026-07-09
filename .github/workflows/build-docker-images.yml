@@ -25,6 +25,7 @@ jobs:
     outputs:
       backend: ${{ steps.filter.outputs.backend }}
       archiver: ${{ steps.filter.outputs.archiver }}
+      prefect: ${{ steps.filter.outputs.prefect }}
     steps:
       # For pull requests it's not necessary to checkout the code
       - uses: actions/checkout@v6
@@ -35,14 +36,25 @@ jobs:
           filters: |
             backend:
               - 'backend/**'
-            api:
-              - 'backend/api/**'
             archiver:
               - 'backend/archiver/**'
             prefect:
-              - 'backend/prefect/prefect/**'
+              - 'backend/prefect/**'
 
 
+
+  lint_markdown:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Markdown lint
+        uses: DavidAnson/markdownlint-cli2-action@v20
+        with:
+          globs: |
+            **/*.md
+            !**/.venv/**
+            !docs/index.md
 
   test_service_api:
     runs-on: ubuntu-latest
@@ -229,8 +241,8 @@ jobs:
       packages: write
       contents: read
 
-    needs: test_archiver
-    if: ${{ needs.detect_changes.outputs.prefect == 'true' }} || github.event_name != 'pull_request'
+    needs: detect_changes
+    if: ${{ needs.detect_changes.outputs.prefect == 'true' || github.event_name != 'pull_request' }}
 
     steps:
       - uses: actions/checkout@v6
