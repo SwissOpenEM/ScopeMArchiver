@@ -44,6 +44,18 @@ jobs:
 
 
 
+  lint_markdown:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Markdown lint
+        uses: DavidAnson/markdownlint-cli2-action@v20
+        with:
+          globs: |
+            **/*.md
+            !**/.venv/**
+
   test_service_api:
     runs-on: ubuntu-latest
     needs: detect_changes 
