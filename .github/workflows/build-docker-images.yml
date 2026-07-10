@@ -230,7 +230,7 @@ jobs:
           context: ./backend/archiver
           file: ./backend/prefect/runtime.Dockerfile
           target: test_runner
-          push: false
+          push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
