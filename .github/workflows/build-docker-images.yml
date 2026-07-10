@@ -93,7 +93,7 @@ jobs:
           uv run pytest --md-report --md-report-flavor gfm --md-report-exclude-outcomes passed skipped xpassed --md-report-output "$REPORT_OUTPUT" --cov=. --cov-report=xml --cov-report=html
 
       - name: Render the report to the PR when tests fail
-        uses: marocchino/sticky-pull-request-comment@v2
+        uses: marocchino/sticky-pull-request-comment@v3
         if: failure()
         with:
           header: test-report
@@ -160,7 +160,7 @@ jobs:
           uv run pytest --md-report --md-report-flavor gfm --md-report-exclude-outcomes passed skipped xpassed --md-report-output "$REPORT_OUTPUT" --cov=. --cov-report=xml --cov-report=html
 
       - name: Render the report to the PR when tests fail
-        uses: marocchino/sticky-pull-request-comment@v2
+        uses: marocchino/sticky-pull-request-comment@v3
         if: failure()
         with:
           header: test-report
