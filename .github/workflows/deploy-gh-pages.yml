@@ -36,7 +36,7 @@ jobs:
           run: docker run --rm -v ${PWD}:/docs ghcr.io/swissopenem/scopemarchiver-docs:latest build
         
         - name: Upload artifact
-          uses: actions/upload-pages-artifact@v3
+          uses: actions/upload-pages-artifact@v5
           with:
             path: './.site'
     deploy:
