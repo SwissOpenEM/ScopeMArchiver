@@ -225,7 +225,7 @@ jobs:
 
       - name: Build and test runtime image
         id: build-and-test
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: ./backend/archiver
           file: ./backend/prefect/runtime.Dockerfile
@@ -236,7 +236,7 @@ jobs:
 
       - name: Build and push runtime image
         id: build-and-push
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: ./backend/archiver
           file: ./backend/prefect/runtime.Dockerfile
@@ -281,7 +281,7 @@ jobs:
 
       - name: Build and push Docker image
         id: build-and-push
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: ./backend/
           file: ./backend/prefect/config.Dockerfile
@@ -363,7 +363,7 @@ jobs:
 
       - name: Build and push Docker image
         id: build-and-push
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: ./backend/api
           file: ./backend/api/Dockerfile
