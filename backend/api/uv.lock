@@ -118,7 +118,7 @@ requires-dist = [
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "importlib-metadata", specifier = ">=8.5.0" },
     { name = "minio", specifier = ">=7.2.18" },
-    { name = "prefect", specifier = "==3.7.2" },
+    { name = "prefect", specifier = "==3.7.7" },
     { name = "pyjwt", specifier = ">=2.10.1" },
     { name = "pytest", specifier = ">=9.0.3" },
     { name = "requests", specifier = ">=2.33.0" },
@@ -1126,7 +1126,7 @@ wheels = [
 
 [[package]]
 name = "prefect"
-version = "3.7.2"
+version = "3.7.7"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiosqlite" },
@@ -1179,15 +1179,16 @@ dependencies = [
     { name = "semver" },
     { name = "sniffio" },
     { name = "sqlalchemy", extra = ["asyncio"] },
+    { name = "starlette" },
     { name = "toml" },
     { name = "typing-extensions" },
     { name = "uvicorn" },
     { name = "websockets" },
     { name = "whenever" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/d1/72/9c43690f3041281917a35f6edcd5e4517fd64026fab3b4efff5940022775/prefect-3.7.2.tar.gz", hash = "sha256:51825cc97abe935bfaee9363c8a6a4400f30981e757d52dd0a787169b2e948ab", size = 14067456, upload-time = "2026-05-23T01:06:41.861Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/cc/d0/03cbd44531c51db3af65464c118ddbb09cf5572df18545a019bc730bfed1/prefect-3.7.7.tar.gz", hash = "sha256:816fd64369927916d88480fda24a6c2104f8f53e5adcaee9d6a638f553c023db", size = 14129007, upload-time = "2026-07-03T12:07:56.549Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/1a/2c/60db5ea3c1f2186eb840c73fe70d6721c887b4ff1b7f1e5048fe08012a7e/prefect-3.7.2-py3-none-any.whl", hash = "sha256:8a16b6de41364bc4e120c17d03fcde674d8459b38ead635762d820973047fdbc", size = 14944703, upload-time = "2026-05-23T01:06:37.648Z" },
+    { url = "https://files.pythonhosted.org/packages/27/fb/5edba59724f3c23497b268330ed6a6e9f87d3419fede9a3cebebf489d83f/prefect-3.7.7-py3-none-any.whl", hash = "sha256:c406c2ecba126f228ce150613179a9dbf542f0342a9f3d85bcfe2babad5802e7", size = 15025258, upload-time = "2026-07-03T12:07:53.617Z" },
 ]
 
 [[package]]
