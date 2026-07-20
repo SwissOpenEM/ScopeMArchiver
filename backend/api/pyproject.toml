@@ -19,7 +19,7 @@ dependencies = [
     "pyjwt>=2.10.1",
     "pytest>=9.0.3",
     "requests>=2.33.0",
-    "uvicorn>=0.34.0",
+    "uvicorn>=0.51.0",
 ]
 
 [tool.ruff]
