@@ -28,7 +28,7 @@ jobs:
       prefect: ${{ steps.filter.outputs.prefect }}
     steps:
       # For pull requests it's not necessary to checkout the code
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         if: github.event_name != 'pull_request'
       - uses: dorny/paths-filter@v4
         id: filter
@@ -46,7 +46,7 @@ jobs:
   lint_markdown:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Markdown lint
         uses: DavidAnson/markdownlint-cli2-action@v20
@@ -66,7 +66,7 @@ jobs:
       run:
         working-directory: ./backend/api
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Install uv
         uses: astral-sh/setup-uv@v7
@@ -134,7 +134,7 @@ jobs:
       run:
         working-directory: ./backend/archiver
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Install uv
         uses: astral-sh/setup-uv@v7
@@ -200,7 +200,7 @@ jobs:
     needs: test_archiver
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Log into registry ${{ env.REGISTRY }}
         
@@ -256,7 +256,7 @@ jobs:
     if: ${{ needs.detect_changes.outputs.prefect == 'true' || github.event_name != 'pull_request' }}
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Log into registry ${{ env.REGISTRY }}
         # if: github.event_name != 'pull_request'
@@ -300,7 +300,7 @@ jobs:
     needs: test_service_api
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Generate API
         uses: addnab/docker-run-action@v3
