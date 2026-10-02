@@ -281,8 +281,8 @@ def on_dataset_flow_failure(flow: Flow, flow_run: FlowRun, state: State):
     )
     try:
         reset_dataset(dataset_id=flow_run.parameters["dataset_id"], token=scicat_token)
-    except Exception as e:
-        getLogger().error(f"failed to reset datablocks {e}")
+    except Exception:
+        getLogger().exception("failed to reset datablocks")
     datablocks_operations.cleanup_scratch(flow_run.parameters["dataset_id"])
 
 
@@ -290,8 +290,8 @@ def cleanup_dataset(flow: Flow, flow_run: FlowRun, state: State):
     try:
         s3_client = get_s3_client()
         datablocks_operations.cleanup_s3_landingzone(s3_client, flow_run.parameters["dataset_id"])
-    except Exception as e:
-        getLogger().error(f"failed to cleanup landingzone {e}")
+    except Exception:
+        getLogger().exception("failed to cleanup landingzone")
     datablocks_operations.cleanup_scratch(flow_run.parameters["dataset_id"])
 
 

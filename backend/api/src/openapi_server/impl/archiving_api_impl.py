@@ -38,8 +38,9 @@ class BaseArchivingApiImpl(BaseArchivingApi):
                 "Flow run for job %s created. Id=%d Name=%s", create_job_body.id, flowRun.id, flowRun.name
             )
             return CreateJobResp(uuid=str(flowRun.id), name=flowRun.name)
-        except Exception as e:
-            _LOGGER.error(e)
+        except Exception:
+            _LOGGER.exception("Job creation failed for job %s", create_job_body.id)
             return JSONResponse(
-                status_code=500, content={"message": "Failed to create job", "details": str(e)}
+                status_code=500,
+                content={"message": "Failed to create job", "details": "an internal error occurred"},
             )
