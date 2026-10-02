@@ -43,10 +43,14 @@ class BaseS3UploadApiImpl(BaseS3uploadApi):
         try:
             bucket = await landingzone_bucket_name()
             return await complete_multipart_upload(bucket, complete_upload_body)
-        except Exception as e:
-            _LOGGER.error(str(e))
+        except Exception:
+            _LOGGER.exception("Failed to complete upload for %s", complete_upload_body.object_name)
             return JSONResponse(
-                status_code=500, content={"message": "Failed to complete upload", "details": str(e)}
+                status_code=500,
+                content={
+                    "message": "Failed to complete upload",
+                    "details": "An internal error has occurred.",
+                },
             )
 
     async def abort_multipart_upload(
@@ -61,14 +65,18 @@ class BaseS3UploadApiImpl(BaseS3uploadApi):
                 upload_id=abort_upload_body.upload_id,
             )
             return AbortUploadResp(
-                message="Abortin multipart upload succeeded.",
+                message="Aborting multipart upload succeeded.",
                 upload_id=abort_upload_body.upload_id,
                 object_name=abort_upload_body.object_name,
             )
-        except Exception as e:
-            _LOGGER.error(str(e))
+        except Exception:
+            _LOGGER.exception("Failed to abort multipart upload: %s", abort_upload_body.object_name)
             return JSONResponse(
-                status_code=500, content={"message": "Failed to abort multipart upload", "details": str(e)}
+                status_code=500,
+                content={
+                    "message": "Failed to abort multipart upload",
+                    "details": "An internal error has occurred.",
+                },
             )
 
     async def get_presigned_urls(
@@ -94,10 +102,14 @@ class BaseS3UploadApiImpl(BaseS3uploadApi):
                 b64urls: List[str] = [base64.b64encode(b[1].encode("utf-8")).decode() for b in urls]
                 _LOGGER.debug("Presigned Urls created: %s", urls)
                 return PresignedUrlResp(upload_id=uploadId, urls=b64urls)
-        except Exception as e:
-            _LOGGER.error(str(e))
+        except Exception:
+            _LOGGER.exception("Failed to get presigned urls for %s", presigned_url_body.object_name)
             return JSONResponse(
-                status_code=500, content={"message": "Failed to get presigned urls", "details": str(e)}
+                status_code=500,
+                content={
+                    "message": "Failed to get presigned urls",
+                    "details": "An internal error has occurred.",
+                },
             )
 
     async def finalize_dataset_upload(
@@ -115,14 +127,16 @@ class BaseS3UploadApiImpl(BaseS3uploadApi):
             return FinalizeDatasetUploadResp(
                 dataset_id=finalize_dataset_upload_body.dataset_id, message="Dataset upload finalized"
             )
-        except Exception as e:
-            _LOGGER.error(e)
+        except Exception:
+            _LOGGER.exception(
+                "Failed to finalize dataset for dataset_id=%s", finalize_dataset_upload_body.dataset_id
+            )
             return JSONResponse(
                 status_code=500,
                 content={
                     "message": "Failed to finalize dataset",
                     "dataset_pid": finalize_dataset_upload_body.dataset_id,
-                    "details": str(e),
+                    "details": "An internal error has occurred.",
                 },
             )
 
