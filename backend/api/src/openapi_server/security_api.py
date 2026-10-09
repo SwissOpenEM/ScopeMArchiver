@@ -208,7 +208,7 @@ async def check_scicat_token(token) -> bool:
 
     groups = GetSettings().SCICAT_INGESTOR_GROUPS.split(";")
 
-    if not any(g in scicat_access_groups for g in groups):
+    if not any(g == s or g.startswith(s + "-") for g in groups for s in scicat_access_groups):
         detail = "SciCat user does have ingestor role"
         _LOGGER.error(detail)
         raise HTTPException(status_code=401, detail=detail)
