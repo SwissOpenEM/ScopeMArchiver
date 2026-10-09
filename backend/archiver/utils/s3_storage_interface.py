@@ -51,9 +51,11 @@ class S3Storage:
                 connect_timeout=30,
                 read_timeout=60,
                 retries={"max_attempts": 3, "mode": "adaptive"},
-                max_pool_connections=5,  # Reduce for local node
-                tcp_keepalive=True,  # Keep connection alive
+                max_pool_connections=10,
+                tcp_keepalive=True,
                 s3={"payload_signing_enabled": True, "addressing_style": "path"},
+                request_checksum_calculation="when_required",  # added
+                response_checksum_validation="when_required",  # added
             ),
         )
 
