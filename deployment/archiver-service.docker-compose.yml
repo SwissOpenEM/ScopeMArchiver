@@ -209,7 +209,7 @@ secrets:
   job_endpoint_username:
     file: ./.secrets/jobsusername.txt
   job_endpoint_password:
-    file: ./.secrets/jobspassword.txt
+    file: ${JOBS_PASSWORD_FILE}
 
 networks:
   internal:
