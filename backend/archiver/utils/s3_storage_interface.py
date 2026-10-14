@@ -135,7 +135,6 @@ class S3Storage:
     @log_debug
     def fget_object(self, bucket: Bucket, folder: str, object_name: str, target_path: Path) -> None:
         self.restore_objects(bucket=Bucket, objects=[object_name])
-        self.check_restore(bucket=Bucket, object=object_name)
 
         self._client.download_file(Bucket=bucket.name, Key=object_name, Filename=str(target_path.absolute()))
 
@@ -152,6 +151,8 @@ class S3Storage:
                     },
                 },
             )
+        for obj in objects:
+            self.check_restore(bucket, obj)
 
     @log
     def check_restore(self, bucket: Bucket, object: str) -> None:
@@ -162,7 +163,7 @@ class S3Storage:
             if 'ongoing-request="false"' in restore_status:
                 getLogger().info("Restore complete, ready to download")
                 break
-            getLogger().debug("Still restoring, waiting 60s...")
+            getLogger().info("Still restoring, waiting 60s...")
             time.sleep(60)
 
     @log_debug
